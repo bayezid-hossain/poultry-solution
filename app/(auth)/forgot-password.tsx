@@ -1,3 +1,7 @@
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Text } from "@/components/ui/text";
 import { authClient } from "@/lib/auth-client";
 import { Link, useRouter } from "expo-router";
 import { useRef, useState } from "react";
@@ -7,7 +11,6 @@ import {
     Platform,
     Pressable,
     ScrollView,
-    Text,
     TextInput,
     View,
 } from "react-native";
@@ -139,10 +142,10 @@ export default function ForgotPasswordScreen() {
                 {/* Header */}
                 <View className="items-center mb-10">
                     <Text className="text-5xl mb-4">🔐</Text>
-                    <Text className="text-3xl font-bold text-foreground mb-2">
+                    <Text className="text-3xl font-bold mb-2">
                         {step === "email" ? "Forgot Password?" : "Reset Password"}
                     </Text>
-                    <Text className="text-base text-muted-foreground text-center">
+                    <Text variant="muted" className="text-base text-center">
                         {step === "email"
                             ? "Enter your email and we'll send you a verification code."
                             : `Enter the code sent to ${email} and set a new password.`}
@@ -159,14 +162,10 @@ export default function ForgotPasswordScreen() {
                 {step === "email" ? (
                     /* Step 1: Email */
                     <View className="gap-4">
-                        <View>
-                            <Text className="text-foreground text-sm font-medium mb-1.5 ml-1">
-                                Email
-                            </Text>
-                            <TextInput
-                                className="bg-card border border-input rounded-xl px-4 py-3.5 text-foreground text-base"
+                        <View className="gap-1.5">
+                            <Label>Email</Label>
+                            <Input
                                 placeholder="you@example.com"
-                                placeholderTextColor="hsl(var(--muted-foreground))"
                                 value={email}
                                 onChangeText={setEmail}
                                 keyboardType="email-address"
@@ -176,10 +175,11 @@ export default function ForgotPasswordScreen() {
                             />
                         </View>
 
-                        <Pressable
+                        <Button
                             onPress={handleSendOtp}
                             disabled={loading}
-                            className="bg-primary rounded-xl py-4 items-center mt-2 active:opacity-90"
+                            className="rounded-xl mt-2"
+                            size="lg"
                         >
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
@@ -188,7 +188,7 @@ export default function ForgotPasswordScreen() {
                                     Send Verification Code
                                 </Text>
                             )}
-                        </Pressable>
+                        </Button>
 
                         <View className="items-center mt-4">
                             <Link href="/(auth)/sign-in" asChild>
@@ -224,14 +224,10 @@ export default function ForgotPasswordScreen() {
                             ))}
                         </View>
 
-                        <View>
-                            <Text className="text-foreground text-sm font-medium mb-1.5 ml-1">
-                                New Password
-                            </Text>
-                            <TextInput
-                                className="bg-card border border-input rounded-xl px-4 py-3.5 text-foreground text-base"
+                        <View className="gap-1.5">
+                            <Label>New Password</Label>
+                            <Input
                                 placeholder="At least 8 characters"
-                                placeholderTextColor="hsl(var(--muted-foreground))"
                                 value={newPassword}
                                 onChangeText={setNewPassword}
                                 secureTextEntry
@@ -239,14 +235,10 @@ export default function ForgotPasswordScreen() {
                             />
                         </View>
 
-                        <View>
-                            <Text className="text-foreground text-sm font-medium mb-1.5 ml-1">
-                                Confirm Password
-                            </Text>
-                            <TextInput
-                                className="bg-card border border-input rounded-xl px-4 py-3.5 text-foreground text-base"
+                        <View className="gap-1.5">
+                            <Label>Confirm Password</Label>
+                            <Input
                                 placeholder="Re-enter your password"
-                                placeholderTextColor="hsl(var(--muted-foreground))"
                                 value={confirmPassword}
                                 onChangeText={setConfirmPassword}
                                 secureTextEntry
@@ -254,10 +246,11 @@ export default function ForgotPasswordScreen() {
                             />
                         </View>
 
-                        <Pressable
+                        <Button
                             onPress={handleResetPassword}
                             disabled={loading}
-                            className="bg-primary rounded-xl py-4 items-center mt-2 active:opacity-90"
+                            className="rounded-xl mt-2"
+                            size="lg"
                         >
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
@@ -266,7 +259,7 @@ export default function ForgotPasswordScreen() {
                                     Reset Password
                                 </Text>
                             )}
-                        </Pressable>
+                        </Button>
 
                         {/* Resend */}
                         <View className="items-center mt-2">
@@ -283,7 +276,7 @@ export default function ForgotPasswordScreen() {
 
                         <View className="items-center mt-2">
                             <Pressable onPress={() => { setStep("email"); setError(""); }}>
-                                <Text className="text-muted-foreground text-sm">
+                                <Text variant="muted" className="text-sm">
                                     ← Change email
                                 </Text>
                             </Pressable>

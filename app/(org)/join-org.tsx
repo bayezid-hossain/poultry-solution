@@ -1,5 +1,7 @@
-import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Text } from '@/components/ui/text';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -38,16 +40,16 @@ export default function JoinOrganizationScreen() {
         });
     };
 
-    const selectedOrg = organizations?.find(o => o.id === selectedOrgId);
+    const selectedOrg = organizations?.find((o: any) => o.id === selectedOrgId);
     const hasMultipleOrgs = (organizations?.length ?? 0) > 1;
 
     return (
         <SafeAreaView className="flex-1 bg-background">
             <ScrollView contentContainerClassName="p-5">
-                <ThemedText type="title" className="mb-2 text-primary">Join Organization</ThemedText>
-                <ThemedText className="mb-6 text-muted-foreground font-medium">Select an organization to join.</ThemedText>
+                <Text variant="h3" className="mb-2 text-primary">Join Organization</Text>
+                <Text variant="muted" className="mb-6 font-medium">Select an organization to join.</Text>
 
-                <ThemedText type="subtitle" className="mt-4 mb-3 text-foreground">1. Choose Organization</ThemedText>
+                <Text className="text-lg font-semibold mt-4 mb-3">1. Choose Organization</Text>
 
                 {isLoadingOrgs ? (
                     <ActivityIndicator size="large" className="text-primary" />
@@ -59,9 +61,9 @@ export default function JoinOrganizationScreen() {
                             activeOpacity={hasMultipleOrgs ? 0.7 : 1}
                             className={`flex-row items-center justify-between p-4 rounded-xl border border-input bg-card ${!hasMultipleOrgs ? 'opacity-80' : ''}`}
                         >
-                            <ThemedText className="text-foreground font-medium">
+                            <Text className="font-medium">
                                 {selectedOrg ? selectedOrg.name : 'Select Organization...'}
-                            </ThemedText>
+                            </Text>
                             {hasMultipleOrgs && (
                                 <IconSymbol
                                     name={isDropdownOpen ? "chevron.up" : "chevron.down"}
@@ -73,7 +75,7 @@ export default function JoinOrganizationScreen() {
 
                         {/* Dropdown List */}
                         {isDropdownOpen && hasMultipleOrgs && (
-                            <View className="mt-2 rounded-xl border border-input bg-card overflow-hidden shadow-lg">
+                            <Card className="mt-2 overflow-hidden shadow-lg p-0">
                                 {organizations?.map((org: any) => (
                                     <TouchableOpacity
                                         key={org.id}
@@ -83,17 +85,17 @@ export default function JoinOrganizationScreen() {
                                             setIsDropdownOpen(false);
                                         }}
                                     >
-                                        <ThemedText className={selectedOrgId === org.id ? 'text-primary font-bold' : 'text-foreground'}>
+                                        <Text className={selectedOrgId === org.id ? 'text-primary font-bold' : ''}>
                                             {org.name}
-                                        </ThemedText>
+                                        </Text>
                                     </TouchableOpacity>
                                 ))}
-                            </View>
+                            </Card>
                         )}
                     </View>
                 )}
 
-                <ThemedText type="subtitle" className={`${isDropdownOpen ? 'opacity-20' : ''} mt-6 mb-3 text-foreground`}>2. Choose Role</ThemedText>
+                <Text className={`${isDropdownOpen ? 'opacity-20' : ''} text-lg font-semibold mt-6 mb-3`}>2. Choose Role</Text>
                 <View className={`${isDropdownOpen ? 'opacity-20' : ''} flex-row gap-3 mt-2`}>
                     <TouchableOpacity
                         className={`flex-1 p-4 rounded-xl border border-input items-center bg-card ${selectedRole === 'OFFICER' ? 'border-primary ring-1 ring-primary' : ''
@@ -101,10 +103,10 @@ export default function JoinOrganizationScreen() {
                         onPress={() => setSelectedRole('OFFICER')}
                         disabled={isDropdownOpen}
                     >
-                        <ThemedText className={`text-foreground font-semibold ${selectedRole === 'OFFICER' ? 'text-primary' : ''}`}>
+                        <Text className={`font-semibold ${selectedRole === 'OFFICER' ? 'text-primary' : ''}`}>
                             Officer
-                        </ThemedText>
-                        <ThemedText className="text-xs text-muted-foreground mt-1 text-center font-medium">Field work, data entry</ThemedText>
+                        </Text>
+                        <Text variant="muted" className="text-xs mt-1 text-center font-medium">Field work, data entry</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -113,25 +115,25 @@ export default function JoinOrganizationScreen() {
                         onPress={() => setSelectedRole('MANAGER')}
                         disabled={isDropdownOpen}
                     >
-                        <ThemedText className={`text-foreground font-semibold ${selectedRole === 'MANAGER' ? 'text-primary' : ''}`}>
+                        <Text className={`font-semibold ${selectedRole === 'MANAGER' ? 'text-primary' : ''}`}>
                             Manager
-                        </ThemedText>
-                        <ThemedText className="text-xs text-muted-foreground mt-1 text-center font-medium">Oversight, reports</ThemedText>
+                        </Text>
+                        <Text variant="muted" className="text-xs mt-1 text-center font-medium">Oversight, reports</Text>
                     </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity
-                    className={`bg-primary p-4 rounded-xl items-center mt-10 shadow-sm ${(!selectedOrgId || joinMutation.isPending || isDropdownOpen) ? 'opacity-50' : 'active:opacity-90'
-                        }`}
+                <Button
                     onPress={handleJoin}
                     disabled={!selectedOrgId || joinMutation.isPending || isDropdownOpen}
+                    className="mt-10 rounded-xl"
+                    size="lg"
                 >
                     {joinMutation.isPending ? (
                         <ActivityIndicator color="white" />
                     ) : (
-                        <ThemedText className="text-primary-foreground font-bold text-base">Request to Join</ThemedText>
+                        <Text className="text-primary-foreground font-bold text-base">Request to Join</Text>
                     )}
-                </TouchableOpacity>
+                </Button>
 
             </ScrollView>
         </SafeAreaView>

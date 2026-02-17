@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { Text } from "@/components/ui/text";
 import { authClient } from "@/lib/auth-client";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
@@ -7,7 +9,6 @@ import {
     Platform,
     Pressable,
     ScrollView,
-    Text,
     TextInput,
     View,
 } from "react-native";
@@ -111,10 +112,10 @@ export default function VerifyEmailScreen() {
                 {/* Header */}
                 <View className="items-center mb-10">
                     <Text className="text-5xl mb-4">✉️</Text>
-                    <Text className="text-3xl font-bold text-foreground mb-2">
+                    <Text className="text-3xl font-bold mb-2">
                         Verify Your Email
                     </Text>
-                    <Text className="text-base text-muted-foreground text-center">
+                    <Text variant="muted" className="text-base text-center">
                         We sent a 6-digit code to
                     </Text>
                     <Text className="text-base text-primary font-semibold mt-1">
@@ -160,10 +161,11 @@ export default function VerifyEmailScreen() {
                 </View>
 
                 {/* Verify Button */}
-                <Pressable
+                <Button
                     onPress={handleVerify}
                     disabled={loading}
-                    className="bg-primary rounded-xl py-4 items-center active:opacity-90"
+                    className="rounded-xl"
+                    size="lg"
                 >
                     {loading ? (
                         <ActivityIndicator color="#fff" />
@@ -172,11 +174,11 @@ export default function VerifyEmailScreen() {
                             Verify Email
                         </Text>
                     )}
-                </Pressable>
+                </Button>
 
                 {/* Resend */}
                 <View className="items-center mt-6">
-                    <Text className="text-muted-foreground text-sm mb-2">
+                    <Text variant="muted" className="text-sm mb-2">
                         Didn&apos;t receive the code?
                     </Text>
                     <Pressable onPress={handleResend} disabled={resending}>

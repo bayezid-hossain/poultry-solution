@@ -1,3 +1,8 @@
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Text } from "@/components/ui/text";
 import { authClient } from "@/lib/auth-client";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
@@ -7,8 +12,6 @@ import {
     Platform,
     Pressable,
     ScrollView,
-    Text,
-    TextInput,
     View,
 } from "react-native";
 
@@ -84,10 +87,10 @@ export default function SignUpScreen() {
             >
                 {/* Header */}
                 <View className="items-center mb-10">
-                    <Text className="text-4xl font-bold text-foreground mb-2">
+                    <Text className="text-4xl font-bold mb-2">
                         🐔 Create Account
                     </Text>
-                    <Text className="text-base text-muted-foreground">
+                    <Text variant="muted">
                         Join Poultry Solution
                     </Text>
                 </View>
@@ -101,14 +104,10 @@ export default function SignUpScreen() {
 
                 {/* Form */}
                 <View className="gap-4">
-                    <View>
-                        <Text className="text-foreground text-sm font-medium mb-1.5 ml-1">
-                            Full Name
-                        </Text>
-                        <TextInput
-                            className="bg-card border border-input rounded-xl px-4 py-3.5 text-foreground text-base"
+                    <View className="gap-1.5">
+                        <Label>Full Name</Label>
+                        <Input
                             placeholder="John Doe"
-                            placeholderTextColor="hsl(var(--muted-foreground))"
                             value={name}
                             onChangeText={setName}
                             autoCapitalize="words"
@@ -116,14 +115,10 @@ export default function SignUpScreen() {
                         />
                     </View>
 
-                    <View>
-                        <Text className="text-foreground text-sm font-medium mb-1.5 ml-1">
-                            Email
-                        </Text>
-                        <TextInput
-                            className="bg-card border border-input rounded-xl px-4 py-3.5 text-foreground text-base"
+                    <View className="gap-1.5">
+                        <Label>Email</Label>
+                        <Input
                             placeholder="you@example.com"
-                            placeholderTextColor="hsl(var(--muted-foreground))"
                             value={email}
                             onChangeText={setEmail}
                             keyboardType="email-address"
@@ -133,14 +128,10 @@ export default function SignUpScreen() {
                         />
                     </View>
 
-                    <View>
-                        <Text className="text-foreground text-sm font-medium mb-1.5 ml-1">
-                            Password
-                        </Text>
-                        <TextInput
-                            className="bg-card border border-input rounded-xl px-4 py-3.5 text-foreground text-base"
+                    <View className="gap-1.5">
+                        <Label>Password</Label>
+                        <Input
                             placeholder="At least 8 characters"
-                            placeholderTextColor="hsl(var(--muted-foreground))"
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry
@@ -148,14 +139,10 @@ export default function SignUpScreen() {
                         />
                     </View>
 
-                    <View>
-                        <Text className="text-foreground text-sm font-medium mb-1.5 ml-1">
-                            Confirm Password
-                        </Text>
-                        <TextInput
-                            className="bg-card border border-input rounded-xl px-4 py-3.5 text-foreground text-base"
+                    <View className="gap-1.5">
+                        <Label>Confirm Password</Label>
+                        <Input
                             placeholder="Re-enter your password"
-                            placeholderTextColor="hsl(var(--muted-foreground))"
                             value={confirmPassword}
                             onChangeText={setConfirmPassword}
                             secureTextEntry
@@ -164,10 +151,11 @@ export default function SignUpScreen() {
                     </View>
 
                     {/* Sign Up Button */}
-                    <Pressable
+                    <Button
                         onPress={handleSignUp}
                         disabled={loading}
-                        className="bg-primary rounded-xl py-4 items-center mt-2 active:opacity-90"
+                        className="rounded-xl mt-2"
+                        size="lg"
                     >
                         {loading ? (
                             <ActivityIndicator color="#fff" />
@@ -176,37 +164,39 @@ export default function SignUpScreen() {
                                 Create Account
                             </Text>
                         )}
-                    </Pressable>
+                    </Button>
 
                     {/* Divider */}
                     <View className="flex-row items-center my-2">
-                        <View className="flex-1 h-px bg-border" />
-                        <Text className="text-muted-foreground text-sm mx-4">or</Text>
-                        <View className="flex-1 h-px bg-border" />
+                        <Separator className="flex-1" />
+                        <Text variant="muted" className="mx-4">or</Text>
+                        <Separator className="flex-1" />
                     </View>
 
                     {/* Google Sign Up */}
-                    <Pressable
+                    <Button
+                        variant="outline"
                         onPress={handleGoogleSignIn}
                         disabled={googleLoading}
-                        className="bg-card border border-input rounded-xl py-4 flex-row items-center justify-center gap-3 active:bg-secondary"
+                        className="rounded-xl"
+                        size="lg"
                     >
                         {googleLoading ? (
                             <ActivityIndicator color="#333" />
                         ) : (
                             <>
-                                <Text className="text-lg text-foreground">G</Text>
+                                <Text className="text-lg">G</Text>
                                 <Text className="text-foreground text-base font-semibold">
                                     Continue with Google
                                 </Text>
                             </>
                         )}
-                    </Pressable>
+                    </Button>
                 </View>
 
                 {/* Sign In Link */}
                 <View className="flex-row justify-center mt-8 gap-1">
-                    <Text className="text-muted-foreground text-sm">
+                    <Text variant="muted" className="text-sm">
                         Already have an account?
                     </Text>
                     <Link href="/(auth)/sign-in" asChild>

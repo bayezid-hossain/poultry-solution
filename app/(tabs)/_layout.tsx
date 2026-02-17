@@ -1,35 +1,51 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { CustomDrawerContent } from "@/components/custom-drawer-content";
+import { Drawer } from "expo-router/drawer";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+export default function TabsDrawerLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Drawer
+        drawerContent={(props) => <CustomDrawerContent {...props} />}
+        screenOptions={{
+          headerShown: false,
+          drawerType: "front",
+          drawerStyle: {
+            width: 280,
+          },
         }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
+      >
+        <Drawer.Screen
+          name="index"
+          options={{ title: "Home" }}
+        />
+        <Drawer.Screen
+          name="cycles"
+          options={{ title: "Cycles" }}
+        />
+        <Drawer.Screen
+          name="farmers"
+          options={{ title: "Farmers" }}
+        />
+        <Drawer.Screen
+          name="overview"
+          options={{ title: "Overview" }}
+        />
+        <Drawer.Screen
+          name="officers"
+          options={{ title: "Officers" }}
+        />
+        <Drawer.Screen
+          name="settings"
+          options={{ title: "Settings" }}
+        />
+        <Drawer.Screen
+          name="explore"
+          options={{
+            drawerItemStyle: { display: "none" },
+          }}
+        />
+      </Drawer>
+    </GestureHandlerRootView>
   );
 }

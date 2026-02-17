@@ -1,4 +1,5 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from "@react-navigation/native";
+import { PortalHost } from "@rn-primitives/portal";
 import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -7,8 +8,8 @@ import { ActivityIndicator, Pressable, View } from "react-native";
 import "react-native-reanimated";
 import "../global.css";
 
-import { ThemedText } from "@/components/themed-text";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Text } from "@/components/ui/text";
+import { ThemeProvider, useTheme } from "@/context/theme-context";
 import { authClient } from "@/lib/auth-client";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -58,12 +59,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       const status = membership.status;
       const inAuthGroup = segments[0] === "(auth)";
       const inOrgGroup = segments[0] === "(org)";
-      const isModal = segments[0] === "modal"; // Handle modal route if needed, usually allow? No, protect it.
 
       if (status === "NO_ORG") {
-        // Check if on join screen.
-        // Note: segments include groups.
-        // app/(org)/join-org.tsx -> segments=["(org)", "join-org"]
         const isOnJoinScreen = inOrgGroup && segments[1] === "join-org";
         if (isOnJoinScreen) {
           action = "render";
@@ -88,7 +85,6 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           action = "render";
         }
       } else {
-        // Unknown status, default to render (or error?)
         action = "render";
       }
     }
@@ -101,12 +97,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [action, redirectTarget]);
 
   if (action === "loading" || action === "redirect") {
-    // Show spinner if loading OR if we are about to redirect
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator size="large" className="text-primary" />
         {isAuthCallback && !session && (
-          <ThemedText className="text-primary font-bold mt-4 text-lg">Completing Sign In...</ThemedText>
+          <Text className="text-primary font-bold mt-4 text-lg">Completing Sign In...</Text>
         )}
       </View>
     );
@@ -115,12 +110,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   if (action === "error") {
     return (
       <View className="flex-1 items-center justify-center bg-background p-4">
-        <ThemedText className="text-destructive">
+        <Text className="text-destructive">
           Failed to load membership status.
           {membershipError?.message}
-        </ThemedText>
+        </Text>
         <Pressable onPress={() => authClient.signOut().then(() => router.replace("/sign-in"))} className="mt-4 bg-destructive p-3 rounded">
-          <ThemedText className="text-destructive-foreground">Sign Out</ThemedText>
+          <Text className="text-destructive-foreground">Sign Out</Text>
         </Pressable>
       </View>
     );
@@ -136,25 +131,34 @@ export const unstable_settings = {
 import { queryClient, trpc, trpcClient } from "@/lib/trpc";
 import { QueryClientProvider } from "@tanstack/react-query";
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+function RootLayoutInner() {
+  const { colorScheme } = useTheme();
 
+  return (
+    <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <AuthGuard>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(org)" />
+          <Stack.Screen
+            name="modal"
+            options={{ presentation: "modal", title: "Modal" }}
+          />
+        </Stack>
+      </AuthGuard>
+      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+      <PortalHost />
+    </NavigationThemeProvider>
+  );
+}
+
+export default function RootLayout() {
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-          <AuthGuard>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(org)" />
-              <Stack.Screen
-                name="modal"
-                options={{ presentation: "modal", title: "Modal" }}
-              />
-            </Stack>
-          </AuthGuard>
-          <StatusBar style="auto" />
+        <ThemeProvider>
+          <RootLayoutInner />
         </ThemeProvider>
       </QueryClientProvider>
     </trpc.Provider>
