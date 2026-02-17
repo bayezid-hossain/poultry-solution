@@ -215,10 +215,10 @@ This roadmap is designed for a solo developer to build, test, and ship "Poultry 
 
 ### Phase 0: Foundation & Connectivity (The "Pulse")
 > **Goal**: Establish the link between Mobile and existing Backend.
-- [x] **PNP-0.1**: Initial Expo Repo with `expo-router` (Tabs + Stack structure). [done]
-- [x] **PNP-0.2**: Shared UI Library Setup (NativeWind/Tailwind v4). [done]
-- [x] **PNP-0.3**: API Layer: Port `tRPC` client and `TanStack Query` config. [done]
-- [x] **PNP-0.4**: Backend Auth Support: Add `bearer` plugin to `better-auth`. [done]
+- [x] **PNP-0.1**: Initial Expo Repo with `expo-router` (Tabs + Stack structure). 
+- [x] **PNP-0.2**: Shared UI Library Setup (NativeWind/Tailwind v4).
+- [x] **PNP-0.3**: API Layer: Port `tRPC` client and `TanStack Query` config. 
+- [x] **PNP-0.4**: Backend Auth Support: Add `bearer` plugin to `better-auth`. 
 - [ ] **PNP-0.5**: Auth Screens: Sign In, Verification OTP, and Session persistence.
 - [ ] **Milestone**: "I can log in on my phone and the app recognizes who I am."
 
