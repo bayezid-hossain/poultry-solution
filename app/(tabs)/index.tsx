@@ -10,6 +10,7 @@ import { Link } from 'expo-router';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { trpc } from '@/lib/trpc';
+import { Text } from '@react-navigation/elements';
 
 export default function HomeScreen() {
   const { data, isLoading, error } = trpc.auth.getSession.useQuery();
