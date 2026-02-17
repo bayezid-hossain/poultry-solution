@@ -8,7 +8,11 @@ import { ThemedView } from '@/components/themed-view';
 import { authClient } from '@/lib/auth-client';
 import { Link } from 'expo-router';
 
+import { trpc } from '@/lib/trpc';
+
 export default function HomeScreen() {
+  const { data, isLoading, error } = trpc.auth.getSession.useQuery();
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -22,6 +26,22 @@ export default function HomeScreen() {
         <ThemedText type="title">Welcome!</ThemedText>
         <HelloWave />
       </ThemedView>
+
+      {/* tRPC Test */}
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">tRPC Connection Status:</ThemedText>
+        {isLoading ? (
+          <ThemedText>Loading session...</ThemedText>
+        ) : error ? (
+          <ThemedText style={{ color: 'red' }}>Error: {error.message}</ThemedText>
+        ) : (
+          <ThemedText>
+            Connected! User: {data?.user?.email ?? "Not logged in"}
+          </ThemedText>
+        )}
+
+      </ThemedView>
+
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>
         <ThemedText>

@@ -43,22 +43,29 @@ export const unstable_settings = {
   anchor: "(tabs)",
 };
 
+import { queryClient, trpc, trpcClient } from "@/lib/trpc";
+import { QueryClientProvider } from "@tanstack/react-query";
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <AuthGuard>
-        <Stack>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
-          />
-        </Stack>
-      </AuthGuard>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+          <AuthGuard>
+            <Stack>
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="modal"
+                options={{ presentation: "modal", title: "Modal" }}
+              />
+            </Stack>
+          </AuthGuard>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }
