@@ -130,6 +130,8 @@ export const unstable_settings = {
 
 import { queryClient, trpc, trpcClient } from "@/lib/trpc";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Toaster } from "sonner-native";
 
 function RootLayoutInner() {
   const { colorScheme } = useTheme();
@@ -149,18 +151,21 @@ function RootLayoutInner() {
       </AuthGuard>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <PortalHost />
+      <Toaster position="bottom-center" />
     </NavigationThemeProvider>
   );
 }
 
 export default function RootLayout() {
   return (
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <RootLayoutInner />
-        </ThemeProvider>
-      </QueryClientProvider>
-    </trpc.Provider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <RootLayoutInner />
+          </ThemeProvider>
+        </QueryClientProvider>
+      </trpc.Provider>
+    </GestureHandlerRootView>
   );
 }

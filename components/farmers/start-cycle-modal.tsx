@@ -3,7 +3,7 @@ import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { Activity, BadgeCheck, Bird, Hash, X } from "lucide-react-native";
+import { Activity, Bird, ChevronDown, Hash, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
 
@@ -24,22 +24,42 @@ export function StartCycleModal({
     onOpenChange,
     onSuccess,
 }: StartCycleModalProps) {
-    const [name, setName] = useState("");
     const [doc, setDoc] = useState("");
     const [age, setAge] = useState("0");
-    const [birdType, setBirdType] = useState("Broiler");
+    const [birdType, setBirdType] = useState("");
+    const [isBirdTypeOpen, setIsBirdTypeOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Fetch available bird types from DB
+    const { data: birdTypes, isLoading: isLoadingBirdTypes } = trpc.officer.docOrders.getBirdTypes.useQuery(undefined, {
+        enabled: open,
+    });
 
     useEffect(() => {
         if (open) {
-            const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-            setName(`BATCH ${dateStr}`);
             setDoc("");
             setAge("0");
-            setBirdType("Broiler");
             setError(null);
+            setIsBirdTypeOpen(false);
         }
     }, [open]);
+
+    // Set default bird type when data loads
+    useEffect(() => {
+        if (open && birdTypes && birdTypes.length > 0 && !birdType) {
+            // Select the oldest created type by default (assuming fetched order or sort)
+            // The query sorts by desc(createdAt), so the LAST item is the oldest.
+            // Wait, the requirement says "oldest one will be default".
+            // If the query returns ordered by DESC createdAt, then the last element is the oldest.
+            // If it returns ordered by ASC createdAt, then the first element is the oldest.
+            // Let's check the query: `orderBy(desc(birdTypes.createdAt))` => Newest first.
+            // So we should pick the LAST element for "Oldest". 
+            // However, typically "default" implies the most common one which might be the first created (base type).
+            // Let's safe pick the last one if we want "oldest".
+            const oldest = birdTypes[birdTypes.length - 1];
+            if (oldest) setBirdType(oldest.name);
+        }
+    }, [open, birdTypes, birdType]);
 
     const mutation = trpc.officer.cycles.create.useMutation({
         onSuccess: () => {
@@ -55,10 +75,6 @@ export function StartCycleModal({
         const numDoc = parseInt(doc, 10);
         const numAge = parseInt(age, 10);
 
-        if (name.length < 1) {
-            setError("Please enter a cycle name");
-            return;
-        }
         if (isNaN(numDoc) || numDoc <= 0) {
             setError("Please enter a valid bird count (DOC)");
             return;
@@ -67,15 +83,20 @@ export function StartCycleModal({
             setError("Age must be between 0 and 40 days");
             return;
         }
+        if (!birdType) {
+            setError("Please select a bird type");
+            return;
+        }
 
         setError(null);
         mutation.mutate({
-            name: name.toUpperCase(),
+            // Name is optional now, server will default to Farmer Name
             farmerId: farmer.id,
             orgId: farmer.organizationId,
             doc: numDoc,
             age: numAge,
             birdType: birdType,
+            name: farmer.name,
         });
     };
 
@@ -117,18 +138,8 @@ export function StartCycleModal({
                         </View>
 
                         {/* Form */}
-                        <ScrollView className="p-8 pt-2" bounces={false}>
+                        <ScrollView className="p-8 pt-2" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
                             <View className="space-y-6">
-                                <View className="gap-2">
-                                    <Text className="text-sm font-bold text-foreground ml-1">Cycle Name / Batch ID</Text>
-                                    <Input
-                                        placeholder="e.g. BATCH 12 FEB"
-                                        value={name}
-                                        onChangeText={setName}
-                                        className="h-14 bg-muted/30 border-border/50 text-lg"
-                                    />
-                                </View>
-
                                 <View className="flex-row gap-4">
                                     <View className="flex-1 gap-2">
                                         <View className="flex-row items-center gap-2 ml-1">
@@ -158,27 +169,53 @@ export function StartCycleModal({
                                     </View>
                                 </View>
 
-                                <View className="gap-2">
+                                <View className="gap-2 z-50">
                                     <View className="flex-row items-center gap-2 ml-1">
-                                        <Icon as={BadgeCheck} size={14} className="text-amber-500" />
+                                        <Icon as={Bird} size={14} className="text-amber-500" />
                                         <Text className="text-sm font-bold text-foreground">Bird Type</Text>
                                     </View>
-                                    <View className="flex-row flex-wrap gap-2">
-                                        {["Broiler", "Sonali", "Layer", "Kashmiri"].map((type) => (
-                                            <Pressable
-                                                key={type}
-                                                onPress={() => setBirdType(type)}
-                                                className={`px-4 py-2 rounded-full border ${birdType === type
-                                                    ? "bg-amber-500/10 border-amber-500"
-                                                    : "bg-muted/30 border-border/50"
-                                                    }`}
-                                            >
-                                                <Text className={`text-xs font-bold ${birdType === type ? "text-amber-600" : "text-muted-foreground"
-                                                    }`}>
-                                                    {type}
-                                                </Text>
-                                            </Pressable>
-                                        ))}
+
+                                    <View className="relative">
+                                        <Pressable
+                                            onPress={() => setIsBirdTypeOpen(!isBirdTypeOpen)}
+                                            className="h-14 bg-muted/30 border border-border/50 rounded-xl px-4 flex-row items-center justify-between active:bg-muted/50"
+                                        >
+                                            <Text className={`text-base font-medium ${birdType ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                                {birdType || (isLoadingBirdTypes ? "Loading types..." : "Select Bird Type")}
+                                            </Text>
+                                            <Icon as={ChevronDown} size={20} className={`text-muted-foreground transition-transform ${isBirdTypeOpen ? 'rotate-180' : ''}`} />
+                                        </Pressable>
+
+                                        {isBirdTypeOpen && (
+                                            <View className="absolute top-16 left-0 right-0 bg-background border border-border/50 rounded-2xl shadow-xl z-50 overflow-hidden max-h-48">
+                                                <ScrollView nestedScrollEnabled>
+                                                    {birdTypes?.map((type: any) => (
+                                                        <Pressable
+                                                            key={type.id}
+                                                            onPress={() => {
+                                                                setBirdType(type.name);
+                                                                setIsBirdTypeOpen(false);
+                                                            }}
+                                                            className={`p-4 border-b border-border/20 active:bg-muted/30 ${birdType === type.name ? 'bg-primary/5' : ''}`}
+                                                        >
+                                                            <View className="flex-row items-center justify-between">
+                                                                <Text className={`font-medium ${birdType === type.name ? 'text-primary' : 'text-foreground'}`}>
+                                                                    {type.name}
+                                                                </Text>
+                                                                {birdType === type.name && (
+                                                                    <Icon as={Bird} size={16} className="text-primary" />
+                                                                )}
+                                                            </View>
+                                                        </Pressable>
+                                                    ))}
+                                                    {(!birdTypes || birdTypes.length === 0) && (
+                                                        <View className="p-4 items-center">
+                                                            <Text className="text-muted-foreground">No bird types found</Text>
+                                                        </View>
+                                                    )}
+                                                </ScrollView>
+                                            </View>
+                                        )}
                                     </View>
                                 </View>
 
@@ -188,7 +225,7 @@ export function StartCycleModal({
                                     </View>
                                 )}
 
-                                <View className="flex-row gap-4 pt-8 pb-10">
+                                <View className="flex-row gap-4 pt-4 pb-4">
                                     <Button
                                         variant="outline"
                                         className="flex-1 h-14 rounded-2xl border-border/50"

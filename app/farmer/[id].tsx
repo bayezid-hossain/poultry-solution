@@ -1,7 +1,11 @@
+/// <reference types="nativewind/types" />
 import { CycleCard } from "@/components/cycles/cycle-card";
+import { DeleteFarmerModal } from "@/components/farmers/delete-farmer-modal";
 import { EditFarmerModal } from "@/components/farmers/edit-farmer-modal";
 import { RestockModal } from "@/components/farmers/restock-modal";
+import { SecurityMoneyModal } from "@/components/farmers/security-money-modal";
 import { StartCycleModal } from "@/components/farmers/start-cycle-modal";
+import { StockCorrectionModal } from "@/components/farmers/stock-correction-modal";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,44 +14,26 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowLeft, Bird, List, MapPin, Pencil, Plus, Trash2, Wheat } from "lucide-react-native";
+import { AlertCircle, ArrowLeft, Bird, ChevronRight, Landmark, List, MapPin, Pencil, Plus, Trash2, Wheat } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
 export default function FarmerDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const [isRestockOpen, setIsRestockOpen] = useState(false);
+    const [isCorrectionOpen, setIsCorrectionOpen] = useState(false);
+    const [isSecurityOpen, setIsSecurityOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isStartCycleOpen, setIsStartCycleOpen] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     const { data: farmer, isLoading, refetch } = trpc.officer.farmers.getDetails.useQuery(
         { farmerId: id ?? "" },
         { enabled: !!id }
     );
 
-    const deleteMutation = trpc.officer.farmers.delete.useMutation({
-        onSuccess: () => {
-            Alert.alert("Success", "Farmer profile deleted successfully");
-            router.back();
-        },
-        onError: (err: any) => {
-            Alert.alert("Error", err.message);
-        }
-    });
-
     const handleDelete = () => {
-        Alert.alert(
-            "Delete Farmer",
-            "Are you sure you want to delete this farmer? This action cannot be undone.",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: () => deleteMutation.mutate({ id: id as string, orgId: farmer?.organizationId as string })
-                }
-            ]
-        );
+        setIsDeleteOpen(true);
     };
 
     if (isLoading) {
@@ -97,7 +83,7 @@ export default function FarmerDetailScreen() {
                             <View className="flex-1">
                                 <Text className="text-2xl font-bold text-foreground">{farmer.name}</Text>
                                 <View className="flex-row items-center gap-2 mt-1">
-                                    <MapPin size={14} className="text-muted-foreground" />
+                                    <Icon as={MapPin} size={14} className="text-muted-foreground" />
                                     <Text className="text-sm text-muted-foreground">{farmer.location || "No location"}</Text>
                                 </View>
                             </View>
@@ -109,7 +95,7 @@ export default function FarmerDetailScreen() {
                             </Pressable>
                         </View>
 
-                        <View className="flex-row gap-4">
+                        <View className="flex-row gap-4 mb-4">
                             <View className="flex-1 h-14 bg-muted/30 rounded-2xl items-center justify-center border border-border/50">
                                 <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1">Stock</Text>
                                 <View className="flex-row items-baseline gap-1">
@@ -124,12 +110,29 @@ export default function FarmerDetailScreen() {
                                     <Text className="text-[10px] text-muted-foreground">bags</Text>
                                 </View>
                             </View>
+                            <View className="flex-1 h-14 bg-muted/30 rounded-2xl items-center justify-center border border-border/50">
+                                <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1">Security</Text>
+                                <View className="flex-row items-baseline gap-1">
+                                    <Text className="text-lg font-bold text-blue-500">{Number(farmer.securityMoney ?? 0).toLocaleString()}</Text>
+                                    <Text className="text-[10px] text-muted-foreground">৳</Text>
+                                </View>
+                            </View>
                         </View>
+
+                        <Button
+                            variant="ghost"
+                            className="h-10 border border-border/10 bg-muted/20 rounded-xl flex-row items-center justify-center gap-2"
+                            onPress={() => router.push(`/farmer/${farmer.id}/ledger` as any)}
+                        >
+                            <Icon as={List} size={20} className="text-muted-foreground" />
+                            <Text className="text-xs font-bold text-muted-foreground uppercase">View History Ledger</Text>
+                            <Icon as={ChevronRight} size={20} className="text-muted-foreground" />
+                        </Button>
                     </CardContent>
                 </Card>
 
                 {/* Primary Actions Row */}
-                <View className="flex-row gap-3 mb-8">
+                <View className="flex-row gap-3 mb-3">
                     <Button
                         className="flex-1 h-14 bg-primary rounded-2xl flex-row items-center justify-center gap-2 shadow-sm"
                         onPress={() => setIsRestockOpen(true)}
@@ -144,6 +147,26 @@ export default function FarmerDetailScreen() {
                     >
                         <Icon as={Plus} size={20} className="text-primary" />
                         <Text className="text-primary font-bold">Start Cycle</Text>
+                    </Button>
+                </View>
+
+                {/* Secondary Actions */}
+                <View className="flex-row gap-3 mb-8">
+                    <Button
+                        variant="outline"
+                        className="flex-1 h-12 rounded-xl flex-row items-center justify-center gap-2 border-orange-500/20 bg-orange-500/5"
+                        onPress={() => setIsCorrectionOpen(true)}
+                    >
+                        <Icon as={AlertCircle} size={16} className="text-orange-500" />
+                        <Text className="text-orange-500 text-xs font-bold">Correction</Text>
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="flex-1 h-12 rounded-xl flex-row items-center justify-center gap-2 border-blue-500/20 bg-blue-500/5"
+                        onPress={() => setIsSecurityOpen(true)}
+                    >
+                        <Icon as={Landmark} size={16} className="text-blue-500" />
+                        <Text className="text-blue-500 text-xs font-bold">Security</Text>
                     </Button>
                 </View>
 
@@ -210,6 +233,19 @@ export default function FarmerDetailScreen() {
                 farmerName={farmer.name}
                 onSuccess={refetch}
             />
+            <StockCorrectionModal
+                open={isCorrectionOpen}
+                onOpenChange={setIsCorrectionOpen}
+                farmerId={farmer.id}
+                farmerName={farmer.name}
+                onSuccess={refetch}
+            />
+            <SecurityMoneyModal
+                open={isSecurityOpen}
+                onOpenChange={setIsSecurityOpen}
+                farmer={farmer}
+                onSuccess={refetch}
+            />
             <EditFarmerModal
                 open={isEditOpen}
                 onOpenChange={setIsEditOpen}
@@ -221,6 +257,13 @@ export default function FarmerDetailScreen() {
                 onOpenChange={setIsStartCycleOpen}
                 farmer={farmer}
                 onSuccess={refetch}
+            />
+            <DeleteFarmerModal
+                open={isDeleteOpen}
+                onOpenChange={setIsDeleteOpen}
+                farmerId={farmer.id}
+                organizationId={farmer.organizationId}
+                farmerName={farmer.name}
             />
         </View>
     );
