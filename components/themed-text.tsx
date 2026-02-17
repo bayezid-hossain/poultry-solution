@@ -1,3 +1,4 @@
+import { cssInterop } from 'nativewind';
 import { StyleSheet, Text, type TextProps } from 'react-native';
 
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -33,7 +34,12 @@ export function ThemedText({
   );
 }
 
+cssInterop(ThemedText, {
+  className: 'style',
+});
+
 const styles = StyleSheet.create({
+  // ... (rest of styles preserved)
   default: {
     fontSize: 16,
     lineHeight: 24,

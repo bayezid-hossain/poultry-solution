@@ -106,7 +106,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator size="large" className="text-primary" />
         {isAuthCallback && !session && (
-          <ThemedText style={{ marginTop: 20 }}>Completing Sign In...</ThemedText>
+          <ThemedText className="text-primary font-bold mt-4 text-lg">Completing Sign In...</ThemedText>
         )}
       </View>
     );

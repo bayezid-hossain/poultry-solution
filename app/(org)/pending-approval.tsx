@@ -25,11 +25,11 @@ export default function PendingApprovalScreen() {
     return (
         <SafeAreaView className="flex-1 bg-background justify-center p-5">
             <View className="items-center gap-5">
-                <ThemedText type="title" className="text-center">
+                <ThemedText type="title" className="text-center text-foreground">
                     {membership?.status === 'REJECTED' ? 'Request Rejected' : 'Pending Approval'}
                 </ThemedText>
 
-                <ThemedText className="text-center text-muted-foreground mb-5">
+                <ThemedText className="text-center text-muted-foreground mb-5 font-medium">
                     {membership?.status === 'REJECTED'
                         ? "Your request to join the organization was rejected. Please contact the administrator."
                         : `You have requested to join ${membership?.orgName || 'an organization'}. Please wait for an administrator to approve your request.`}
