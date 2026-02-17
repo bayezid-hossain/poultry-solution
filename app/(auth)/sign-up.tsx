@@ -76,7 +76,7 @@ export default function SignUpScreen() {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            className="flex-1 bg-slate-900"
+            className="flex-1 bg-background"
         >
             <ScrollView
                 contentContainerClassName="flex-1 justify-center px-6 py-12"
@@ -84,31 +84,31 @@ export default function SignUpScreen() {
             >
                 {/* Header */}
                 <View className="items-center mb-10">
-                    <Text className="text-4xl font-bold text-white mb-2">
+                    <Text className="text-4xl font-bold text-foreground mb-2">
                         🐔 Create Account
                     </Text>
-                    <Text className="text-base text-slate-400">
+                    <Text className="text-base text-muted-foreground">
                         Join Poultry Solution
                     </Text>
                 </View>
 
                 {/* Error Banner */}
                 {error ? (
-                    <View className="bg-red-500/20 border border-red-500/40 rounded-xl p-3 mb-4">
-                        <Text className="text-red-300 text-sm text-center">{error}</Text>
+                    <View className="bg-destructive/10 border border-destructive/20 rounded-xl p-3 mb-4">
+                        <Text className="text-destructive text-sm text-center">{error}</Text>
                     </View>
                 ) : null}
 
                 {/* Form */}
                 <View className="gap-4">
                     <View>
-                        <Text className="text-slate-300 text-sm font-medium mb-1.5 ml-1">
+                        <Text className="text-foreground text-sm font-medium mb-1.5 ml-1">
                             Full Name
                         </Text>
                         <TextInput
-                            className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3.5 text-white text-base"
+                            className="bg-card border border-input rounded-xl px-4 py-3.5 text-foreground text-base"
                             placeholder="John Doe"
-                            placeholderTextColor="#64748b"
+                            placeholderTextColor="hsl(var(--muted-foreground))"
                             value={name}
                             onChangeText={setName}
                             autoCapitalize="words"
@@ -117,13 +117,13 @@ export default function SignUpScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-slate-300 text-sm font-medium mb-1.5 ml-1">
+                        <Text className="text-foreground text-sm font-medium mb-1.5 ml-1">
                             Email
                         </Text>
                         <TextInput
-                            className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3.5 text-white text-base"
+                            className="bg-card border border-input rounded-xl px-4 py-3.5 text-foreground text-base"
                             placeholder="you@example.com"
-                            placeholderTextColor="#64748b"
+                            placeholderTextColor="hsl(var(--muted-foreground))"
                             value={email}
                             onChangeText={setEmail}
                             keyboardType="email-address"
@@ -134,13 +134,13 @@ export default function SignUpScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-slate-300 text-sm font-medium mb-1.5 ml-1">
+                        <Text className="text-foreground text-sm font-medium mb-1.5 ml-1">
                             Password
                         </Text>
                         <TextInput
-                            className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3.5 text-white text-base"
+                            className="bg-card border border-input rounded-xl px-4 py-3.5 text-foreground text-base"
                             placeholder="At least 8 characters"
-                            placeholderTextColor="#64748b"
+                            placeholderTextColor="hsl(var(--muted-foreground))"
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry
@@ -149,13 +149,13 @@ export default function SignUpScreen() {
                     </View>
 
                     <View>
-                        <Text className="text-slate-300 text-sm font-medium mb-1.5 ml-1">
+                        <Text className="text-foreground text-sm font-medium mb-1.5 ml-1">
                             Confirm Password
                         </Text>
                         <TextInput
-                            className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3.5 text-white text-base"
+                            className="bg-card border border-input rounded-xl px-4 py-3.5 text-foreground text-base"
                             placeholder="Re-enter your password"
-                            placeholderTextColor="#64748b"
+                            placeholderTextColor="hsl(var(--muted-foreground))"
                             value={confirmPassword}
                             onChangeText={setConfirmPassword}
                             secureTextEntry
@@ -167,12 +167,12 @@ export default function SignUpScreen() {
                     <Pressable
                         onPress={handleSignUp}
                         disabled={loading}
-                        className="bg-emerald-500 rounded-xl py-4 items-center mt-2 active:bg-emerald-600"
+                        className="bg-primary rounded-xl py-4 items-center mt-2 active:opacity-90"
                     >
                         {loading ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <Text className="text-white text-base font-bold">
+                            <Text className="text-primary-foreground text-base font-bold">
                                 Create Account
                             </Text>
                         )}
@@ -180,23 +180,23 @@ export default function SignUpScreen() {
 
                     {/* Divider */}
                     <View className="flex-row items-center my-2">
-                        <View className="flex-1 h-px bg-slate-700" />
-                        <Text className="text-slate-500 text-sm mx-4">or</Text>
-                        <View className="flex-1 h-px bg-slate-700" />
+                        <View className="flex-1 h-px bg-border" />
+                        <Text className="text-muted-foreground text-sm mx-4">or</Text>
+                        <View className="flex-1 h-px bg-border" />
                     </View>
 
                     {/* Google Sign Up */}
                     <Pressable
                         onPress={handleGoogleSignIn}
                         disabled={googleLoading}
-                        className="bg-white rounded-xl py-4 flex-row items-center justify-center gap-3 active:bg-gray-100"
+                        className="bg-card border border-input rounded-xl py-4 flex-row items-center justify-center gap-3 active:bg-secondary"
                     >
                         {googleLoading ? (
                             <ActivityIndicator color="#333" />
                         ) : (
                             <>
-                                <Text className="text-lg">G</Text>
-                                <Text className="text-gray-800 text-base font-semibold">
+                                <Text className="text-lg text-foreground">G</Text>
+                                <Text className="text-foreground text-base font-semibold">
                                     Continue with Google
                                 </Text>
                             </>
@@ -206,12 +206,12 @@ export default function SignUpScreen() {
 
                 {/* Sign In Link */}
                 <View className="flex-row justify-center mt-8 gap-1">
-                    <Text className="text-slate-400 text-sm">
+                    <Text className="text-muted-foreground text-sm">
                         Already have an account?
                     </Text>
                     <Link href="/(auth)/sign-in" asChild>
                         <Pressable>
-                            <Text className="text-emerald-400 text-sm font-bold">
+                            <Text className="text-primary text-sm font-bold">
                                 Sign In
                             </Text>
                         </Pressable>

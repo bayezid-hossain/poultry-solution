@@ -102,7 +102,7 @@ export default function VerifyEmailScreen() {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            className="flex-1 bg-slate-900"
+            className="flex-1 bg-background"
         >
             <ScrollView
                 contentContainerClassName="flex-1 justify-center px-6 py-12"
@@ -111,28 +111,28 @@ export default function VerifyEmailScreen() {
                 {/* Header */}
                 <View className="items-center mb-10">
                     <Text className="text-5xl mb-4">✉️</Text>
-                    <Text className="text-3xl font-bold text-white mb-2">
+                    <Text className="text-3xl font-bold text-foreground mb-2">
                         Verify Your Email
                     </Text>
-                    <Text className="text-base text-slate-400 text-center">
+                    <Text className="text-base text-muted-foreground text-center">
                         We sent a 6-digit code to
                     </Text>
-                    <Text className="text-base text-emerald-400 font-semibold mt-1">
+                    <Text className="text-base text-primary font-semibold mt-1">
                         {email}
                     </Text>
                 </View>
 
                 {/* Error Banner */}
                 {error ? (
-                    <View className="bg-red-500/20 border border-red-500/40 rounded-xl p-3 mb-4">
-                        <Text className="text-red-300 text-sm text-center">{error}</Text>
+                    <View className="bg-destructive/10 border border-destructive/20 rounded-xl p-3 mb-4">
+                        <Text className="text-destructive text-sm text-center">{error}</Text>
                     </View>
                 ) : null}
 
                 {/* Resent Banner */}
                 {resent ? (
-                    <View className="bg-emerald-500/20 border border-emerald-500/40 rounded-xl p-3 mb-4">
-                        <Text className="text-emerald-300 text-sm text-center">
+                    <View className="bg-primary/10 border border-primary/20 rounded-xl p-3 mb-4">
+                        <Text className="text-primary text-sm text-center">
                             New code sent! Check your inbox.
                         </Text>
                     </View>
@@ -146,7 +146,7 @@ export default function VerifyEmailScreen() {
                             ref={(ref) => {
                                 inputRefs.current[index] = ref;
                             }}
-                            className="w-12 h-14 bg-slate-800 border border-slate-700 rounded-xl text-white text-xl text-center font-bold"
+                            className="w-12 h-14 bg-card border border-input rounded-xl text-foreground text-xl text-center font-bold"
                             value={digit}
                             onChangeText={(v) => handleOtpChange(v, index)}
                             onKeyPress={({ nativeEvent: { key } }) =>
@@ -163,12 +163,12 @@ export default function VerifyEmailScreen() {
                 <Pressable
                     onPress={handleVerify}
                     disabled={loading}
-                    className="bg-emerald-500 rounded-xl py-4 items-center active:bg-emerald-600"
+                    className="bg-primary rounded-xl py-4 items-center active:opacity-90"
                 >
                     {loading ? (
                         <ActivityIndicator color="#fff" />
                     ) : (
-                        <Text className="text-white text-base font-bold">
+                        <Text className="text-primary-foreground text-base font-bold">
                             Verify Email
                         </Text>
                     )}
@@ -176,14 +176,14 @@ export default function VerifyEmailScreen() {
 
                 {/* Resend */}
                 <View className="items-center mt-6">
-                    <Text className="text-slate-400 text-sm mb-2">
+                    <Text className="text-muted-foreground text-sm mb-2">
                         Didn&apos;t receive the code?
                     </Text>
                     <Pressable onPress={handleResend} disabled={resending}>
                         {resending ? (
-                            <ActivityIndicator size="small" color="#34d399" />
+                            <ActivityIndicator size="small" className="text-primary" />
                         ) : (
-                            <Text className="text-emerald-400 text-sm font-bold">
+                            <Text className="text-primary text-sm font-bold">
                                 Resend Code
                             </Text>
                         )}
