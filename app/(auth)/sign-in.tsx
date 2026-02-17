@@ -18,6 +18,7 @@ export default function SignInScreen() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
 
     const handleSignIn = async () => {
         if (!email || !password) {
@@ -40,6 +41,24 @@ export default function SignInScreen() {
             setError(e?.message ?? "An unexpected error occurred.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleGoogleSignIn = async () => {
+        setError("");
+        setGoogleLoading(true);
+        try {
+            const result = await authClient.signIn.social({
+                provider: "google",
+                callbackURL: "/(tabs)",
+            });
+            if (result?.error) {
+                setError(result.error.message ?? "Google sign-in failed.");
+                setGoogleLoading(false);
+            }
+        } catch (e: any) {
+            setError(e?.message ?? "Google sign-in failed.");
+            setGoogleLoading(false);
         }
     };
 
@@ -124,6 +143,31 @@ export default function SignInScreen() {
                             <ActivityIndicator color="#fff" />
                         ) : (
                             <Text className="text-white text-base font-bold">Sign In</Text>
+                        )}
+                    </Pressable>
+
+                    {/* Divider */}
+                    <View className="flex-row items-center my-2">
+                        <View className="flex-1 h-px bg-slate-700" />
+                        <Text className="text-slate-500 text-sm mx-4">or</Text>
+                        <View className="flex-1 h-px bg-slate-700" />
+                    </View>
+
+                    {/* Google Sign In */}
+                    <Pressable
+                        onPress={handleGoogleSignIn}
+                        disabled={googleLoading}
+                        className="bg-white rounded-xl py-4 flex-row items-center justify-center gap-3 active:bg-gray-100"
+                    >
+                        {googleLoading ? (
+                            <ActivityIndicator color="#333" />
+                        ) : (
+                            <>
+                                <Text className="text-lg">G</Text>
+                                <Text className="text-gray-800 text-base font-semibold">
+                                    Continue with Google
+                                </Text>
+                            </>
                         )}
                     </Pressable>
                 </View>

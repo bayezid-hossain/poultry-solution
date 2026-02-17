@@ -1,7 +1,6 @@
-import Constants from "expo-constants";
+// Use the production backend directly
+// For local development, you can switch to ngrok or LAN IP:
+// const DEV_API_URL = "https://alycia-inflexible-tree.ngrok-free.app";
+// const DEV_API_URL = `http://192.168.x.x:3000`;
 
-// In development, use the LAN IP of the machine running the Next.js server
-// In production, use the deployed URL
-const DEV_API_URL = `http://${Constants.expoConfig?.hostUri?.split(":")[0] ?? "localhost"}:3000`;
-
-export const API_URL = __DEV__ ? DEV_API_URL : "https://feed-newhope.vercel.app";
+export const API_URL = "https://feed-newhope.vercel.app";

@@ -20,6 +20,21 @@ export default function SignUpScreen() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
+
+    const handleGoogleSignIn = async () => {
+        setError("");
+        setGoogleLoading(true);
+        try {
+            await authClient.signIn.social({
+                provider: "google",
+                callbackURL: "/(tabs)",
+            });
+        } catch (e: any) {
+            setError(e?.message ?? "Google sign-in failed.");
+            setGoogleLoading(false);
+        }
+    };
 
     const handleSignUp = async () => {
         if (!name || !email || !password) {
@@ -160,6 +175,31 @@ export default function SignUpScreen() {
                             <Text className="text-white text-base font-bold">
                                 Create Account
                             </Text>
+                        )}
+                    </Pressable>
+
+                    {/* Divider */}
+                    <View className="flex-row items-center my-2">
+                        <View className="flex-1 h-px bg-slate-700" />
+                        <Text className="text-slate-500 text-sm mx-4">or</Text>
+                        <View className="flex-1 h-px bg-slate-700" />
+                    </View>
+
+                    {/* Google Sign Up */}
+                    <Pressable
+                        onPress={handleGoogleSignIn}
+                        disabled={googleLoading}
+                        className="bg-white rounded-xl py-4 flex-row items-center justify-center gap-3 active:bg-gray-100"
+                    >
+                        {googleLoading ? (
+                            <ActivityIndicator color="#333" />
+                        ) : (
+                            <>
+                                <Text className="text-lg">G</Text>
+                                <Text className="text-gray-800 text-base font-semibold">
+                                    Continue with Google
+                                </Text>
+                            </>
                         )}
                     </Pressable>
                 </View>

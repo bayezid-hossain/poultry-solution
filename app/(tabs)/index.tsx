@@ -1,10 +1,11 @@
 import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text } from 'react-native';
 
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { authClient } from '@/lib/auth-client';
 import { Link } from 'expo-router';
 
 export default function HomeScreen() {
@@ -74,6 +75,14 @@ export default function HomeScreen() {
           <ThemedText type="defaultSemiBold">app-example</ThemedText>.
         </ThemedText>
       </ThemedView>
+
+      {/* Sign Out */}
+      <Pressable
+        onPress={() => authClient.signOut()}
+        style={styles.signOutButton}
+      >
+        <Text style={styles.signOutText}>Sign Out</Text>
+      </Pressable>
     </ParallaxScrollView>
   );
 }
@@ -94,5 +103,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     position: 'absolute',
+  },
+  signOutButton: {
+    backgroundColor: '#ef4444',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  signOutText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
