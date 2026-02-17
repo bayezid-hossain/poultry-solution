@@ -3,53 +3,57 @@ import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon, X } from "lucide-react-native";
-import { useState } from "react";
+import { AlertTriangle, Archive, X } from "lucide-react-native";
+import { useEffect, useState } from "react";
 import { Modal, Pressable, View } from "react-native";
 
-interface AddMortalityModalProps {
-    cycleId: string;
-    farmerName: string;
+interface EndCycleModalProps {
+    cycle: {
+        id: string;
+        name: string;
+        intake: number;
+    };
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess?: () => void;
 }
 
-export function AddMortalityModal({
-    cycleId,
-    farmerName,
+export function EndCycleModal({
+    cycle,
     open,
     onOpenChange,
     onSuccess,
-}: AddMortalityModalProps) {
-    const [amount, setAmount] = useState("");
-    const [date, setDate] = useState(new Date());
+}: EndCycleModalProps) {
+    const [intake, setIntake] = useState(cycle.intake.toString());
     const [error, setError] = useState<string | null>(null);
 
-    const mutation = trpc.officer.cycles.addMortality.useMutation({
+    useEffect(() => {
+        if (open) {
+            setIntake(cycle.intake.toString());
+            setError(null);
+        }
+    }, [open, cycle]);
+
+    const mutation = trpc.officer.cycles.end.useMutation({
         onSuccess: () => {
             onOpenChange(false);
-            setAmount("");
-            setDate(new Date());
             onSuccess?.();
         },
-        onError: (err) => {
+        onError: (err: any) => {
             setError(err.message);
         },
     });
 
     const handleSubmit = () => {
-        const numAmount = parseInt(amount, 10);
-        if (isNaN(numAmount) || numAmount <= 0) {
-            setError("Please enter a valid amount");
+        const numIntake = parseFloat(intake);
+        if (isNaN(numIntake) || numIntake < 0) {
+            setError("Please enter a valid final feed intake");
             return;
         }
         setError(null);
         mutation.mutate({
-            id: cycleId,
-            amount: numAmount,
-            date: date,
+            id: cycle.id,
+            intake: numIntake,
         });
     };
 
@@ -70,41 +74,40 @@ export function AddMortalityModal({
                 >
                     {/* Header */}
                     <View className="p-6 pb-2 flex-row justify-between items-center">
-                        <View>
-                            <Text className="text-xl font-bold text-foreground">Add Mortality</Text>
-                            <Text className="text-xs text-muted-foreground mt-1">
-                                Record birds death for {farmerName}
-                            </Text>
+                        <View className="flex-row items-center gap-3">
+                            <View className="w-10 h-10 rounded-full bg-amber-500/10 items-center justify-center">
+                                <Icon as={Archive} size={20} className="text-amber-500" />
+                            </View>
+                            <View>
+                                <Text className="text-xl font-bold text-foreground">End Cycle</Text>
+                                <Text className="text-xs text-muted-foreground mt-0.5">
+                                    Archive batch "{cycle.name}"
+                                </Text>
+                            </View>
                         </View>
                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onPress={() => onOpenChange(false)}>
                             <Icon as={X} size={18} className="text-muted-foreground" />
                         </Button>
                     </View>
 
-                    {/* Form */}
+                    {/* Content */}
                     <View className="p-6 space-y-4">
-                        <View className="gap-2">
-                            <Text className="text-sm font-bold text-foreground ml-1">Number of Birds</Text>
-                            <Input
-                                placeholder="0"
-                                keyboardType="numeric"
-                                value={amount}
-                                onChangeText={setAmount}
-                                className="h-12 bg-muted/30 border-border/50"
-                            />
+                        <View className="bg-amber-500/5 border border-amber-500/20 p-4 rounded-2xl flex-row gap-3">
+                            <Icon as={AlertTriangle} size={20} className="text-amber-500 shrink-0" />
+                            <Text className="text-xs text-amber-700 dark:text-amber-400 flex-1 leading-relaxed">
+                                Ending this cycle will move it to history. Please confirm the final total feed consumption below.
+                            </Text>
                         </View>
 
                         <View className="gap-2">
-                            <Text className="text-sm font-bold text-foreground ml-1">Date of Death</Text>
-                            <View className="h-12 bg-muted/30 border border-border/50 rounded-md px-3 flex-row items-center justify-between">
-                                <Text className="text-sm text-foreground">
-                                    {format(date, "PPPP")}
-                                </Text>
-                                <Icon as={CalendarIcon} size={16} className="text-muted-foreground" />
-                            </View>
-                            <Text className="text-[10px] text-muted-foreground ml-1">
-                                * Default to today. Backdating supported in details.
-                            </Text>
+                            <Text className="text-sm font-bold text-foreground ml-1">Final Feed Intake (Bags)</Text>
+                            <Input
+                                placeholder="0.00"
+                                keyboardType="numeric"
+                                value={intake}
+                                onChangeText={setIntake}
+                                className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
+                            />
                         </View>
 
                         {error && (
@@ -122,12 +125,12 @@ export function AddMortalityModal({
                                 <Text className="font-bold">Cancel</Text>
                             </Button>
                             <Button
-                                className="flex-1 h-12 bg-destructive rounded-xl shadow-none"
+                                className="flex-1 h-12 bg-amber-500 rounded-xl shadow-none"
                                 onPress={handleSubmit}
                                 disabled={mutation.isPending}
                             >
                                 <Text className="text-white font-bold">
-                                    {mutation.isPending ? "Recording..." : "Record"}
+                                    {mutation.isPending ? "Ending..." : "End & Archive"}
                                 </Text>
                             </Button>
                         </View>

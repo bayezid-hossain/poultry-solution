@@ -16,6 +16,7 @@ cssInterop(IconImpl, {
     nativeStyleToProp: {
       height: 'size',
       width: 'size',
+      color: 'color',
     },
   },
 });
@@ -52,3 +53,4 @@ function Icon({ as: IconComponent, className, size = 14, ...props }: IconProps) 
 }
 
 export { Icon };
+

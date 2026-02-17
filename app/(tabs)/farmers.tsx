@@ -1,8 +1,10 @@
 import { FarmerCard } from "@/components/farmers/farmer-card";
 import { ScreenHeader } from "@/components/screen-header";
+import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
+import { router } from "expo-router";
 import { Search } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, FlatList, View } from "react-native";
@@ -31,7 +33,7 @@ export default function FarmersScreen() {
             <View className="px-4 py-3">
                 <View className="relative">
                     <View className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
-                        <Search size={18} className="text-muted-foreground" />
+                        <Icon as={Search} size={18} className="text-muted-foreground" />
                     </View>
                     <Input
                         placeholder="Search farmers..."
@@ -51,13 +53,18 @@ export default function FarmersScreen() {
                 <FlatList
                     data={farmers}
                     keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => <FarmerCard farmer={item} />}
+                    renderItem={({ item }) => (
+                        <FarmerCard
+                            farmer={item}
+                            onPress={() => router.push(`/farmer/${item.id}` as any)}
+                        />
+                    )}
                     contentContainerClassName="p-4 pt-1 pb-10"
                     onRefresh={refetch}
                     refreshing={isLoading}
                     ListEmptyComponent={
                         <View className="items-center justify-center p-10 opacity-50">
-                            <Search size={48} className="text-muted-foreground mb-4" />
+                            <Icon as={Search} size={48} className="text-muted-foreground mb-4" />
                             <Text className="text-center text-lg font-medium">No farmers found</Text>
                             <Text className="text-center text-sm text-muted-foreground">Try searching with a different name</Text>
                         </View>

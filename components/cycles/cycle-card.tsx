@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { Bird, ChevronRight, Skull, Wheat } from "lucide-react-native";
 import { Pressable, View } from "react-native";
@@ -50,7 +51,7 @@ export function CycleCard({ cycle, onPress }: CycleCardProps) {
                                 </Badge>
                             )}
                         </View>
-                        <ChevronRight size={18} className="text-muted-foreground" />
+                        <Icon as={ChevronRight} size={18} className="text-muted-foreground" />
                     </View>
 
                     <View className="flex-row border-y border-border/50 py-3">
@@ -65,7 +66,7 @@ export function CycleCard({ cycle, onPress }: CycleCardProps) {
                         <View className="flex-1 items-center justify-center border-r border-border/30">
                             <Text className="text-[10px] text-muted-foreground font-bold uppercase mb-1">DOC</Text>
                             <View className="flex-row items-center gap-1">
-                                <Bird size={14} className="text-primary/70" />
+                                <Icon as={Bird} size={14} className="text-primary/70" />
                                 <Text className="font-bold text-lg text-foreground">{cycle.doc.toLocaleString()}</Text>
                             </View>
                             <Text className="text-[8px] text-muted-foreground font-medium">Live: {liveBirds.toLocaleString()}</Text>
@@ -74,7 +75,7 @@ export function CycleCard({ cycle, onPress }: CycleCardProps) {
                         <View className="flex-1 items-center justify-center border-r border-border/30">
                             <Text className="text-[10px] text-muted-foreground font-bold uppercase mb-1">Feed</Text>
                             <View className="flex-row items-center gap-1">
-                                <Wheat size={14} className="text-amber-500/70" />
+                                <Icon as={Wheat} size={14} className="text-amber-500/70" />
                                 <Text className="font-bold text-lg text-amber-600">{Number(cycle.intake ?? 0).toFixed(1)}</Text>
                             </View>
                         </View>
@@ -82,7 +83,7 @@ export function CycleCard({ cycle, onPress }: CycleCardProps) {
                         <View className="flex-1 items-center justify-center">
                             <Text className="text-[10px] text-muted-foreground font-bold uppercase mb-1">Deaths</Text>
                             <View className="flex-row items-center gap-1">
-                                <Skull size={14} className={cycle.mortality > 0 ? "text-destructive" : "text-muted-foreground/30"} />
+                                <Icon as={Skull} size={14} className={cycle.mortality > 0 ? "text-destructive" : "text-muted-foreground/30"} />
                                 <Text className={`font-bold text-lg ${cycle.mortality > 0 ? "text-destructive" : "text-muted-foreground/30"}`}>
                                     {cycle.mortality || "-"}
                                 </Text>

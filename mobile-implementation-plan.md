@@ -219,19 +219,19 @@ This roadmap is designed for a solo developer to build, test, and ship "Poultry 
 - [x] **PNP-0.2**: Shared UI Library Setup (NativeWind/Tailwind v4) [done]
 - [x] **PNP-0.3**: API Layer: Port `tRPC` client and `TanStack Query` config. [done]
 - [x] **PNP-0.4**: Backend Auth Support: Add `bearer` plugin to `better-auth`. [done]
-- [ ] **PNP-0.5**: Auth Screens: Sign In, Verification OTP, and Session persistence.[done]
-- [ ] **Milestone**: "I can log in on my phone and the app recognizes who I am." [reached]
+- [x] **PNP-0.5**: Auth Screens: Sign In, Verification OTP, and Session persistence.[done]
+- [x] **Milestone**: "I can log in on my phone and the app recognizes who I am." [reached]
 
 ---
 
 ### Phase 1: Officer Core - Day-to-Day Operations
 > **Goal**: The most critical loop for on-the-ground work.
-- [ ] **PNP-1.1**: Farmer Directory: List view with search and "Active Only" filters.
-- [ ] **PNP-1.2**: Farmer Detail Page: Quick stats overview (Stock, Total Consumed).
-- [ ] **PNP-1.3**: Cycle Browser: List all active batches with age/mortality badges.
-- [ ] **PNP-1.4**: Production Logging: Simple forms for daily Feed Intake & Mortality.
-- [ ] **PNP-1.5**: Cycle Audit Logs: List view of all `cycleLogs` (Notes, Corrections).
-- [ ] **Milestone**: "Officers can record daily data without opening their laptops."
+- [x] **PNP-1.1**: Farmer Directory: List view with search and "Active Only" filters. [done]
+- [x] **PNP-1.2**: Farmer Detail Page: Quick stats overview (Stock, Total Consumed). [done]
+- [x] **PNP-1.3**: Cycle Browser: List all active batches with age/mortality badges. [done]
+- [x] **PNP-1.4**: Production Logging: Simple forms for daily Feed Intake & Mortality. [done]
+- [x] **PNP-1.5**: Cycle Audit Logs: List view of all `cycleLogs` (Notes, Corrections). [done]
+- [x] **Milestone**: "Officers can record daily data without opening their laptops." [reached]
 
 ---
 
