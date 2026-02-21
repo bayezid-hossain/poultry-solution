@@ -4,8 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Wheat, X } from "lucide-react-native";
-import { useState } from "react";
-import { Modal, Pressable, View } from "react-native";
+import { useRef, useState } from "react";
+import { Modal, Pressable, TextInput, View } from "react-native";
 
 interface RestockModalProps {
     farmerId: string;
@@ -25,6 +25,9 @@ export function RestockModal({
     const [amount, setAmount] = useState("");
     const [note, setNote] = useState("");
     const [error, setError] = useState<string | null>(null);
+
+    const amountRef = useRef<TextInput>(null);
+    const noteRef = useRef<TextInput>(null);
 
     const mutation = trpc.officer.stock.addStock.useMutation({
         onSuccess: () => {
@@ -90,21 +93,27 @@ export function RestockModal({
                         <View className="gap-2">
                             <Text className="text-sm font-bold text-foreground ml-1">Number of Bags</Text>
                             <Input
+                                ref={amountRef}
                                 placeholder="0.00"
                                 keyboardType="numeric"
                                 value={amount}
                                 onChangeText={setAmount}
                                 className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
+                                returnKeyType="next"
+                                onSubmitEditing={() => noteRef.current?.focus()}
                             />
                         </View>
 
                         <View className="gap-2">
                             <Text className="text-sm font-bold text-foreground ml-1">Note (Optional)</Text>
                             <Input
+                                ref={noteRef}
                                 placeholder="Manual restock..."
                                 value={note}
                                 onChangeText={setNote}
                                 className="h-12 bg-muted/30 border-border/50"
+                                returnKeyType="next"
+                                onSubmitEditing={handleSubmit}
                             />
                         </View>
 

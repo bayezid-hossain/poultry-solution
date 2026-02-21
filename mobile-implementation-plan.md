@@ -36,6 +36,8 @@ After a full codebase analysis of 581-line DB schema (20+ tables), 28+ tRPC rout
 | Security money management | Decimal tracking with audit logs | **P1** |
 | Farmer benchmark stats | FCR, mortality, avg weight from history | **P1** |
 | Soft delete farmers | status = "deleted", deletedAt timestamp | **P0** |
+| Restore deleted farmers | Management action to un-delete | **P1** |
+| Bulk farmer import | Import multiple farmers at once | **P2** |
 
 ### 🔄 Cycle Management (Officer)
 | Feature | Details | Priority |
@@ -47,9 +49,13 @@ After a full codebase analysis of 581-line DB schema (20+ tables), 28+ tRPC rout
 | Record mortality | Logs in cycleLogs, updates cycle.mortality | **P0** |
 | Add notes / corrections | cycleLogs with log types | **P0** |
 | End/Close cycle | Archives to cycleHistory, stock deduction | **P0** |
-| Revert log entries | isReverted flag | **P1** |
+| Reopen cycle | Move cycleHistory back to active | **P1** |
+| Delete past cycle | Completely remove history record | **P2** |
+| Revert log entries | isReverted flag for various logs | **P1** |
+| Explicit corrections | correctDoc, correctAge, correctMortality endpoints | **P1** |
 | Auto age calculation | Based on createdAt date | **P0** |
 | Feed consumption calculator | CUMULATIVE_FEED_SCHEDULE (40-day schedule) | **P0** |
+| Sync Feed | Re-calculate feed logic manually | **P2** |
 
 ### 💰 Sales System (Officer)
 | Feature | Details | Priority |
@@ -62,6 +68,7 @@ After a full codebase analysis of 581-line DB schema (20+ tables), 28+ tRPC rout
 | Sale metrics | FCR, EPI, survival rate, profit calculation | **P0** |
 | Multiple feed types tracking | JSON arrays for consumed/stock feeds | **P0** |
 | Dynamic pricing | pricePerKg, cashReceived, depositReceived | **P0** |
+| Sale adjustment versioning | setActiveVersion to switch between edits | **P1** |
 
 ### 📦 Stock Ledger (Officer)
 | Feature | Details | Priority |
@@ -69,7 +76,10 @@ After a full codebase analysis of 581-line DB schema (20+ tables), 28+ tRPC rout
 | View stock history per farmer | Ledger with all transactions | **P0** |
 | Add stock (restock) | Positive entries with notifications | **P0** |
 | Deduct stock (corrections) | Negative entries | **P0** |
+| Transfer stock | Move stock between farmers | **P0** |
+| Correct/Revert stock logs | edit/revert existing stock entries | **P1** |
 | Bulk stock add (Pro) | Up to 50 farmers at once, driver name | **P1** |
+| Stock import history | View batch import details | **P2** |
 | Management view: stock summary & ledger | Org-wide stock overview | **P1** |
 
 ### 📋 Feed Orders (Pro Feature)
@@ -231,27 +241,32 @@ This roadmap is designed for a solo developer to build, test, and ship "Poultry 
 - [x] **PNP-1.3**: Cycle Browser: List all active batches with age/mortality badges. [done]
 - [x] **PNP-1.4**: Production Logging: Simple forms for daily Feed Intake & Mortality. [done]
 - [x] **PNP-1.5**: Cycle Audit Logs: List view of all `cycleLogs` (Notes, Corrections). [done]
+- [x] **PNP-1.6**: Explicit Corrections & Sync: Correct DOC, Age, Mortality via specific modals, and manually sync feed. [done]
 - [x] **Milestone**: "Officers can record daily data without opening their laptops." [reached]
 
 ---
 
 ### Phase 2: Sales, Financials & Archive
 > **Goal**: Closing the loop on batch production.
-- [ ] **PNP-2.1**: Sales Entry: Multi-step form for birds sold, weight, and pricing.
-- [ ] **PNP-2.2**: Sales Preview: Real-time FCR/EPI calculation *before* submission.
-- [ ] **PNP-2.3**: Cycle Closure: "Close Batch" flow with stock reconciliation.
-- [ ] **PNP-2.4**: Historical Browser: Searchable list of `cycleHistory`.
-- [ ] **Milestone**: "A batch can be started, tracked, and sold entirely from mobile."
+- [X] **PNP-2.1**: Sales Entry: Multi-step form for birds sold, weight, and pricing.[done]
+- [X] **PNP-2.2**: Sales Preview: Real-time FCR/EPI calculation *before* submission.[done]
+- [X] **PNP-2.3**: Cycle Closure: "Close Batch" flow with stock reconciliation.[done]
+- [X] **PNP-2.4**: Historical Browser: Searchable list of `cycleHistory`.[done]
+- [X] **PNP-2.5**: Cycle Archive Management: Allow reopening closed cycles and completely deleting past cycle records.[done]
+- [X] **PNP-2.6**: Sale Adjustments & Versioning: Edit existing sales and switch between versions (`setActiveVersion`).[done]
+- [X] **Milestone**: "A batch can be started, tracked, and sold entirely from mobile."[reached]
 
 ---
 
 ### Phase 3: Inventory & Ledger Control
 > **Goal**: Managing the physical assets (Feed Stock).
-- [ ] **PNP-3.1**: Stock Ledger: Filterable list of all stock transactions per farmer.
-- [ ] **PNP-3.2**: Manual Restock: "Add Stock" modal for driver deliveries.
-- [ ] **PNP-3.3**: Correction Logs: "Deduct Stock" for wastage or error corrections.
-- [ ] **PNP-3.5**: Security Money Trace: View/Update security deposit logs.
-- [ ] **Milestone**: "Farmer stock balances are always in sync with the physical warehouse."
+- [X] **PNP-3.1**: Stock Ledger: Filterable list of all stock transactions per farmer.[done]
+- [X] **PNP-3.2**: Manual Restock: "Add Stock" modal for driver deliveries.[done]
+- [X] **PNP-3.3**: Correction Logs: "Deduct Stock" for wastage or error corrections.[done]
+- [X] **PNP-3.4**: Transfer Stock: Move stock directly between farmers.[done]
+- [X] **PNP-3.5**: Security Money Trace: View/Update security deposit logs.[done]
+- [X] **PNP-3.6**: Correct/Revert Stock Logs: Edit or revert existing stock entries.[done]
+- [X] **Milestone**: "Farmer stock balances are always in sync with the physical warehouse."[reached]
 
 ---
 
@@ -259,8 +274,9 @@ This roadmap is designed for a solo developer to build, test, and ship "Poultry 
 > **Goal**: Scaling operations with advanced tools.
 - [ ] **PNP-4.1**: Feed Orders: Create/Confirm multi-farmer orders.
 - [ ] **PNP-4.2**: DOC Orders: Tracking placements and auto-creating cycles.
-- [ ] **PNP-4.3**: Bulk Actions: Bulk Stock Restock (Pro feature).
+- [ ] **PNP-4.3**: Bulk Actions: Bulk Stock Restock, Bulk Farmer Import (Pro features).
 - [ ] **PNP-4.4**: AI Data Extraction: Import cycle data from text/voice notes (Experimental).
+- [ ] **PNP-4.5**: Stock Import History: View details of bulk stock imports.
 - [ ] **Milestone**: "Large-scale logistics (Feed/Chicks) are managed directly from the field."
 
 ---
@@ -270,7 +286,8 @@ This roadmap is designed for a solo developer to build, test, and ship "Poultry 
 - [ ] **PNP-5.1**: Performance Dashboards: Monthly/Annual officer benchmarks.
 - [ ] **PNP-5.2**: Org Oversight: Management view of all officer cycles/farmers.
 - [ ] **PNP-5.3**: Member Approval: Approve/Reject new staff join requests.
-- [ ] **PNP-5.4**: PDF Export: Generating placement/production reports from mobile.
+- [ ] **PNP-5.4**: Farmer Restoration: Management action to un-delete (restore) soft-deleted farmers.
+- [ ] **PNP-5.5**: PDF Export: Generating placement/production reports from mobile.
 - [ ] **Milestone**: "The Owner has a birds-eye view of the entire organization."
 
 ---

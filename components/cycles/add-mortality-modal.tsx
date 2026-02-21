@@ -5,8 +5,8 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, X } from "lucide-react-native";
-import { useState } from "react";
-import { Modal, Pressable, View } from "react-native";
+import { useRef, useState } from "react";
+import { Modal, Pressable, TextInput, View } from "react-native";
 
 interface AddMortalityModalProps {
     cycleId: string;
@@ -26,6 +26,8 @@ export function AddMortalityModal({
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(new Date());
     const [error, setError] = useState<string | null>(null);
+
+    const amountRef = useRef<TextInput>(null);
 
     const mutation = trpc.officer.cycles.addMortality.useMutation({
         onSuccess: () => {
@@ -86,11 +88,14 @@ export function AddMortalityModal({
                         <View className="gap-2">
                             <Text className="text-sm font-bold text-foreground ml-1">Number of Birds</Text>
                             <Input
+                                ref={amountRef}
                                 placeholder="0"
                                 keyboardType="numeric"
                                 value={amount}
                                 onChangeText={setAmount}
                                 className="h-12 bg-muted/30 border-border/50"
+                                returnKeyType="next"
+                                onSubmitEditing={handleSubmit}
                             />
                         </View>
 

@@ -6,8 +6,8 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { Calendar, Check, Plus, Search, ShoppingCart, Trash2, X } from "lucide-react-native";
-import { useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Share, View } from "react-native";
+import { useRef, useState } from "react";
+import { ActivityIndicator, Modal, Pressable, ScrollView, Share, TextInput, View } from "react-native";
 import { toast } from "sonner-native";
 
 interface FeedItem {
@@ -27,6 +27,8 @@ export function FeedOrderModal({ open, onOpenChange, orgId }: FeedOrderModalProp
     const [selectedFarmers, setSelectedFarmers] = useState<FeedItem[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+    const searchRef = useRef<TextInput>(null);
 
     const { data: farmers, isLoading: isLoadingFarmers } = trpc.officer.farmers.listWithStock.useQuery({
         orgId,
@@ -185,10 +187,12 @@ export function FeedOrderModal({ open, onOpenChange, orgId }: FeedOrderModalProp
                             {isSearchOpen && (
                                 <View className="bg-muted/20 rounded-2xl border border-border/50 p-2 mb-6">
                                     <Input
+                                        ref={searchRef}
                                         placeholder="Search by name..."
                                         className="h-12 px-4 bg-background/50 rounded-xl mb-2"
                                         value={searchQuery}
                                         onChangeText={setSearchQuery}
+                                        returnKeyType="next"
                                     />
                                     <View className="max-h-48">
                                         <ScrollView nestedScrollEnabled>
@@ -230,6 +234,7 @@ export function FeedOrderModal({ open, onOpenChange, orgId }: FeedOrderModalProp
                                                         className="flex-1 bg-muted/30 h-10 px-3 rounded-lg border border-border/30 text-xs"
                                                         value={feed.type}
                                                         onChangeText={(v) => handleUpdateFeed(item.id, idx, 'type', v)}
+                                                        returnKeyType="next"
                                                     />
                                                     <Input
                                                         placeholder="Qty"
@@ -237,6 +242,7 @@ export function FeedOrderModal({ open, onOpenChange, orgId }: FeedOrderModalProp
                                                         className="w-20 bg-muted/30 h-10 px-3 rounded-lg border border-border/30 text-xs text-right"
                                                         value={feed.quantity}
                                                         onChangeText={(v) => handleUpdateFeed(item.id, idx, 'quantity', v)}
+                                                        returnKeyType="next"
                                                     />
                                                     <Text className="text-[10px] text-muted-foreground uppercase font-black w-8">Bags</Text>
                                                     {idx >= 2 && (

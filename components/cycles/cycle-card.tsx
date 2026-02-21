@@ -1,8 +1,9 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
-import { Bird, ChevronRight, Skull, Wheat } from "lucide-react-native";
+import { Bird, ChevronRight, RotateCcw, Skull, Trash2, Wheat } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 
 interface CycleCardProps {
@@ -19,9 +20,11 @@ interface CycleCardProps {
         status: string;
     };
     onPress?: () => void;
+    onReopen?: () => void;
+    onDelete?: () => void;
 }
 
-export function CycleCard({ cycle, onPress }: CycleCardProps) {
+export function CycleCard({ cycle, onPress, onReopen, onDelete }: CycleCardProps) {
     const liveBirds = Math.max(0, cycle.doc - cycle.mortality - (cycle.birdsSold || 0));
 
     return (
@@ -90,6 +93,32 @@ export function CycleCard({ cycle, onPress }: CycleCardProps) {
                             </View>
                         </View>
                     </View>
+
+                    {(onReopen || onDelete) && (
+                        <View className="flex-row gap-2 mt-3 pt-3 border-t border-border/50">
+                            {onReopen && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1 flex-row gap-2 h-10 border-amber-500/20 bg-amber-500/5"
+                                    onPress={onReopen}
+                                >
+                                    <Icon as={RotateCcw} size={14} className="text-amber-600" />
+                                    <Text className="text-amber-600 font-bold text-xs uppercase">Reopen Cycle</Text>
+                                </Button>
+                            )}
+                            {onDelete && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-none w-10 h-10 p-0 border-destructive/20 bg-destructive/5"
+                                    onPress={onDelete}
+                                >
+                                    <Icon as={Trash2} size={14} className="text-destructive" />
+                                </Button>
+                            )}
+                        </View>
+                    )}
                 </CardContent>
             </Pressable>
         </Card>

@@ -3,47 +3,46 @@ import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, Archive, ShoppingCart, X } from "lucide-react-native";
+import { Pencil, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, TextInput, View } from "react-native";
 
-interface EndCycleModalProps {
-    cycle: {
-        id: string;
-        name: string;
-        intake: number;
-    };
-    farmerName: string;
+interface CorrectDocModalProps {
+    cycleId: string;
+    currentDoc: number;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess?: () => void;
-    onRecordSale?: () => void;
 }
 
-export function EndCycleModal({
-    cycle,
-    farmerName,
+export function CorrectDocModal({
+    cycleId,
+    currentDoc,
     open,
     onOpenChange,
     onSuccess,
-    onRecordSale,
-}: EndCycleModalProps) {
-    const [intake, setIntake] = useState("");
+}: CorrectDocModalProps) {
+    const [doc, setDoc] = useState("");
+    const [reason, setReason] = useState("");
     const [error, setError] = useState<string | null>(null);
 
-    const intakeRef = useRef<TextInput>(null);
+    const docRef = useRef<TextInput>(null);
+    const reasonRef = useRef<TextInput>(null);
 
     useEffect(() => {
         if (open) {
-            setIntake(cycle.intake.toString());
+            setDoc(currentDoc.toString());
+            setReason("");
             setError(null);
         }
-    }, [open, cycle]);
+    }, [open, currentDoc]);
 
-    const mutation = trpc.officer.cycles.end.useMutation({
+    const mutation = trpc.officer.cycles.correctDoc.useMutation({
         onSuccess: () => {
             onOpenChange(false);
             onSuccess?.();
+            setDoc("");
+            setReason("");
         },
         onError: (err: any) => {
             setError(err.message);
@@ -51,15 +50,20 @@ export function EndCycleModal({
     });
 
     const handleSubmit = () => {
-        const numIntake = parseFloat(intake);
-        if (isNaN(numIntake) || numIntake < 0) {
-            setError("Please enter a valid final feed intake");
+        const numDoc = parseInt(doc, 10);
+        if (isNaN(numDoc) || numDoc <= 0) {
+            setError("Please enter a valid number of birds (>0)");
+            return;
+        }
+        if (!reason || reason.trim().length < 3) {
+            setError("Please provide a reason (min 3 characters)");
             return;
         }
         setError(null);
         mutation.mutate({
-            id: cycle.id,
-            intake: numIntake,
+            cycleId,
+            newDoc: numDoc,
+            reason: reason.trim(),
         });
     };
 
@@ -78,16 +82,15 @@ export function EndCycleModal({
                     className="w-full max-w-sm bg-card rounded-3xl overflow-hidden"
                     onPress={(e) => e.stopPropagation()}
                 >
-                    {/* Header */}
                     <View className="p-6 pb-2 flex-row justify-between items-center">
                         <View className="flex-row items-center gap-3">
                             <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
-                                <Icon as={Archive} size={20} className="text-primary" />
+                                <Icon as={Pencil} size={20} className="text-primary" />
                             </View>
                             <View>
-                                <Text className="text-xl font-bold text-foreground">Confirm End Cycle</Text>
+                                <Text className="text-xl font-bold text-foreground">Correct DOC</Text>
                                 <Text className="text-xs text-muted-foreground mt-0.5">
-                                    Are you sure you want to end this cycle?
+                                    Update initial birds placed
                                 </Text>
                             </View>
                         </View>
@@ -96,30 +99,35 @@ export function EndCycleModal({
                         </Button>
                     </View>
 
-                    {/* Content */}
                     <View className="p-6 space-y-4">
-                        <View className="bg-destructive/10 border border-destructive/20 p-4 rounded-2xl flex-row gap-3">
-                            <Icon as={AlertTriangle} size={20} className="text-destructive shrink-0" />
-                            <Text className="text-xs text-destructive flex-1 leading-relaxed">
-                                This will archive <Text className="font-bold text-destructive uppercase">{farmerName}</Text>. This action cannot be undone.
-                            </Text>
+                        <View className="gap-2">
+                            <View className="flex-row justify-between items-center ml-1">
+                                <Text className="text-sm font-bold text-foreground">Number of Birds (DOC)</Text>
+                                <Text className="text-[10px] text-muted-foreground">Current: {currentDoc}</Text>
+                            </View>
+                            <Input
+                                ref={docRef}
+                                placeholder="0"
+                                keyboardType="numeric"
+                                value={doc}
+                                onChangeText={setDoc}
+                                className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
+                                returnKeyType="next"
+                                onSubmitEditing={() => reasonRef.current?.focus()}
+                            />
                         </View>
 
                         <View className="gap-2">
-                            <Text className="text-sm font-bold text-foreground ml-1">Physical Stock Intake (Bags)</Text>
+                            <Text className="text-sm font-bold text-foreground ml-1">Reason for Correction</Text>
                             <Input
-                                ref={intakeRef}
-                                placeholder="0"
-                                keyboardType="numeric"
-                                value={intake}
-                                onChangeText={setIntake}
-                                className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
+                                ref={reasonRef}
+                                placeholder="Reason for correction..."
+                                value={reason}
+                                onChangeText={setReason}
+                                className="h-12 bg-muted/30 border-border/50"
                                 returnKeyType="next"
                                 onSubmitEditing={handleSubmit}
                             />
-                            <Text className="text-[10px] text-muted-foreground ml-1">
-                                Enter the actual number of bags physically eaten.
-                            </Text>
                         </View>
 
                         {error && (
@@ -128,35 +136,22 @@ export function EndCycleModal({
                             </View>
                         )}
 
-                        <View className="gap-3 pt-2">
+                        <View className="flex-row gap-3 pt-2">
                             <Button
-                                className="h-14 bg-white border border-border shadow-none rounded-2xl flex-row gap-2"
-                                onPress={() => {
-                                    onOpenChange(false);
-                                    onRecordSale?.();
-                                }}
+                                variant="outline"
+                                className="flex-1 h-12 rounded-xl"
+                                onPress={() => onOpenChange(false)}
                             >
-                                <Icon as={ShoppingCart} size={18} className="text-black" />
-                                <Text className="text-black font-bold">Record Sale & End</Text>
+                                <Text className="font-bold">Cancel</Text>
                             </Button>
-
                             <Button
-                                variant="destructive"
-                                className="h-14 rounded-2xl shadow-none"
+                                className="flex-1 h-12 bg-primary rounded-xl shadow-none"
                                 onPress={handleSubmit}
                                 disabled={mutation.isPending}
                             >
-                                <Text className="text-destructive-foreground font-bold">
-                                    {mutation.isPending ? "Ending..." : "End Without Sale"}
+                                <Text className="text-primary-foreground font-bold">
+                                    {mutation.isPending ? "Saving..." : "Save Correction"}
                                 </Text>
-                            </Button>
-
-                            <Button
-                                variant="ghost"
-                                className="h-12 rounded-xl"
-                                onPress={() => onOpenChange(false)}
-                            >
-                                <Text className="font-bold text-muted-foreground">Cancel</Text>
                             </Button>
                         </View>
                     </View>

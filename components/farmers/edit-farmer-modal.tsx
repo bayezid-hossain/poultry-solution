@@ -4,8 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { MapPin, Phone, User, X } from "lucide-react-native";
-import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 
 interface EditFarmerModalProps {
     farmer: {
@@ -30,6 +30,10 @@ export function EditFarmerModal({
     const [location, setLocation] = useState(farmer.location || "");
     const [mobile, setMobile] = useState(farmer.mobile || "");
     const [error, setError] = useState<string | null>(null);
+
+    const nameRef = useRef<TextInput>(null);
+    const locationRef = useRef<TextInput>(null);
+    const mobileRef = useRef<TextInput>(null);
 
     useEffect(() => {
         if (open) {
@@ -107,10 +111,13 @@ export function EditFarmerModal({
                             <View className="gap-2">
                                 <Text className="text-sm font-bold text-foreground ml-1">Full Name</Text>
                                 <Input
+                                    ref={nameRef}
                                     placeholder="Farmer Name"
                                     value={name}
                                     onChangeText={setName}
                                     className="h-12 bg-muted/30 border-border/50"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => locationRef.current?.focus()}
                                 />
                             </View>
 
@@ -120,10 +127,13 @@ export function EditFarmerModal({
                                     <Text className="text-sm font-bold text-foreground">Location</Text>
                                 </View>
                                 <Input
+                                    ref={locationRef}
                                     placeholder="Village, Upazila"
                                     value={location}
                                     onChangeText={setLocation}
                                     className="h-12 bg-muted/30 border-border/50"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => mobileRef.current?.focus()}
                                 />
                             </View>
 
@@ -133,11 +143,14 @@ export function EditFarmerModal({
                                     <Text className="text-sm font-bold text-foreground">Mobile Number</Text>
                                 </View>
                                 <Input
+                                    ref={mobileRef}
                                     placeholder="017XXXXXXXX"
                                     keyboardType="phone-pad"
                                     value={mobile}
                                     onChangeText={setMobile}
                                     className="h-12 bg-muted/30 border-border/50"
+                                    returnKeyType="next"
+                                    onSubmitEditing={handleSubmit}
                                 />
                                 <Text className="text-[10px] text-muted-foreground ml-1">
                                     Format: 013XXXXXXXX to 019XXXXXXXX

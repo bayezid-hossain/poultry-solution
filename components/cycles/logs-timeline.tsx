@@ -1,9 +1,13 @@
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Activity, FileText, Settings, ShoppingCart, Skull, Wheat, Wrench } from "lucide-react-native";
-import { View } from "react-native";
+import { Activity, FileText, Pencil, Settings, ShoppingCart, Skull, Wheat, Wrench } from "lucide-react-native";
+import { useState } from "react";
+import { ActionSheetIOS, Platform, Pressable, View } from "react-native";
+import { EditMortalityLogModal } from "./edit-mortality-log-modal";
+import { RevertCycleLogModal } from "./revert-cycle-log-modal";
 
 export interface TimelineLog {
     id: string;
@@ -57,7 +61,39 @@ const getLogTitle = (type: string, note?: string | null) => {
     return "Activity Log";
 };
 
-export function LogsTimeline({ logs }: { logs: TimelineLog[] }) {
+export function LogsTimeline({ logs, onRefresh }: { logs: TimelineLog[], onRefresh?: () => void }) {
+    const [selectedLog, setSelectedLog] = useState<TimelineLog | null>(null);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isRevertOpen, setIsRevertOpen] = useState(false);
+
+    const handleLogOptions = (log: TimelineLog) => {
+        if (log.type.toUpperCase() !== "MORTALITY" || log.isReverted) return;
+
+        // Simple mock of ActionSheet for options. In a real app we'd use a bottom sheet.
+        // For simplicity, let's just use ActionSheetIOS on iOS, or just open edit modal for now.
+        if (Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions(
+                {
+                    options: ['Cancel', 'Edit Mortality Log', 'Revert Mortality Log'],
+                    destructiveButtonIndex: 2,
+                    cancelButtonIndex: 0,
+                },
+                (buttonIndex) => {
+                    if (buttonIndex === 1) {
+                        setSelectedLog(log);
+                        setIsEditOpen(true);
+                    } else if (buttonIndex === 2) {
+                        setSelectedLog(log);
+                        setIsRevertOpen(true);
+                    }
+                }
+            );
+        } else {
+            // Very simple fallback for Android: just open Edit for now
+            setSelectedLog(log);
+            setIsEditOpen(true);
+        }
+    };
     if (!logs || logs.length === 0) {
         return (
             <View className="items-center justify-center py-10 bg-muted/20 rounded-2xl border border-dashed border-border/50">
@@ -86,9 +122,17 @@ export function LogsTimeline({ logs }: { logs: TimelineLog[] }) {
                                 <Text className="font-bold text-sm text-foreground">
                                     {getLogTitle(log.type, log.note)}
                                 </Text>
-                                <Text className="text-[10px] text-muted-foreground">
-                                    {format(new Date(log.createdAt), "MMM d, HH:mm")}
-                                </Text>
+                                <View className="flex-row items-center gap-2">
+                                    <Text className="text-[10px] text-muted-foreground">
+                                        {format(new Date(log.createdAt), "MMM d, HH:mm")}
+                                    </Text>
+                                    {log.type.toUpperCase() === "MORTALITY" && !log.isReverted && (
+                                        <Pressable onPress={() => handleLogOptions(log)} className="p-1 -mr-2 bg-muted/50 rounded flex-row items-center gap-1">
+                                            <Icon as={Pencil} size={10} className="text-muted-foreground" />
+                                            <Text className="text-[9px] text-muted-foreground font-bold">EDIT</Text>
+                                        </Pressable>
+                                    )}
+                                </View>
                             </View>
 
                             <View className="flex-row items-center gap-2 mb-1">
@@ -116,6 +160,20 @@ export function LogsTimeline({ logs }: { logs: TimelineLog[] }) {
                     </View>
                 );
             })}
+
+            <EditMortalityLogModal
+                open={isEditOpen}
+                onOpenChange={setIsEditOpen}
+                log={selectedLog ? { id: selectedLog.id, value: selectedLog.valueChange, note: selectedLog.note } : null}
+                onSuccess={onRefresh}
+            />
+
+            <RevertCycleLogModal
+                open={isRevertOpen}
+                onOpenChange={setIsRevertOpen}
+                log={selectedLog ? { id: selectedLog.id, value: selectedLog.valueChange, note: selectedLog.note } : null}
+                onSuccess={onRefresh}
+            />
         </View>
     );
 }

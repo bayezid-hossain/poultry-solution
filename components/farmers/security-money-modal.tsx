@@ -4,8 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Landmark, X } from "lucide-react-native";
-import { useEffect, useState } from "react";
-import { Modal, Pressable, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Modal, Pressable, TextInput, View } from "react-native";
 
 interface SecurityMoneyModalProps {
     farmer: {
@@ -27,6 +27,9 @@ export function SecurityMoneyModal({
     const [amount, setAmount] = useState("");
     const [reason, setReason] = useState("");
     const [error, setError] = useState<string | null>(null);
+
+    const amountRef = useRef<TextInput>(null);
+    const reasonRef = useRef<TextInput>(null);
 
     useEffect(() => {
         if (open) {
@@ -98,21 +101,27 @@ export function SecurityMoneyModal({
                         <View className="gap-2">
                             <Text className="text-sm font-bold text-foreground ml-1">Total Amount (BTD)</Text>
                             <Input
+                                ref={amountRef}
                                 placeholder="0.00"
                                 keyboardType="numeric"
                                 value={amount}
                                 onChangeText={setAmount}
                                 className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
+                                returnKeyType="next"
+                                onSubmitEditing={() => reasonRef.current?.focus()}
                             />
                         </View>
 
                         <View className="gap-2">
                             <Text className="text-sm font-bold text-foreground ml-1">Adjustment Reason</Text>
                             <Input
+                                ref={reasonRef}
                                 placeholder="Initial deposit, addition..."
                                 value={reason}
                                 onChangeText={setReason}
                                 className="h-12 bg-muted/30 border-border/50"
+                                returnKeyType="next"
+                                onSubmitEditing={handleSubmit}
                             />
                         </View>
 

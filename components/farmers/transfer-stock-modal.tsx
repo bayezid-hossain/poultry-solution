@@ -6,9 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRightLeft, ChevronDown, Search, X } from "lucide-react-native";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, TouchableOpacity, View } from "react-native";
 import { toast } from "sonner-native";
 import { z } from "zod";
 
@@ -43,6 +43,10 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
             note: "",
         },
     });
+
+    const searchRef = useRef<TextInput>(null);
+    const amountRef = useRef<TextInput>(null);
+    const noteRef = useRef<TextInput>(null);
 
     const targetFarmerId = watch("targetFarmerId");
 
@@ -157,11 +161,14 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                                                     <Icon as={Search} size={14} className="text-muted-foreground" />
                                                 </View>
                                                 <Input
+                                                    ref={searchRef}
                                                     placeholder="Search..."
                                                     value={searchTerm}
                                                     onChangeText={setSearchTerm}
                                                     className="pl-9 h-10 bg-card/50 border-0 text-sm"
                                                     autoFocus
+                                                    returnKeyType="next"
+                                                    onSubmitEditing={() => amountRef.current?.focus()}
                                                 />
                                             </View>
                                         </View>
@@ -210,11 +217,14 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                                     name="amount"
                                     render={({ field: { onChange, value } }) => (
                                         <Input
+                                            ref={amountRef}
                                             placeholder="0"
                                             value={value}
                                             onChangeText={onChange}
                                             keyboardType="numeric"
                                             className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
+                                            returnKeyType="next"
+                                            onSubmitEditing={() => noteRef.current?.focus()}
                                         />
                                     )}
                                 />
@@ -230,11 +240,13 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                                     name="note"
                                     render={({ field: { onChange, value } }) => (
                                         <Textarea
+                                            ref={noteRef as any}
                                             placeholder="Reason for transfer..."
                                             value={value}
                                             onChangeText={onChange}
                                             numberOfLines={2}
                                             className="bg-muted/30 border-border/50 text-sm h-20"
+                                            onSubmitEditing={handleSubmit(onSubmit)}
                                         />
                                     )}
                                 />

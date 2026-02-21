@@ -6,8 +6,9 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react-native";
+import { useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { ActivityIndicator, Modal, Pressable, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, TextInput, View } from "react-native";
 import { toast } from "sonner-native";
 import { z } from "zod";
 
@@ -40,6 +41,11 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
             mobile: ""
         },
     });
+
+    const nameRef = useRef<TextInput>(null);
+    const mobileRef = useRef<TextInput>(null);
+    const locationRef = useRef<TextInput>(null);
+    const stockRef = useRef<TextInput>(null);
 
     const createMutation = trpc.officer.farmers.create.useMutation({
         onSuccess: () => {
@@ -106,10 +112,13 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
                                 name="name"
                                 render={({ field: { onChange, value } }) => (
                                     <Input
+                                        ref={nameRef}
                                         placeholder="e.g. John Doe"
                                         value={value}
                                         onChangeText={onChange}
                                         className={`bg-muted/30 h-12 px-4 rounded-xl ${errors.name ? 'border-destructive' : 'border-border/50'}`}
+                                        returnKeyType="next"
+                                        onSubmitEditing={() => mobileRef.current?.focus()}
                                     />
                                 )}
                             />
@@ -123,11 +132,14 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
                                 name="mobile"
                                 render={({ field: { onChange, value } }) => (
                                     <Input
+                                        ref={mobileRef}
                                         placeholder="e.g. 01712345678"
                                         value={value || ""}
                                         onChangeText={onChange}
                                         keyboardType="phone-pad"
                                         className={`bg-muted/30 h-12 px-4 rounded-xl ${errors.mobile ? 'border-destructive' : 'border-border/50'}`}
+                                        returnKeyType="next"
+                                        onSubmitEditing={() => locationRef.current?.focus()}
                                     />
                                 )}
                             />
@@ -141,10 +153,13 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
                                 name="location"
                                 render={({ field: { onChange, value } }) => (
                                     <Input
+                                        ref={locationRef}
                                         placeholder="e.g. Village, Union"
                                         value={value || ""}
                                         onChangeText={onChange}
                                         className="bg-muted/30 h-12 px-4 rounded-xl border border-border/50"
+                                        returnKeyType="next"
+                                        onSubmitEditing={() => stockRef.current?.focus()}
                                     />
                                 )}
                             />
@@ -157,11 +172,14 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
                                 name="initialStock"
                                 render={({ field: { onChange, value } }) => (
                                     <Input
+                                        ref={stockRef}
                                         placeholder="0"
                                         value={value}
                                         onChangeText={onChange}
                                         keyboardType="decimal-pad"
                                         className={`bg-muted/30 h-12 px-4 rounded-xl ${errors.initialStock ? 'border-destructive' : 'border-border/50'}`}
+                                        returnKeyType="next"
+                                        onSubmitEditing={handleSubmit(onSubmit)}
                                     />
                                 )}
                             />
