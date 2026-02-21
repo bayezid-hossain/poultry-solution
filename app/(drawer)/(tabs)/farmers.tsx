@@ -2,24 +2,31 @@ import { BulkImportModal } from "@/components/farmers/bulk-import-modal";
 import { DeleteFarmerModal } from "@/components/farmers/delete-farmer-modal";
 import { EditFarmerModal } from "@/components/farmers/edit-farmer-modal";
 import { FarmerCard } from "@/components/farmers/farmer-card";
-import { FeedOrderModal } from "@/components/farmers/feed-order-modal";
 import { RegisterFarmerModal } from "@/components/farmers/register-farmer-modal";
 import { RestockModal } from "@/components/farmers/restock-modal";
 import { TransferStockModal } from "@/components/farmers/transfer-stock-modal";
+import { CreateFeedOrderModal } from "@/components/orders/create-feed-order-modal";
+import { ScreenHeader } from "@/components/screen-header";
+import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { router } from "expo-router";
-import { Plus, Search, ShoppingCart, Sparkles } from "lucide-react-native";
+import { Archive, List, Plus, Search, ShoppingCart, Sparkles, X } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function FarmersScreen() {
-    const insets = useSafeAreaInsets();
     const [search, setSearch] = useState("");
+    const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
+
+    // Force active tab if not management
+    if (!isManagement && activeTab === 'archived') {
+        setActiveTab('active');
+    }
 
     // Modal States
     const [restockingFarmer, setRestockingFarmer] = useState<{ id: string; name: string } | null>(null);
@@ -34,6 +41,7 @@ export default function FarmersScreen() {
             orgId: membership?.orgId ?? "",
             search: search,
             pageSize: 50,
+            status: isManagement ? (activeTab === 'archived' ? 'deleted' : 'active') : 'active',
         },
         {
             enabled: !!membership?.orgId,
@@ -48,19 +56,10 @@ export default function FarmersScreen() {
 
     return (
         <View className="flex-1 bg-background">
-            {/* Custom Header Section */}
-            <View
-                style={{ paddingTop: insets.top + 10 }}
-                className="bg-card border-b border-border/50 px-6 pb-6"
-            >
-                <View className="flex-row justify-between items-start mb-6">
-                    <View>
-                        <Text className="text-3xl font-black text-foreground tracking-tighter uppercase">Main Stock</Text>
-                        <Text className="text-3xl font-black text-primary tracking-tighter uppercase -mt-1">Inventory</Text>
-                        <Text className="text-xs text-muted-foreground font-medium mt-1 tracking-wider opacity-60">Centralized feed stock management</Text>
-                    </View>
-                </View>
+            <ScreenHeader title="Farmers" />
 
+            {/* Controls Section */}
+            <View className="bg-card border-b border-border/50 px-3 pb-3 pt-2">
                 {/* Search Bar */}
                 <View className="relative mb-6">
                     <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
@@ -68,11 +67,19 @@ export default function FarmersScreen() {
                     </View>
                     <Input
                         placeholder="Search inventories..."
-                        className="pl-12 h-14 bg-muted/30 border-border/50 rounded-2xl text-base font-bold"
+                        className="pl-12 pr-12 h-14 bg-muted/30 border-border/50 rounded-2xl text-base font-bold"
                         value={search}
                         onChangeText={setSearch}
                         placeholderTextColor="rgba(255,255,255,0.2)"
                     />
+                    {search.length > 0 && (
+                        <Pressable
+                            onPress={() => setSearch("")}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full active:bg-muted/50 z-20"
+                        >
+                            <Icon as={X} size={20} className="text-muted-foreground" />
+                        </Pressable>
+                    )}
                 </View>
 
                 {/* Action Buttons Row */}
@@ -99,6 +106,32 @@ export default function FarmersScreen() {
                         <Text className="text-white font-black text-[10px] uppercase tracking-widest">Register</Text>
                     </Pressable>
                 </View>
+
+                {/* Segmented Tabs - Only for Management */}
+                {isManagement && (
+                    <View className='mt-6 flex-row gap-2'>
+                        <Button
+                            variant={activeTab === 'active' ? 'default' : 'outline'}
+                            className='flex-1 flex-row gap-2 h-11'
+                            onPress={() => setActiveTab('active')}
+                        >
+                            <Icon as={List} className={activeTab === 'active' ? "text-primary-foreground" : "text-muted-foreground"} size={14} />
+                            <Text className={`font-bold ${activeTab === 'active' ? "text-primary-foreground" : "text-muted-foreground"}`}>
+                                Active ({data?.total || 0})
+                            </Text>
+                        </Button>
+                        <Button
+                            variant={activeTab === 'archived' ? 'default' : 'outline'}
+                            className='flex-1 flex-row gap-2 h-11'
+                            onPress={() => setActiveTab('archived')}
+                        >
+                            <Icon as={Archive} className={activeTab === 'archived' ? "text-primary-foreground" : "text-muted-foreground"} size={14} />
+                            <Text className={`font-bold ${activeTab === 'archived' ? "text-primary-foreground" : "text-muted-foreground"}`}>
+                                Archived
+                            </Text>
+                        </Button>
+                    </View>
+                )}
             </View>
 
             {isLoading ? (
@@ -186,10 +219,11 @@ export default function FarmersScreen() {
             )}
 
             {membership?.orgId && (
-                <FeedOrderModal
+                <CreateFeedOrderModal
                     open={isFeedOrderOpen}
                     onOpenChange={setIsFeedOrderOpen}
                     orgId={membership.orgId}
+                    onSuccess={() => refetch()}
                 />
             )}
 

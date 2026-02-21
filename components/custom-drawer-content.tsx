@@ -13,16 +13,16 @@ interface NavItem {
 }
 
 const officerItems: NavItem[] = [
-    { label: "Home", icon: "🏠", route: "/(tabs)" },
-    { label: "Cycles", icon: "🔄", route: "/(tabs)/cycles" },
-    { label: "Farmers", icon: "🧑‍🌾", route: "/(tabs)/farmers" },
+    { label: "Home", icon: "🏠", route: "/(drawer)/(tabs)" },
+    { label: "Cycles", icon: "🔄", route: "/(drawer)/(tabs)/cycles" },
+    { label: "Farmers", icon: "🧑‍🌾", route: "/(drawer)/(tabs)/farmers" },
 ];
 
 const managementItems: NavItem[] = [
-    { label: "Overview", icon: "📊", route: "/(tabs)/overview" },
-    { label: "Officers", icon: "👥", route: "/(tabs)/officers" },
-    { label: "Farmers", icon: "🧑‍🌾", route: "/(tabs)/farmers" },
-    { label: "Cycles", icon: "🔄", route: "/(tabs)/cycles" },
+    { label: "Overview", icon: "📊", route: "/(drawer)/(tabs)/overview" },
+    { label: "Officers", icon: "👥", route: "/(drawer)/officers" },
+    { label: "Farmers", icon: "🧑‍🌾", route: "/(drawer)/(tabs)/farmers" },
+    { label: "Cycles", icon: "🔄", route: "/(drawer)/(tabs)/cycles" },
 ];
 
 export function CustomDrawerContent(props: any) {
@@ -38,8 +38,8 @@ export function CustomDrawerContent(props: any) {
     const navItems = isManagement ? managementItems : officerItems;
 
     const isActive = (route: string) => {
-        if (route === "/(tabs)") return pathname === "/" || pathname === "";
-        return pathname === route.replace("/(tabs)", "");
+        if (route === "/(drawer)/(tabs)") return pathname === "/" || pathname === "";
+        return pathname === route.replace("/(drawer)/(tabs)", "").replace("/(drawer)", "");
     };
 
     return (
@@ -84,7 +84,7 @@ export function CustomDrawerContent(props: any) {
                 {/* Settings */}
                 <View className="px-2">
                     <Pressable
-                        onPress={() => router.push("/(tabs)/settings" as any)}
+                        onPress={() => router.push("/(drawer)/(tabs)/settings" as any)}
                         className={`flex-row items-center gap-3 px-3 py-3 rounded-lg ${pathname === "/settings" ? "bg-primary/10" : "active:bg-accent"
                             }`}
                     >

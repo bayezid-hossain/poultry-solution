@@ -16,33 +16,18 @@ export default function TabsDrawerLayout() {
         }}
       >
         <Drawer.Screen
-          name="index"
-          options={{ title: "Home" }}
-        />
-        <Drawer.Screen
-          name="cycles"
-          options={{ title: "Cycles" }}
-        />
-        <Drawer.Screen
-          name="farmers"
-          options={{ title: "Farmers" }}
-        />
-        <Drawer.Screen
-          name="overview"
-          options={{ title: "Overview" }}
+          name="(tabs)"
+          options={{ title: "Home", headerShown: false }}
         />
         <Drawer.Screen
           name="officers"
-          options={{ title: "Officers" }}
-        />
-        <Drawer.Screen
-          name="settings"
-          options={{ title: "Settings" }}
+          options={{ title: "Officers", headerShown: false }}
         />
         <Drawer.Screen
           name="explore"
           options={{
             drawerItemStyle: { display: "none" },
+            headerShown: false
           }}
         />
       </Drawer>

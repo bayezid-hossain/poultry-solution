@@ -125,7 +125,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 export const unstable_settings = {
-  initialRouteName: "(tabs)",
+  initialRouteName: "(drawer)",
 };
 
 import { queryClient, trpc, trpcClient } from "@/lib/trpc";
@@ -140,7 +140,7 @@ function RootLayoutInner() {
     <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AuthGuard>
         <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(drawer)" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(org)" />
           <Stack.Screen

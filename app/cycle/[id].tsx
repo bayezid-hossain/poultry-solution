@@ -51,6 +51,7 @@ export default function CycleDetailsScreen() {
         );
     }
 
+    const isArchived = response.type === 'history';
     const { data: cycle, farmerContext: farmer, logs } = response;
     const liveBirds = Math.max(0, (cycle.doc ?? 0) - (cycle.mortality ?? 0) - (cycle.birdsSold ?? 0));
 
@@ -72,11 +73,17 @@ export default function CycleDetailsScreen() {
                         <Icon as={ExternalLink} size={14} className="text-primary/50" />
                     </View>
                     <View className="flex-row items-center gap-2">
-                        <Badge variant="outline" className={`h-4 px-1.5 ${cycle.status === 'active' ? 'border-emerald-500 bg-emerald-500/5' : 'border-muted-foreground'}`}>
-                            <Text className={`text-[8px] font-bold uppercase ${cycle.status === 'active' ? 'text-emerald-600' : 'text-muted-foreground'}`}>
-                                {cycle.status}
-                            </Text>
-                        </Badge>
+                        {isArchived ? (
+                            <Badge variant="outline" className="h-4 px-1.5 border-amber-500 bg-amber-500/10">
+                                <Text className="text-[8px] font-bold uppercase text-amber-600">Archived</Text>
+                            </Badge>
+                        ) : (
+                            <Badge variant="outline" className={`h-4 px-1.5 ${cycle.status === 'active' ? 'border-emerald-500 bg-emerald-500/5' : 'border-muted-foreground'}`}>
+                                <Text className={`text-[8px] font-bold uppercase ${cycle.status === 'active' ? 'text-emerald-600' : 'text-muted-foreground'}`}>
+                                    {cycle.status}
+                                </Text>
+                            </Badge>
+                        )}
                         {cycle.birdType && (
                             <Badge variant="outline" className="h-4 px-1.5 bg-amber-500/10 border-amber-500/20">
                                 <Text className="text-amber-600 text-[8px] font-bold uppercase">{cycle.birdType}</Text>
@@ -87,16 +94,27 @@ export default function CycleDetailsScreen() {
             </View>
 
             <ScrollView contentContainerClassName="p-4 pb-20 gap-6">
+                {/* Archived Banner */}
+                {isArchived && (
+                    <View className="flex-row items-center gap-3 p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
+                        <Icon as={Archive} size={20} className="text-amber-600" />
+                        <View className="flex-1">
+                            <Text className="font-bold text-sm text-amber-700 dark:text-amber-400">Archived Cycle</Text>
+                            <Text className="text-xs text-muted-foreground">This cycle has been completed and is read-only.</Text>
+                        </View>
+                    </View>
+                )}
+
                 {/* Stats Grid */}
                 <View className="gap-4">
                     {/* Row 1: Age, DOC, Live Birds */}
                     <View className="flex-row gap-3">
-                        <Pressable className="flex-1" onPress={() => setIsAgeModalOpen(true)}>
+                        <Pressable className="flex-1" onPress={!isArchived ? () => setIsAgeModalOpen(true) : undefined} disabled={isArchived}>
                             <Card className="border-border/50">
                                 <CardContent className="p-3 items-center">
                                     <View className="flex-row items-center gap-1 mb-1">
                                         <Text className="text-[9px] text-muted-foreground font-bold uppercase">Age</Text>
-                                        <Icon as={Pencil} size={8} className="text-muted-foreground/50" />
+                                        {!isArchived && <Icon as={Pencil} size={8} className="text-muted-foreground/50" />}
                                     </View>
                                     <View className="flex-row items-baseline gap-0.5">
                                         <Text className="font-bold text-xl text-foreground">{cycle.age}</Text>
@@ -106,12 +124,12 @@ export default function CycleDetailsScreen() {
                             </Card>
                         </Pressable>
 
-                        <Pressable className="flex-1" onPress={() => setIsDocModalOpen(true)}>
+                        <Pressable className="flex-1" onPress={!isArchived ? () => setIsDocModalOpen(true) : undefined} disabled={isArchived}>
                             <Card className="border-border/50">
                                 <CardContent className="p-3 items-center">
                                     <View className="flex-row items-center gap-1 mb-1">
                                         <Text className="text-[9px] text-muted-foreground font-bold uppercase">DOC</Text>
-                                        <Icon as={Pencil} size={8} className="text-muted-foreground/50" />
+                                        {!isArchived && <Icon as={Pencil} size={8} className="text-muted-foreground/50" />}
                                     </View>
                                     <View className="flex-row items-center gap-1">
                                         <Icon as={Bird} size={14} className="text-primary/70" />
@@ -124,8 +142,10 @@ export default function CycleDetailsScreen() {
                         <View className="flex-1">
                             <Card className="border-border/50 bg-emerald-500/5">
                                 <CardContent className="p-3 items-center">
-                                    <Text className="text-[9px] text-emerald-600 font-bold uppercase mb-1">Live</Text>
-                                    <Text className="font-bold text-xl text-emerald-600">{liveBirds}</Text>
+                                    <Text className="text-[9px] text-emerald-600 font-bold uppercase mb-1">{isArchived ? "Sold" : "Live"}</Text>
+                                    <Text className="font-bold text-xl text-emerald-600">
+                                        {isArchived ? (cycle.birdsSold ?? 0) : liveBirds}
+                                    </Text>
                                 </CardContent>
                             </Card>
                         </View>
@@ -157,12 +177,12 @@ export default function CycleDetailsScreen() {
                             </Card>
                         </View>
 
-                        <Pressable className="flex-1" onPress={() => setIsMortalityCorrectionOpen(true)}>
+                        <Pressable className="flex-1" onPress={!isArchived ? () => setIsMortalityCorrectionOpen(true) : undefined} disabled={isArchived}>
                             <Card className="border-border/50">
                                 <CardContent className="p-3 items-center">
                                     <View className="flex-row items-center gap-1 mb-1">
                                         <Text className="text-[9px] text-muted-foreground font-bold uppercase">Dead</Text>
-                                        <Icon as={Pencil} size={8} className="text-muted-foreground/50" />
+                                        {!isArchived && <Icon as={Pencil} size={8} className="text-muted-foreground/50" />}
                                     </View>
                                     <View className="flex-row items-center gap-1">
                                         <Icon as={Skull} size={14} className={cycle.mortality > 0 ? "text-destructive" : "text-muted-foreground/30"} />
@@ -176,8 +196,8 @@ export default function CycleDetailsScreen() {
                     </View>
                 </View>
 
-                {/* Quick Actions */}
-                {cycle.status === 'active' && (
+                {/* Quick Actions — Only for active cycles */}
+                {!isArchived && cycle.status === 'active' && (
                     <View className="flex-row gap-4 flex-wrap">
                         <Button
                             className="flex-1 h-14 flex-row gap-2 bg-primary shadow-none rounded-2xl min-w-[140px]"
@@ -210,7 +230,10 @@ export default function CycleDetailsScreen() {
                         <Icon as={ShoppingCart} size={20} className="text-foreground" />
                         <Text className="text-lg font-bold">Sales & History</Text>
                     </View>
-                    <SalesHistoryList cycleId={id as string} />
+                    <SalesHistoryList
+                        cycleId={isArchived ? undefined : (id as string)}
+                        historyId={isArchived ? (id as string) : undefined}
+                    />
                 </View>
 
                 {/* Activity Timeline */}
@@ -231,69 +254,74 @@ export default function CycleDetailsScreen() {
                 </View>
             </ScrollView>
 
-            <AddMortalityModal
-                open={isMortalityModalOpen}
-                onOpenChange={setIsMortalityModalOpen}
-                cycleId={cycle.id}
-                farmerName={farmer.name}
-                onSuccess={refetch}
-            />
+            {/* Modals — Only rendered for active cycles */}
+            {!isArchived && (
+                <>
+                    <AddMortalityModal
+                        open={isMortalityModalOpen}
+                        onOpenChange={setIsMortalityModalOpen}
+                        cycleId={cycle.id}
+                        farmerName={farmer.name}
+                        onSuccess={refetch}
+                    />
 
-            <EndCycleModal
-                open={isEndCycleOpen}
-                onOpenChange={setIsEndCycleOpen}
-                cycle={{
-                    id: cycle.id,
-                    name: cycle.name,
-                    intake: Number(cycle.intake)
-                }}
-                farmerName={farmer.name}
-                onRecordSale={() => setIsSellModalOpen(true)}
-                onSuccess={() => {
-                    refetch();
-                }}
-            />
+                    <EndCycleModal
+                        open={isEndCycleOpen}
+                        onOpenChange={setIsEndCycleOpen}
+                        cycle={{
+                            id: cycle.id,
+                            name: cycle.name,
+                            intake: Number(cycle.intake)
+                        }}
+                        farmerName={farmer.name}
+                        onRecordSale={() => setIsSellModalOpen(true)}
+                        onSuccess={() => {
+                            refetch();
+                        }}
+                    />
 
-            <CorrectDocModal
-                open={isDocModalOpen}
-                onOpenChange={setIsDocModalOpen}
-                cycleId={cycle.id}
-                currentDoc={cycle.doc}
-                onSuccess={refetch}
-            />
+                    <CorrectDocModal
+                        open={isDocModalOpen}
+                        onOpenChange={setIsDocModalOpen}
+                        cycleId={cycle.id}
+                        currentDoc={cycle.doc}
+                        onSuccess={refetch}
+                    />
 
-            <CorrectAgeModal
-                open={isAgeModalOpen}
-                onOpenChange={setIsAgeModalOpen}
-                cycleId={cycle.id}
-                currentAge={cycle.age}
-                onSuccess={refetch}
-            />
+                    <CorrectAgeModal
+                        open={isAgeModalOpen}
+                        onOpenChange={setIsAgeModalOpen}
+                        cycleId={cycle.id}
+                        currentAge={cycle.age}
+                        onSuccess={refetch}
+                    />
 
-            <CorrectMortalityModal
-                open={isMortalityCorrectionOpen}
-                onOpenChange={setIsMortalityCorrectionOpen}
-                cycleId={cycle.id}
-                currentMortality={cycle.mortality || 0}
-                onSuccess={refetch}
-            />
+                    <CorrectMortalityModal
+                        open={isMortalityCorrectionOpen}
+                        onOpenChange={setIsMortalityCorrectionOpen}
+                        cycleId={cycle.id}
+                        currentMortality={cycle.mortality || 0}
+                        onSuccess={refetch}
+                    />
 
-            <SellModal
-                open={isSellModalOpen}
-                onOpenChange={setIsSellModalOpen}
-                cycleId={cycle.id}
-                farmerId={farmer.id}
-                cycleName={cycle.name}
-                farmerName={farmer.name}
-                farmerLocation={farmer.location}
-                farmerMobile={farmer.mobile}
-                cycleAge={cycle.age}
-                doc={cycle.doc}
-                mortality={cycle.mortality || 0}
-                birdsSold={cycle.birdsSold || 0}
-                intake={Number(cycle.intake || 0)}
-                startDate={new Date(cycle.startDate)}
-            />
+                    <SellModal
+                        open={isSellModalOpen}
+                        onOpenChange={setIsSellModalOpen}
+                        cycleId={cycle.id}
+                        farmerId={farmer.id}
+                        cycleName={cycle.name}
+                        farmerName={farmer.name}
+                        farmerLocation={farmer.location}
+                        farmerMobile={farmer.mobile}
+                        cycleAge={cycle.age}
+                        doc={cycle.doc}
+                        mortality={cycle.mortality || 0}
+                        birdsSold={cycle.birdsSold || 0}
+                        intake={Number(cycle.intake || 0)}
+                        startDate={new Date(cycle.startDate)}
+                    />
+                </>
+            )}
         </View>
     );
 }

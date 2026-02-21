@@ -39,12 +39,12 @@ export function FarmerCard({
 
     return (
         <Pressable onPress={onPress}>
-            <Card className='mb-4 overflow-hidden border-border/50 bg-[#121212]'>
-                <CardContent className='p-5'>
+            <Card className='mb-1 overflow-hidden border-border/50 bg-card p-1'>
+                <CardContent className='p-1'>
                     {/* Header Area */}
-                    <View className='flex-row justify-between items-center mb-5'>
+                    <View className='flex-row justify-between items-center mb-1'>
                         <View className='flex-row items-center gap-2 flex-1'>
-                            <Text className='font-black text-xl text-white uppercase tracking-tight'>
+                            <Text className='font-black text-lg text-foreground uppercase tracking-tight'>
                                 {farmer.name}
                             </Text>
                             <View className="flex-row items-center gap-2 ml-1">
@@ -52,92 +52,92 @@ export function FarmerCard({
                                     onPress={onEdit}
                                     className="opacity-60 active:opacity-100"
                                 >
-                                    <Icon as={Wrench} size={18} className="text-white" />
+                                    <Icon as={Wrench} size={18} className="text-foreground" />
                                 </Pressable>
                                 <Pressable
                                     onPress={onDelete}
                                     className="opacity-60 active:opacity-100"
                                 >
-                                    <Icon as={Trash2} size={18} className="text-white" />
+                                    <Icon as={Trash2} size={18} className="text-foreground" />
                                 </Pressable>
-                                <Badge variant='secondary' className='bg-[#222] border-0 h-6 px-2 rounded-md'>
-                                    <Text className='text-muted-foreground text-[10px] font-bold uppercase'>
+                                <Badge variant='outline' className={`${farmer.activeCyclesCount > 0 ? "bg-emerald-500/10 border-emerald-500/20" : "bg-muted/50 border-border"} h-6 px-2 rounded-md`}>
+                                    <Text className={`${farmer.activeCyclesCount > 0 ? "text-emerald-500" : "text-muted-foreground"} text-[10px] font-bold uppercase`}>
                                         {farmer.activeCyclesCount > 0 ? "Active" : "Idle"}
                                     </Text>
                                 </Badge>
                             </View>
                         </View>
 
-                        <View className='flex-row items-center gap-1.5'>
-                            <Icon as={Bird} size={18} className="text-white/80" />
-                            <Text className='text-white font-black text-lg'>
+                        <View className='flex-row items-center gap-1.5 bg-muted/30 px-3 py-1.5 rounded-xl border border-border/50'>
+                            <Icon as={Bird} size={16} className="text-primary" />
+                            <Text className='text-foreground font-bold text-sm'>
                                 {farmer.activeCyclesCount} / {farmer.activeCyclesCount + farmer.pastCyclesCount}
                             </Text>
                         </View>
                     </View>
 
                     {/* Stats Grid */}
-                    <View className="flex-row gap-2.5 mb-5">
+                    <View className="flex-row gap-2 mb-3">
                         {/* Stock Card */}
-                        <View className="flex-1 bg-[#1A1A1A] border border-white/5 p-3 rounded-2xl h-24 justify-between">
-                            <Text className="text-white/40 text-[10px] font-black uppercase tracking-widest">Stock</Text>
+                        <View className="flex-1 bg-muted/30 border border-border p-2.5 rounded-xl h-20 justify-between">
+                            <Text className="text-muted-foreground text-[9px] font-black uppercase tracking-widest">Stock</Text>
                             <View className="flex-row items-center gap-1.5">
-                                <Icon as={Wheat} size={20} className="text-red-400" />
+                                <Icon as={Wheat} size={16} className="text-red-400" />
                                 <View className="flex-row items-baseline gap-1">
-                                    <Text className="text-2xl font-black text-red-500">{Number(farmer.mainStock ?? 0).toFixed(1)}</Text>
-                                    <Text className="text-[10px] text-white/30 font-bold lowercase">b</Text>
+                                    <Text className="text-xl font-black text-red-500">{Number(farmer.mainStock ?? 0).toFixed(1)}</Text>
+                                    <Text className="text-[10px] text-muted-foreground/60 font-bold lowercase">b</Text>
                                 </View>
                             </View>
                         </View>
 
                         {/* Used Card */}
-                        <View className="flex-1 bg-[#231508] border border-orange-500/10 p-3 rounded-2xl h-24 justify-between">
-                            <Text className="text-orange-500/60 text-[10px] font-black uppercase tracking-widest">Used</Text>
+                        <View className="flex-1 bg-orange-500/5 border border-orange-500/10 p-2.5 rounded-xl h-20 justify-between">
+                            <Text className="text-orange-500/60 text-[9px] font-black uppercase tracking-widest">Used</Text>
                             <View className="flex-row items-center">
                                 <View className="flex-row items-baseline gap-1">
-                                    <Text className="text-2xl font-black text-orange-500">{Number(farmer.totalConsumed ?? 0).toFixed(1)}</Text>
+                                    <Text className="text-xl font-black text-orange-500">{Number(farmer.totalConsumed ?? 0).toFixed(1)}</Text>
                                     <Text className="text-[10px] text-orange-500/40 font-bold lowercase">b</Text>
                                 </View>
                             </View>
                         </View>
 
                         {/* Total Card */}
-                        <View className="flex-1 bg-white p-3 rounded-2xl h-24 justify-between">
-                            <Text className="text-black/40 text-[10px] font-black uppercase tracking-widest text-right">Total</Text>
+                        <View className="flex-1 bg-primary p-2.5 rounded-xl h-20 justify-between shadow-sm shadow-primary/20">
+                            <Text className="text-primary-foreground/60 text-[9px] font-black uppercase tracking-widest text-right">Total</Text>
                             <View className="flex-row items-baseline justify-end gap-1">
-                                <Text className="text-2xl font-black text-black">{totalSupplied.toFixed(1)}</Text>
-                                <Text className="text-[10px] text-black/40 font-bold lowercase">b</Text>
+                                <Text className="text-xl font-black text-primary-foreground">{totalSupplied.toFixed(1)}</Text>
+                                <Text className="text-[10px] text-primary-foreground/40 font-bold lowercase">b</Text>
                             </View>
                         </View>
                     </View>
 
                     {/* Quick Actions */}
-                    <View className="flex-row gap-3 mb-5">
+                    <View className="flex-row gap-2 mb-3">
                         <Pressable
                             onPress={onTransfer}
-                            className="flex-1 flex-row items-center justify-center gap-2 h-14 bg-[#1A1A1A] border border-white/5 rounded-2xl active:bg-white/5"
+                            className="flex-1 flex-row items-center justify-center gap-2 h-10 bg-muted/40 border border-border rounded-xl active:bg-muted"
                         >
-                            <Icon as={ArrowRightLeft} size={18} className="text-white/60" />
-                            <Text className="text-white/80 font-bold text-base">Transfer</Text>
+                            <Icon as={ArrowRightLeft} size={16} className="text-muted-foreground" />
+                            <Text className="text-foreground font-bold text-sm">Transfer</Text>
                         </Pressable>
                         <Pressable
                             onPress={onRestock}
-                            className="flex-1 flex-row items-center justify-center gap-2 h-14 bg-[#1A1A1A] border border-white/5 rounded-2xl active:bg-white/5"
+                            className="flex-1 flex-row items-center justify-center gap-2 h-10 bg-muted/40 border border-border rounded-xl active:bg-muted"
                         >
-                            <Icon as={Wheat} size={18} className="text-white/60" />
-                            <Text className="text-white/80 font-bold text-base">Restock</Text>
+                            <Icon as={Wheat} size={16} className="text-muted-foreground" />
+                            <Text className="text-foreground font-bold text-sm">Restock</Text>
                         </Pressable>
                     </View>
 
                     {/* Footer */}
-                    <View className="flex-row justify-between items-center border-t border-white/5 pt-4">
-                        <Text className="text-white/40 text-xs font-medium">Joined {joinedDate}</Text>
+                    <View className="flex-row justify-between items-center border-t border-border pt-2">
+                        <Text className="text-muted-foreground text-xs font-medium">Joined {joinedDate}</Text>
                         <Pressable
                             onPress={onPress}
                             className="flex-row items-center gap-1.5"
                         >
-                            <Text className="text-white font-black text-sm">View</Text>
-                            <Icon as={ArrowRight} size={14} className="text-white" />
+                            <Text className="text-foreground font-black text-sm">View</Text>
+                            <Icon as={ArrowRight} size={14} className="text-foreground" />
                         </Pressable>
                     </View>
                 </CardContent>

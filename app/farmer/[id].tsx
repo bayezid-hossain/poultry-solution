@@ -7,14 +7,13 @@ import { SecurityMoneyModal } from "@/components/farmers/security-money-modal";
 import { StartCycleModal } from "@/components/farmers/start-cycle-modal";
 import { StockCorrectionModal } from "@/components/farmers/stock-correction-modal";
 import { ScreenHeader } from "@/components/screen-header";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { router, useLocalSearchParams } from "expo-router";
-import { AlertCircle, ArrowLeft, Bird, ChevronRight, Landmark, List, MapPin, Pencil, Plus, Trash2, Wheat } from "lucide-react-native";
+import { AlertCircle, Archive, ArrowLeft, Bird, ChevronRight, History, Landmark, List, MapPin, Pencil, Plus, Trash2, Wheat } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
@@ -26,10 +25,22 @@ export default function FarmerDetailScreen() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isStartCycleOpen, setIsStartCycleOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [cycleTab, setCycleTab] = useState<'active' | 'archived'>('active');
+
+    const { data: membership } = trpc.auth.getMyMembership.useQuery();
 
     const { data: farmer, isLoading, refetch } = trpc.officer.farmers.getDetails.useQuery(
         { farmerId: id ?? "" },
         { enabled: !!id }
+    );
+
+    const { data: historyData, isLoading: historyLoading } = trpc.officer.cycles.listPast.useQuery(
+        {
+            orgId: membership?.orgId ?? "",
+            farmerId: id,
+            pageSize: 50,
+        },
+        { enabled: !!id && !!membership?.orgId }
     );
 
     const handleDelete = () => {
@@ -60,6 +71,7 @@ export default function FarmerDetailScreen() {
     }
 
     const { cycles: activeCycles = [] } = farmer;
+    const archivedCycles = historyData?.items ?? [];
 
     return (
         <View className="flex-1 bg-background">
@@ -151,7 +163,7 @@ export default function FarmerDetailScreen() {
                 </View>
 
                 {/* Secondary Actions */}
-                <View className="flex-row gap-3 mb-8">
+                <View className="flex-row gap-3 mb-6">
                     <Button
                         variant="outline"
                         className="flex-1 h-12 rounded-xl flex-row items-center justify-center gap-2 border-orange-500/20 bg-orange-500/5"
@@ -170,46 +182,87 @@ export default function FarmerDetailScreen() {
                     </Button>
                 </View>
 
-                {/* Active Cycles Header */}
-                <View className="flex-row items-center justify-between mb-4 px-1">
-                    <View className="flex-row items-center gap-2">
-                        <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center">
-                            <Icon as={List} size={16} className="text-primary" />
-                        </View>
-                        <Text className="text-xl font-bold text-foreground">Active Batches</Text>
-                    </View>
-                    <Badge variant="outline" className="border-primary/30 h-7 px-3">
-                        <Text className="text-[10px] text-primary font-bold uppercase">{activeCycles.length} Total</Text>
-                    </Badge>
+                {/* Active / Archived Tab Switcher */}
+                <View className="flex-row bg-muted/50 rounded-xl p-1 mb-4">
+                    <Button
+                        variant={cycleTab === 'active' ? 'default' : 'ghost'}
+                        size="sm"
+                        className={`flex-1 flex-row gap-2 rounded-lg h-10 ${cycleTab === 'active' ? '' : 'bg-transparent'}`}
+                        onPress={() => setCycleTab('active')}
+                    >
+                        <Icon as={List} className={cycleTab === 'active' ? "text-primary-foreground" : "text-muted-foreground"} size={14} />
+                        <Text className={`font-bold ${cycleTab === 'active' ? "text-primary-foreground" : "text-muted-foreground"}`}>
+                            Active ({activeCycles.length})
+                        </Text>
+                    </Button>
+                    <Button
+                        variant={cycleTab === 'archived' ? 'default' : 'ghost'}
+                        size="sm"
+                        className={`flex-1 flex-row gap-2 rounded-lg h-10 ${cycleTab === 'archived' ? '' : 'bg-transparent'}`}
+                        onPress={() => setCycleTab('archived')}
+                    >
+                        <Icon as={History} className={cycleTab === 'archived' ? "text-primary-foreground" : "text-muted-foreground"} size={14} />
+                        <Text className={`font-bold ${cycleTab === 'archived' ? "text-primary-foreground" : "text-muted-foreground"}`}>
+                            Archived ({archivedCycles.length})
+                        </Text>
+                    </Button>
                 </View>
 
-                {/* Active Cycles List */}
-                {activeCycles.length > 0 ? (
-                    activeCycles.map((cycle: any) => (
-                        <CycleCard
-                            key={cycle.id}
-                            cycle={{
-                                ...cycle,
-                                intake: Number(cycle.intake)
-                            }}
-                            onPress={() => router.push(`/cycle/${cycle.id}` as any)}
-                        />
-                    ))
+                {/* Tab Content */}
+                {cycleTab === 'active' ? (
+                    <>
+                        {activeCycles.length > 0 ? (
+                            activeCycles.map((cycle: any) => (
+                                <CycleCard
+                                    key={cycle.id}
+                                    cycle={{
+                                        ...cycle,
+                                        intake: Number(cycle.intake)
+                                    }}
+                                    onPress={() => router.push(`/cycle/${cycle.id}` as any)}
+                                />
+                            ))
+                        ) : (
+                            <Card className="border-dashed border-border/50 bg-muted/10 h-40">
+                                <CardContent className="flex-1 items-center justify-center gap-2">
+                                    <Icon as={Bird} size={40} className="text-muted-foreground/20" />
+                                    <Text className="text-muted-foreground text-sm font-medium">No active cycles for this farmer</Text>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="mt-2"
+                                        onPress={() => setIsStartCycleOpen(true)}
+                                    >
+                                        <Text className="text-primary font-bold">Launch First Batch</Text>
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </>
                 ) : (
-                    <Card className="border-dashed border-border/50 bg-muted/10 h-40">
-                        <CardContent className="flex-1 items-center justify-center gap-2">
-                            <Icon as={Bird} size={40} className="text-muted-foreground/20" />
-                            <Text className="text-muted-foreground text-sm font-medium">No active cycles for this farmer</Text>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="mt-2"
-                                onPress={() => setIsStartCycleOpen(true)}
-                            >
-                                <Text className="text-primary font-bold">Launch First Batch</Text>
-                            </Button>
-                        </CardContent>
-                    </Card>
+                    <>
+                        {historyLoading ? (
+                            <View className="items-center justify-center py-10">
+                                <ActivityIndicator size="large" color="hsl(var(--primary))" />
+                                <Text className="mt-4 text-muted-foreground">Loading history...</Text>
+                            </View>
+                        ) : archivedCycles.length > 0 ? (
+                            archivedCycles.map((cycle: any) => (
+                                <CycleCard
+                                    key={cycle.id}
+                                    cycle={cycle as any}
+                                    onPress={() => router.push(`/cycle/${cycle.id}` as any)}
+                                />
+                            ))
+                        ) : (
+                            <Card className="border-dashed border-border/50 bg-muted/10 h-40">
+                                <CardContent className="flex-1 items-center justify-center gap-2">
+                                    <Icon as={Archive} size={40} className="text-muted-foreground/20" />
+                                    <Text className="text-muted-foreground text-sm font-medium">No archived cycles yet</Text>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </>
                 )}
 
                 {/* Dangerous Zone */}

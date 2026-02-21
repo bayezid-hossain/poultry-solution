@@ -1,3 +1,4 @@
+import { RestockModal } from "@/components/farmers/restock-modal";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,6 @@ import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
 import { z } from "zod";
-// AddFeedModal to be implemented
 import { SaleDetailsContent } from "./sale-details-content";
 import { FarmerInfoHeader, FeedFieldArray, SaleMetricsBar } from "./sale-form-sections";
 
@@ -779,13 +779,15 @@ export const SellModal = ({
                 )}
             </KeyboardAvoidingView>
 
-            {/* Note: In a full implementation, you would need to integrate AddFeedModal from farmers. 
-                For now we mock the restock by importing AddFeedModal (if it exists) or leaving the placeholder */}
-            {/* <AddFeedModal
-                id={farmerId}
+            <RestockModal
+                farmerId={farmerId}
+                farmerName={farmerName}
                 open={showRestockModal}
                 onOpenChange={setShowRestockModal}
-            /> */}
+                onSuccess={() => {
+                    utils.officer.farmers.getDetails.invalidate({ farmerId });
+                }}
+            />
         </Modal>
     );
 };

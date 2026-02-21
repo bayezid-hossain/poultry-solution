@@ -220,6 +220,7 @@ export default function CyclesScreen() {
                             renderItem={({ item }) => (
                                 <CycleCard
                                     cycle={item as any}
+                                    onPress={() => router.push(`/cycle/${item.id}` as any)}
                                     onReopen={() => {
                                         setSelectedCycle(item);
                                         setIsReopenModalOpen(true);
