@@ -1,15 +1,17 @@
 import { CustomDrawerContent } from "@/components/custom-drawer-content";
 import { Drawer } from "expo-router/drawer";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { View } from "react-native";
 
 export default function TabsDrawerLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
       <Drawer
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
           headerShown: false,
           drawerType: "front",
+          swipeEnabled: true,
+          swipeEdgeWidth: 200,
           drawerStyle: {
             width: 280,
           },
@@ -74,6 +76,6 @@ export default function TabsDrawerLayout() {
           }}
         />
       </Drawer>
-    </GestureHandlerRootView>
+    </View>
   );
 }

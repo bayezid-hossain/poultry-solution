@@ -46,7 +46,7 @@ export function FarmerCard({
                     {/* Header Area */}
                     <View className='flex-row justify-between items-center mb-1'>
                         <View className='flex-row items-center gap-2 flex-1'>
-                            <Text className='font-black text-lg text-foreground uppercase tracking-tight'>
+                            <Text className='font-black text-lg text-foreground uppercase tracking-tight flex-1' numberOfLines={2}>
                                 {farmer.name}
                             </Text>
                             <View className="flex-row items-center gap-2 ml-1">
@@ -73,7 +73,7 @@ export function FarmerCard({
                         <View className='flex-row items-center gap-1.5 bg-muted/30 px-3 py-1.5 rounded-xl border border-border/50'>
                             <Icon as={Bird} size={16} className="text-primary" />
                             <Text className='text-foreground font-bold text-sm'>
-                                {farmer.activeCyclesCount} / {farmer.activeCyclesCount + farmer.pastCyclesCount}
+                                {farmer.activeCyclesCount} / {farmer.pastCyclesCount}
                             </Text>
                         </View>
                     </View>

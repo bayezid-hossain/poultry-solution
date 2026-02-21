@@ -1,5 +1,6 @@
 /// <reference types="nativewind/types" />
 import { CycleCard } from "@/components/cycles/cycle-card";
+import { SaleEventCard } from "@/components/cycles/sale-event-card";
 import { DeleteFarmerModal } from "@/components/farmers/delete-farmer-modal";
 import { EditFarmerModal } from "@/components/farmers/edit-farmer-modal";
 import { RestockModal } from "@/components/farmers/restock-modal";
@@ -12,8 +13,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
+import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { AlertCircle, Archive, ArrowLeft, Bird, ChevronRight, History, Landmark, List, MapPin, Pencil, Plus, Trash2, Wheat } from "lucide-react-native";
+import { Activity, Archive, ArrowLeft, Bird, ChevronDown, ChevronUp, History, Link, MoreVertical, Pencil, Scale, ShoppingCart, Trash2 } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
@@ -25,7 +27,10 @@ export default function FarmerDetailScreen() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isStartCycleOpen, setIsStartCycleOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-    const [cycleTab, setCycleTab] = useState<'active' | 'archived'>('active');
+    const [activeExpanded, setActiveExpanded] = useState(true);
+    const [salesExpanded, setSalesExpanded] = useState(false);
+    const [historyExpanded, setHistoryExpanded] = useState(false);
+    const [ledgerExpanded, setLedgerExpanded] = useState(false);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
 
@@ -40,7 +45,17 @@ export default function FarmerDetailScreen() {
             farmerId: id,
             pageSize: 50,
         },
-        { enabled: !!id && !!membership?.orgId }
+        { enabled: !!id && !!membership?.orgId && historyExpanded }
+    );
+
+    const { data: salesData, isLoading: salesLoading } = trpc.officer.sales.getRecentSales.useQuery(
+        { limit: 50 },
+        { enabled: !!id && !!membership?.orgId && salesExpanded }
+    );
+
+    const { data: ledgerData, isLoading: ledgerLoading } = trpc.officer.stock.getHistory.useQuery(
+        { farmerId: id ?? "" },
+        { enabled: !!id && ledgerExpanded }
     );
 
     const handleDelete = () => {
@@ -76,7 +91,7 @@ export default function FarmerDetailScreen() {
     return (
         <View className="flex-1 bg-background">
             <ScreenHeader
-                title={farmer.name}
+                title=""
                 leftElement={
                     <Pressable onPress={() => router.back()} className="p-2 -ml-2">
                         <Icon as={ArrowLeft} size={24} className="text-foreground" />
@@ -88,182 +103,208 @@ export default function FarmerDetailScreen() {
                 contentContainerClassName="p-4 pb-20"
                 className="flex-1"
             >
-                {/* Farmer Info Card */}
-                <Card className="mb-6 border-border/50 bg-card overflow-hidden">
-                    <CardContent className="p-6">
-                        <View className="flex-row justify-between items-start mb-6">
-                            <View className="flex-1">
-                                <Text className="text-2xl font-bold text-foreground">{farmer.name}</Text>
-                                <View className="flex-row items-center gap-2 mt-1">
-                                    <Icon as={MapPin} size={14} className="text-muted-foreground" />
-                                    <Text className="text-sm text-muted-foreground">{farmer.location || "No location"}</Text>
-                                </View>
-                            </View>
-                            <Pressable
-                                onPress={() => setIsEditOpen(true)}
-                                className="h-10 w-10 rounded-full bg-muted items-center justify-center"
-                            >
-                                <Icon as={Pencil} size={18} className="text-muted-foreground" />
-                            </Pressable>
+                {/* Farmer Title Section */}
+                <View className="mb-6">
+                    <View className="flex-row justify-between items-start">
+                        <View className="flex-1">
+                            <Text className="text-3xl font-black text-foreground uppercase tracking-tight">{farmer.name}</Text>
+                            <Text className="text-base text-muted-foreground">{farmer.location || "No location"}</Text>
+                        </View>
+                        <Pressable onPress={() => setIsEditOpen(true)} className="h-10 w-10 items-center justify-center rounded-xl bg-muted/30 border border-border/50">
+                            <Icon as={MoreVertical} size={20} className="text-muted-foreground" />
+                        </Pressable>
+                    </View>
+                    <Text className="text-sm text-muted-foreground italic mt-2">
+                        Farmer History & Details • Production & Stock Management
+                    </Text>
+                </View>
+
+                {/* ESTIMATED REMAINING Card */}
+                <Card className="mb-4 bg-card border-border/50 overflow-hidden">
+                    <CardContent className="p-5">
+                        <Text className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Estimated Remaining</Text>
+                        <View className="flex-row items-baseline gap-2 mb-6">
+                            <Text className="text-4xl font-black text-foreground">{Number(farmer.mainStock ?? 0).toFixed(2)}</Text>
+                            <Text className="text-sm text-muted-foreground">bags</Text>
                         </View>
 
-                        <View className="flex-row gap-4 mb-4">
-                            <View className="flex-1 h-14 bg-muted/30 rounded-2xl items-center justify-center border border-border/50">
-                                <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1">Stock</Text>
-                                <View className="flex-row items-baseline gap-1">
-                                    <Text className="text-lg font-bold text-primary">{Number(farmer.mainStock ?? 0).toFixed(1)}</Text>
-                                    <Text className="text-[10px] text-muted-foreground">bags</Text>
-                                </View>
+                        <View className="flex-row justify-between mb-3">
+                            <View>
+                                <Text className="text-xs text-muted-foreground mb-1">Active Cycle Use</Text>
+                                <Text className="text-sm font-bold text-orange-500">+{Number(farmer.totalConsumed ?? 0).toFixed(2)} bags</Text>
                             </View>
-                            <View className="flex-1 h-14 bg-muted/30 rounded-2xl items-center justify-center border border-border/50">
-                                <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1">Consumption</Text>
-                                <View className="flex-row items-baseline gap-1">
-                                    <Text className="text-lg font-bold text-emerald-500">{Number(farmer.totalConsumed ?? 0).toFixed(1)}</Text>
-                                    <Text className="text-[10px] text-muted-foreground">bags</Text>
-                                </View>
-                            </View>
-                            <View className="flex-1 h-14 bg-muted/30 rounded-2xl items-center justify-center border border-border/50">
-                                <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1">Security</Text>
-                                <View className="flex-row items-baseline gap-1">
-                                    <Text className="text-lg font-bold text-blue-500">{Number(farmer.securityMoney ?? 0).toLocaleString()}</Text>
-                                    <Text className="text-[10px] text-muted-foreground">৳</Text>
-                                </View>
+                            <View className="items-start">
+                                <Text className="text-xs text-muted-foreground mb-1">Total Provisioned (Ledger)</Text>
+                                <Text className="text-sm font-bold text-foreground">{(Number(farmer.mainStock ?? 0) + Number(farmer.totalConsumed ?? 0)).toFixed(2)} bags</Text>
                             </View>
                         </View>
 
-                        <Button
-                            variant="ghost"
-                            className="h-10 border border-border/10 bg-muted/20 rounded-xl flex-row items-center justify-center gap-2"
-                            onPress={() => router.push(`/farmer/${farmer.id}/ledger` as any)}
-                        >
-                            <Icon as={List} size={20} className="text-muted-foreground" />
-                            <Text className="text-xs font-bold text-muted-foreground uppercase">View History Ledger</Text>
-                            <Icon as={ChevronRight} size={20} className="text-muted-foreground" />
-                        </Button>
+                        {/* Progress bar */}
+                        <View className="h-2 w-full bg-emerald-500/20 rounded-full mt-1 overflow-hidden flex-row">
+                            <View className="h-full bg-emerald-500" style={{ width: `${(Number(farmer.mainStock ?? 0) / (Number(farmer.mainStock ?? 0) + Number(farmer.totalConsumed ?? 0))) * 100}%` }} />
+                            <View className="h-full bg-orange-500" style={{ width: `${(Number(farmer.totalConsumed ?? 0) / (Number(farmer.mainStock ?? 0) + Number(farmer.totalConsumed ?? 0))) * 100}%` }} />
+                        </View>
                     </CardContent>
                 </Card>
 
-                {/* Primary Actions Row */}
-                <View className="flex-row gap-3 mb-3">
-                    <Button
-                        className="flex-1 h-14 bg-primary rounded-2xl flex-row items-center justify-center gap-2 shadow-sm"
-                        onPress={() => setIsRestockOpen(true)}
-                    >
-                        <Icon as={Wheat} size={20} className="text-primary-foreground" />
-                        <Text className="text-primary-foreground font-bold">Restock</Text>
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="flex-1 h-14 rounded-2xl flex-row items-center justify-center gap-2 border-primary/20 bg-primary/5"
-                        onPress={() => setIsStartCycleOpen(true)}
-                    >
-                        <Icon as={Plus} size={20} className="text-primary" />
-                        <Text className="text-primary font-bold">Start Cycle</Text>
-                    </Button>
-                </View>
+                {/* SECURITY DEPOSIT Card */}
+                <Card className="mb-8 border-border/50 bg-card overflow-hidden">
+                    <CardContent className="p-5">
+                        <View className="flex-row items-center gap-2 mb-3">
+                            <Icon as={Link} size={14} className="text-muted-foreground" />
+                            <Text className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Security Deposit</Text>
+                        </View>
+                        <Text className="text-2xl font-black text-foreground mb-6">TK. {Number(farmer.securityMoney ?? 0).toLocaleString()}</Text>
 
-                {/* Secondary Actions */}
-                <View className="flex-row gap-3 mb-6">
-                    <Button
-                        variant="outline"
-                        className="flex-1 h-12 rounded-xl flex-row items-center justify-center gap-2 border-orange-500/20 bg-orange-500/5"
-                        onPress={() => setIsCorrectionOpen(true)}
-                    >
-                        <Icon as={AlertCircle} size={16} className="text-orange-500" />
-                        <Text className="text-orange-500 text-xs font-bold">Correction</Text>
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="flex-1 h-12 rounded-xl flex-row items-center justify-center gap-2 border-blue-500/20 bg-blue-500/5"
-                        onPress={() => setIsSecurityOpen(true)}
-                    >
-                        <Icon as={Landmark} size={16} className="text-blue-500" />
-                        <Text className="text-blue-500 text-xs font-bold">Security</Text>
-                    </Button>
-                </View>
+                        <View className="flex-row gap-3">
+                            <Button variant="outline" className="flex-1 bg-transparent border-border/50 flex-row gap-2 h-10" onPress={() => setIsSecurityOpen(true)}>
+                                <Icon as={Pencil} size={14} className="text-foreground" />
+                                <Text className="font-bold text-foreground text-sm">Edit Amount</Text>
+                            </Button>
+                            <Button variant="outline" className="flex-1 bg-transparent border-border/50 flex-row gap-2 h-10" onPress={() => router.push({ pathname: `/farmer/${farmer.id}/ledger`, params: { initialTab: 'security' } } as any)}>
+                                <Icon as={History} size={14} className="text-foreground" />
+                                <Text className="font-bold text-foreground text-sm">History</Text>
+                            </Button>
+                        </View>
+                    </CardContent>
+                </Card>
 
-                {/* Active / Archived Tab Switcher */}
-                <View className="flex-row bg-muted/50 rounded-xl p-1 mb-4">
-                    <Button
-                        variant={cycleTab === 'active' ? 'default' : 'ghost'}
-                        size="sm"
-                        className={`flex-1 flex-row gap-2 rounded-lg h-10 ${cycleTab === 'active' ? '' : 'bg-transparent'}`}
-                        onPress={() => setCycleTab('active')}
-                    >
-                        <Icon as={List} className={cycleTab === 'active' ? "text-primary-foreground" : "text-muted-foreground"} size={14} />
-                        <Text className={`font-bold ${cycleTab === 'active' ? "text-primary-foreground" : "text-muted-foreground"}`}>
-                            Active ({activeCycles.length})
-                        </Text>
-                    </Button>
-                    <Button
-                        variant={cycleTab === 'archived' ? 'default' : 'ghost'}
-                        size="sm"
-                        className={`flex-1 flex-row gap-2 rounded-lg h-10 ${cycleTab === 'archived' ? '' : 'bg-transparent'}`}
-                        onPress={() => setCycleTab('archived')}
-                    >
-                        <Icon as={History} className={cycleTab === 'archived' ? "text-primary-foreground" : "text-muted-foreground"} size={14} />
-                        <Text className={`font-bold ${cycleTab === 'archived' ? "text-primary-foreground" : "text-muted-foreground"}`}>
-                            Archived ({archivedCycles.length})
-                        </Text>
-                    </Button>
-                </View>
-
-                {/* Tab Content */}
-                {cycleTab === 'active' ? (
-                    <>
-                        {activeCycles.length > 0 ? (
-                            activeCycles.map((cycle: any) => (
-                                <CycleCard
-                                    key={cycle.id}
-                                    cycle={{
-                                        ...cycle,
-                                        intake: Number(cycle.intake)
-                                    }}
-                                    onPress={() => router.push(`/cycle/${cycle.id}` as any)}
-                                />
-                            ))
-                        ) : (
-                            <Card className="border-dashed border-border/50 bg-muted/10 h-40">
-                                <CardContent className="flex-1 items-center justify-center gap-2">
-                                    <Icon as={Bird} size={40} className="text-muted-foreground/20" />
-                                    <Text className="text-muted-foreground text-sm font-medium">No active cycles for this farmer</Text>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="mt-2"
-                                        onPress={() => setIsStartCycleOpen(true)}
-                                    >
-                                        <Text className="text-primary font-bold">Launch First Batch</Text>
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </>
-                ) : (
-                    <>
-                        {historyLoading ? (
-                            <View className="items-center justify-center py-10">
-                                <ActivityIndicator size="large" color="hsl(var(--primary))" />
-                                <Text className="mt-4 text-muted-foreground">Loading history...</Text>
+                {/* Accordions */}
+                <View className="mb-8 mt-4">
+                    {/* ACTIVE CYCLES */}
+                    <View className="border-t border-border/10">
+                        <Pressable className="flex-row items-center justify-between py-5" onPress={() => setActiveExpanded(!activeExpanded)}>
+                            <View className="flex-row items-center gap-3">
+                                <Icon as={Activity} size={20} className="text-emerald-500" />
+                                <Text className="text-lg font-black text-foreground">Active Cycles</Text>
                             </View>
-                        ) : archivedCycles.length > 0 ? (
-                            archivedCycles.map((cycle: any) => (
-                                <CycleCard
-                                    key={cycle.id}
-                                    cycle={cycle as any}
-                                    onPress={() => router.push(`/cycle/${cycle.id}` as any)}
-                                />
-                            ))
-                        ) : (
-                            <Card className="border-dashed border-border/50 bg-muted/10 h-40">
-                                <CardContent className="flex-1 items-center justify-center gap-2">
-                                    <Icon as={Archive} size={40} className="text-muted-foreground/20" />
-                                    <Text className="text-muted-foreground text-sm font-medium">No archived cycles yet</Text>
-                                </CardContent>
-                            </Card>
+                            <Icon as={activeExpanded ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
+                        </Pressable>
+                        {activeExpanded && (
+                            <View className="pb-5">
+                                {activeCycles.length > 0 ? (
+                                    activeCycles.map((cycle: any) => (
+                                        <CycleCard
+                                            key={cycle.id}
+                                            cycle={{
+                                                ...cycle,
+                                                intake: Number(cycle.intake)
+                                            }}
+                                            onPress={() => router.push(`/cycle/${cycle.id}` as any)}
+                                        />
+                                    ))
+                                ) : (
+                                    <Card className="border-dashed border-border/50 bg-muted/10 h-32 mt-2">
+                                        <CardContent className="flex-1 items-center justify-center gap-2">
+                                            <Icon as={Bird} size={32} className="text-muted-foreground/20" />
+                                            <Text className="text-muted-foreground text-sm font-medium">No active cycles</Text>
+                                            <Button variant="ghost" size="sm" className="mt-1" onPress={() => setIsStartCycleOpen(true)}>
+                                                <Text className="text-primary font-bold">Launch First Batch</Text>
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </View>
                         )}
-                    </>
-                )}
+                    </View>
+
+                    {/* SALES HISTORY */}
+                    <View className="border-t border-border/10">
+                        <Pressable className="flex-row items-center justify-between py-5" onPress={() => setSalesExpanded(!salesExpanded)}>
+                            <View className="flex-row items-center gap-3">
+                                <Icon as={ShoppingCart} size={20} className="text-blue-500" />
+                                <Text className="text-lg font-black text-foreground">Sales History</Text>
+                            </View>
+                            <Icon as={salesExpanded ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
+                        </Pressable>
+                        {salesExpanded && (
+                            <View className="pb-5">
+                                {salesLoading ? (
+                                    <ActivityIndicator size="small" className="my-4" />
+                                ) : salesData?.filter((s: any) => s.cycle?.farmer?.id === farmer.id).length ? (
+                                    salesData.filter((s: any) => s.cycle?.farmer?.id === farmer.id).map((sale: any) => (
+                                        <SaleEventCard key={sale.id} sale={sale} isLatest={false} />
+                                    ))
+                                ) : (
+                                    <Card className="border-dashed border-border/50 bg-muted/10 p-6 items-center">
+                                        <Text className="text-muted-foreground text-sm font-medium">No sales recorded</Text>
+                                    </Card>
+                                )}
+                            </View>
+                        )}
+                    </View>
+
+                    {/* CYCLES HISTORY */}
+                    <View className="border-t border-border/10">
+                        <Pressable className="flex-row items-center justify-between py-5" onPress={() => setHistoryExpanded(!historyExpanded)}>
+                            <View className="flex-row items-center gap-3">
+                                <Icon as={Archive} size={20} className="text-muted-foreground" />
+                                <Text className="text-lg font-black text-foreground">Cycles History</Text>
+                            </View>
+                            <Icon as={historyExpanded ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
+                        </Pressable>
+                        {historyExpanded && (
+                            <View className="pb-5">
+                                {historyLoading ? (
+                                    <ActivityIndicator size="small" className="my-4" />
+                                ) : archivedCycles.length > 0 ? (
+                                    archivedCycles.map((cycle: any) => (
+                                        <CycleCard
+                                            key={cycle.id}
+                                            cycle={cycle as any}
+                                            onPress={() => router.push(`/cycle/${cycle.id}` as any)}
+                                        />
+                                    ))
+                                ) : (
+                                    <Card className="border-dashed border-border/50 bg-muted/10 p-6 items-center">
+                                        <Text className="text-muted-foreground text-sm font-medium">No past cycles</Text>
+                                    </Card>
+                                )}
+                            </View>
+                        )}
+                    </View>
+
+                    {/* STOCK LEDGER */}
+                    <View className="border-y border-border/10">
+                        <Pressable className="flex-row items-center justify-between py-5" onPress={() => setLedgerExpanded(!ledgerExpanded)}>
+                            <View className="flex-row items-center gap-3">
+                                <Icon as={Scale} size={20} className="text-orange-500" />
+                                <Text className="text-lg font-black text-foreground">Stock Ledger & Import History</Text>
+                            </View>
+                            <Icon as={ledgerExpanded ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
+                        </Pressable>
+                        {ledgerExpanded && (
+                            <View className="pb-5">
+                                {ledgerLoading ? (
+                                    <ActivityIndicator size="small" className="my-4" />
+                                ) : ledgerData && ledgerData.length > 0 ? (
+                                    <>
+                                        {ledgerData.slice(0, 5).map((log: any) => (
+                                            <Card key={log.id} className="mb-2 border-border/50 bg-card p-3">
+                                                <View className="flex-row justify-between items-center">
+                                                    <View>
+                                                        <Text className="font-bold text-foreground text-sm">{log.type}</Text>
+                                                        <Text className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(log.createdAt), "MMM d, yyyy")}</Text>
+                                                    </View>
+                                                    <Text className={`font-black ${parseFloat(log.amount) > 0 ? 'text-emerald-500' : 'text-orange-500'}`}>
+                                                        {parseFloat(log.amount) > 0 ? '+' : ''}{log.amount} b
+                                                    </Text>
+                                                </View>
+                                            </Card>
+                                        ))}
+                                        <Button variant="outline" className="mt-2 h-10 border-border/50" onPress={() => router.push(`/farmer/${farmer.id}/ledger` as any)}>
+                                            <Text className="text-foreground font-bold">View Full Ledger</Text>
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Card className="border-dashed border-border/50 bg-muted/10 p-6 items-center">
+                                        <Text className="text-muted-foreground text-sm font-medium">No stock transactions</Text>
+                                    </Card>
+                                )}
+                            </View>
+                        )}
+                    </View>
+                </View>
 
                 {/* Dangerous Zone */}
                 <View className="mt-10 pt-6 border-t border-border/50">

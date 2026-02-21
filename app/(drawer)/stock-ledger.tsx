@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
-import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronUp, ClipboardList, Package, RotateCcw, Wheat } from "lucide-react-native";
+import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronUp, ClipboardList, Package, RotateCcw, User, Wheat } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
@@ -15,7 +15,7 @@ export default function StockLedgerScreen() {
 
     return (
         <View className="flex-1 bg-background">
-            <ScreenHeader title="Stock Ledger" />
+            <ScreenHeader title="Stock Ledger and Import History" />
 
             <View className="bg-card border-b border-border/50 px-4 pb-3 pt-2">
                 <View className="flex-row gap-2">
@@ -194,35 +194,7 @@ function ImportHistoryTab() {
             </View>
 
             {batches.map((batch: any) => (
-                <Card key={batch.batchId} className="mb-3 border-border/50">
-                    <CardContent className="p-4">
-                        <View className="flex-row items-center justify-between mb-2">
-                            <View className="flex-row items-center gap-2">
-                                <View className="w-8 h-8 rounded-xl bg-primary/10 items-center justify-center">
-                                    <Icon as={Package} size={16} className="text-primary" />
-                                </View>
-                                <View>
-                                    <Text className="text-xs font-bold text-foreground">
-                                        {format(new Date(batch.createdAt), "dd MMM yyyy, h:mm a")}
-                                    </Text>
-                                    {batch.driverName && (
-                                        <Text className="text-[10px] text-muted-foreground">
-                                            Driver: {batch.driverName}
-                                        </Text>
-                                    )}
-                                </View>
-                            </View>
-                        </View>
-                        <View className="flex-row gap-4">
-                            <Text className="text-xs text-muted-foreground">
-                                {batch.count} farmer{batch.count !== 1 ? "s" : ""}
-                            </Text>
-                            <Text className="text-xs font-bold text-primary">
-                                +{batch.totalAmount.toFixed(1)} bags
-                            </Text>
-                        </View>
-                    </CardContent>
-                </Card>
+                <BatchHistoryRow key={batch.batchId} batch={batch} />
             ))}
 
             {batches.length === 0 && (
@@ -233,5 +205,110 @@ function ImportHistoryTab() {
                 </Card>
             )}
         </ScrollView>
+    );
+}
+
+function BatchHistoryRow({ batch }: { batch: any }) {
+    const [expanded, setExpanded] = useState(false);
+
+    const { data: details, isLoading } = trpc.officer.stock.getBatchDetails.useQuery(
+        { batchId: batch.batchId },
+        { enabled: expanded }
+    );
+
+    return (
+        <View className="mb-4 border border-border/70 rounded-2xl bg-card/60 p-4">
+            <View className="p-4 flex-row gap-4">
+                <Pressable
+                    onPress={() => setExpanded(!expanded)}
+                    className="w-12 h-12 rounded-full bg-muted/40 items-center justify-center -ml-1 border border-border/90 bg-card/60"
+                >
+                    <Icon as={expanded ? ChevronUp : ChevronDown} size={20} className="text-foreground" />
+                </Pressable>
+
+                <View className="flex-1">
+                    <View className="flex-row justify-between items-start mb-6">
+                        <View>
+                            <Text className="text-xl font-bold text-foreground tracking-tight">Import</Text>
+                            <Text className="text-xl font-bold text-foreground tracking-tight mb-1">
+                                #{batch.batchId?.slice(0, 8)}
+                            </Text>
+                            <Text className="text-sm text-muted-foreground mt-0.5">
+                                {format(new Date(batch.createdAt), "dd/MM/yyyy 'at' \nh:mm a")}
+                            </Text>
+                        </View>
+
+                        <View className="items-end gap-2.5">
+                            <Badge variant="outline" className="border-border/30 bg-muted/10 h-7 px-3.5 rounded-full">
+                                <Text className="text-xs font-bold text-foreground tracking-wide">{batch.count} Farmers</Text>
+                            </Badge>
+                            {batch.driverName && (
+                                <Badge variant="outline" className="border-border/30 bg-muted/10 h-7 px-3 rounded-full flex-row items-center gap-1.5">
+                                    <Icon as={User} size={12} className="text-foreground" />
+                                    <Text className="text-[11px] font-medium text-foreground tracking-wide ml-0.5">Driver: {batch.driverName}</Text>
+                                </Badge>
+                            )}
+                        </View>
+                    </View>
+
+                    <View>
+                        <Text className="text-lg font-black text-foreground">
+                            {batch.totalAmount.toLocaleString()} Bags
+                        </Text>
+                        <Text className="text-[13px] text-muted-foreground mt-0.5">Total Added</Text>
+                    </View>
+                </View>
+            </View>
+
+            {expanded && (
+                <View className="mt-4 border-t border-border/20 pt-4 px-1">
+                    {/* Premium Table Header */}
+                    <View className="flex-row items-center bg-muted/30 rounded-xl px-4 py-3 mb-2">
+                        <Text className="flex-[2] text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Farmer Name</Text>
+                        <Text className="flex-1 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] text-right pr-2">Quantity</Text>
+                    </View>
+
+                    {isLoading ? (
+                        <View className="py-12 items-center justify-center">
+                            <ActivityIndicator size="small" color="hsl(var(--primary))" />
+                        </View>
+                    ) : details && details.length > 0 ? (
+                        <View className="bg-card/40 rounded-2xl border border-border/10 overflow-hidden">
+                            {details.map((item: any, index: number) => {
+                                const amount = Number(item.amount);
+                                return (
+                                    <View
+                                        key={item.logId}
+                                        className={`flex-row items-center px-4 py-4 ${index !== details.length - 1 ? "border-b border-border/5" : ""}`}
+                                    >
+                                        <View className="flex-[2]">
+                                            <Text className="text-[15px] font-bold text-foreground tracking-tight" numberOfLines={2}>
+                                                {item.farmerName}
+                                            </Text>
+                                            <View className="flex-row items-center gap-1.5 mt-1">
+                                                <View className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                                                <Text className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Confirmed Receipt</Text>
+                                            </View>
+                                        </View>
+
+                                        <View className="flex-1 items-end">
+                                            <View className="bg-primary/10 px-4 py-2 rounded-2xl border border-primary/20">
+                                                <Text className="text-sm font-black text-primary">
+                                                    +{amount.toFixed(0)} <Text className="text-[10px] font-medium opacity-60">bags</Text>
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    ) : (
+                        <View className="py-10 items-center justify-center bg-muted/10 rounded-2xl border border-dashed border-border/30">
+                            <Text className="text-xs text-muted-foreground italic font-medium">No details found for this batch</Text>
+                        </View>
+                    )}
+                </View>
+            )}
+        </View>
     );
 }

@@ -270,7 +270,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
             onRequestClose={() => onOpenChange(false)}
         >
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
                 className="flex-1 bg-background"
             >
                 <View className="px-4 py-3 border-b border-border/50 bg-card/50 flex-row items-center justify-between">

@@ -346,7 +346,7 @@ export const SellModal = ({
             onRequestClose={() => onOpenChange(false)}
         >
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
                 className="flex-1 bg-background"
             >
                 {/* Header */}

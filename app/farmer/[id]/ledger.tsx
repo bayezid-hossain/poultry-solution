@@ -16,8 +16,8 @@ import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
 
 export default function FarmerLedgerScreen() {
     const utils = trpc.useUtils();
-    const { id } = useLocalSearchParams<{ id: string }>();
-    const [tab, setTab] = useState<"stock" | "security">("stock");
+    const { id, initialTab } = useLocalSearchParams<{ id: string; initialTab?: "stock" | "security" }>();
+    const [tab, setTab] = useState<"stock" | "security">(initialTab || "stock");
 
     // Modal States
     const [editingLog, setEditingLog] = useState<any | null>(null);

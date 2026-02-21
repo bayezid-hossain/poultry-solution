@@ -5,11 +5,94 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
-import { CheckCircle2, ChevronDown, ChevronUp, Edit, Eye, EyeOff, Loader2 } from "lucide-react-native";
+import * as Clipboard from 'expo-clipboard';
+import { Check, CheckCircle2, ChevronDown, ChevronUp, ClipboardCopy, Edit, Eye, EyeOff, Loader2 } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
+import { toast } from "sonner-native";
 import { AdjustSaleModal } from "./adjust-sale-modal";
 import { SaleDetailsContent } from "./sale-details-content";
+
+export const calculateTotalBags = (feedData: any) => {
+    if (!feedData || !Array.isArray(feedData)) return 0;
+    return feedData.reduce((total: number, item: any) => total + (Number(item.quantity) || Number(item.bags) || 0), 0);
+};
+
+export const formatFeedBreakdown = (feedData: any) => {
+    if (!feedData || !Array.isArray(feedData) || feedData.length === 0) return "None";
+    const breakdown = feedData
+        .filter((item: any) => (Number(item.quantity) || Number(item.bags) || 0) > 0)
+        .map((item: any) => `${item.type || 'Feed'}: ${Number(item.quantity) || Number(item.bags)} Bags`)
+        .join("\n");
+
+    return breakdown || "None";
+};
+
+const safeParseJSON = (data: any) => {
+    console.log(data)
+    if (!data) return [];
+    if (typeof data === 'string') {
+        try { return JSON.parse(data); } catch (e) { return []; }
+    }
+    return data;
+};
+
+export const generateReportText = (sale: any, report: any, isLatest: boolean): string => {
+    const birdsSold = report ? report.birdsSold : sale.birdsSold;
+    const totalWeight = report ? report.totalWeight : sale.totalWeight;
+    const displayAvgWeight = report ? report.avgWeight : sale.avgWeight;
+
+    const cumulativeWeight = sale.cycleContext?.totalWeight || 0;
+    const cumulativeBirdsSold = sale.cycleContext?.cumulativeBirdsSold || 0;
+
+    const avgWeight = (isLatest && cumulativeWeight > 0 && cumulativeBirdsSold > 0)
+        ? (cumulativeWeight / cumulativeBirdsSold).toFixed(2)
+        : displayAvgWeight;
+    const pricePerKg = report ? report.pricePerKg : sale.pricePerKg;
+    const totalAmount = report ? report.totalAmount : sale.totalAmount;
+
+    const cashReceived = report ? (report.cashReceived ?? sale.cashReceived) : sale.cashReceived;
+    const depositReceived = report ? (report.depositReceived ?? sale.depositReceived) : sale.depositReceived;
+    const medicineCost = report ? (report.medicineCost ?? sale.medicineCost) : sale.medicineCost;
+
+    const totalMortality = (report && report.totalMortality !== undefined && report.totalMortality !== null) ? report.totalMortality : sale.totalMortality;
+
+    const feedConsumed = safeParseJSON(report?.feedConsumed ?? sale.feedConsumed);
+    const feedStock = safeParseJSON(report?.feedStock ?? sale.feedStock);
+    const feedTotal = calculateTotalBags(feedConsumed);
+    const feedBreakdown = formatFeedBreakdown(feedConsumed);
+    const stockBreakdown = formatFeedBreakdown(feedStock);
+
+    const fcr = sale.cycleContext?.fcr || 0;
+    const epi = sale.cycleContext?.epi || 0;
+    const isEnded = sale.cycleContext?.isEnded || false;
+
+    return `Date: ${format(new Date(sale.saleDate), "dd/MM/yyyy")}
+
+Farmer: ${sale.farmerName || "N/A"}
+Location: ${sale.location || "N/A"}
+House bird : ${sale.houseBirds || 0}pcs
+Total Sold : ${birdsSold}pcs
+Total Mortality: ${totalMortality} pcs
+${(!isEnded || !isLatest) ? `\nRemaining Birds: ${(sale.cycleContext?.doc || 0) - totalMortality - birdsSold} pcs` : ""}
+
+Weight: ${totalWeight} kg
+Avg. Weight: ${avgWeight} kg
+${isEnded && isLatest ? `
+FCR: ${fcr}
+EPI: ${epi}
+` : ""}
+Price : ${pricePerKg} tk
+Total taka : ${parseFloat(totalAmount?.toString() || "0").toLocaleString()} tk
+Deposit: ${depositReceived ? `${parseFloat(depositReceived?.toString() || "0").toLocaleString()} tk` : ""}
+Cash: ${parseFloat(cashReceived?.toString() || "0").toLocaleString()} tk
+
+Feed: ${feedTotal} bags
+${feedBreakdown}
+${stockBreakdown !== "None" ? `\nStock:\n${stockBreakdown}\n` : ""}
+Medicine: ${medicineCost ? parseFloat(medicineCost?.toString() || "0").toLocaleString() : 0} tk
+${!isEnded || !isLatest ? "\n--- Sale not complete ---" : ""}`;
+};
 
 interface SaleEventCardProps {
     sale: any;
@@ -20,6 +103,18 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
     const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
     const [showVersionPicker, setShowVersionPicker] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = async () => {
+        try {
+            await Clipboard.setStringAsync(generateReportText(sale, selectedReport, isLatest));
+            setCopied(true);
+            toast.success("Report copied to clipboard!");
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            toast.error("Failed to copy report");
+        }
+    };
 
     const utils = trpc.useUtils();
 
@@ -86,17 +181,15 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                         <Text className="text-xs text-muted-foreground">{sale.location}</Text>
                     </View>
 
-                    {isLatest && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 px-3 border-primary/20 bg-primary/5 flex-row gap-1.5"
-                            onPress={() => setIsAdjustModalOpen(true)}
-                        >
-                            <Icon as={Edit} size={14} className="text-primary" />
-                            <Text className="text-primary font-bold text-xs">Adjust</Text>
-                        </Button>
-                    )}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-3 border-primary/20 bg-primary/5 flex-row gap-1.5"
+                        onPress={() => setIsAdjustModalOpen(true)}
+                    >
+                        <Icon as={Edit} size={14} className="text-primary" />
+                        <Text className="text-primary font-bold text-xs">Adjust</Text>
+                    </Button>
                 </View>
 
                 {/* Active Version Summary */}
@@ -211,17 +304,28 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                     )}
                 </View>
 
-                {/* Expandable Sale Details */}
-                <Pressable
-                    onPress={() => setShowDetails(!showDetails)}
-                    className="flex-row items-center justify-center gap-2 py-3 border-t border-border/50 bg-muted/10"
-                >
-                    <Icon as={showDetails ? EyeOff : Eye} size={14} className="text-primary" />
-                    <Text className="text-xs text-primary font-bold">
-                        {showDetails ? "Hide Details" : "View Full Details"}
-                    </Text>
-                    <Icon as={showDetails ? ChevronUp : ChevronDown} size={12} className="text-primary" />
-                </Pressable>
+                <View className="flex-row items-center border-t border-border/50 bg-muted/10">
+                    {/* Expandable Sale Details */}
+                    <Pressable
+                        onPress={() => setShowDetails(!showDetails)}
+                        className="flex-1 flex-row items-center justify-center gap-2 py-3 border-r border-border/50"
+                    >
+                        <Icon as={showDetails ? EyeOff : Eye} size={14} className="text-primary" />
+                        <Text className="text-xs text-primary font-bold">
+                            {showDetails ? "Hide Details" : "View Full Details"}
+                        </Text>
+                        <Icon as={showDetails ? ChevronUp : ChevronDown} size={12} className="text-primary" />
+                    </Pressable>
+                    <Pressable
+                        onPress={handleCopy}
+                        className="flex-1 flex-row items-center justify-center gap-2 py-3"
+                    >
+                        <Icon as={copied ? Check : ClipboardCopy} size={14} className={copied ? "text-emerald-500" : "text-primary"} />
+                        <Text className={`text-xs font-bold ${copied ? "text-emerald-500" : "text-primary"}`}>
+                            {copied ? "Copied" : "Copy Report"}
+                        </Text>
+                    </Pressable>
+                </View>
 
                 {showDetails && (
                     <View className="px-4 pb-4 pt-2 border-t border-border/30">

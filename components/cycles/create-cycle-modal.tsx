@@ -5,7 +5,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Bird, Check, ChevronDown, Hash, Plus, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
+import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
 import { toast } from "sonner-native";
 
 interface CreateCycleModalProps {
@@ -30,7 +30,10 @@ export function CreateCycleModal({
     // UI states
     const [isFarmerOpen, setIsFarmerOpen] = useState(false);
     const [isBirdTypeOpen, setIsBirdTypeOpen] = useState(false);
+    const [newBirdType, setNewBirdType] = useState("");
     const [error, setError] = useState<string | null>(null);
+
+    const utils = trpc.useUtils();
 
     // Queries
     const { data: farmersData, isLoading: isLoadingFarmers } = trpc.officer.farmers.listWithStock.useQuery(
@@ -62,6 +65,19 @@ export function CreateCycleModal({
             if (oldest) setBirdType(oldest.name);
         }
     }, [open, birdTypes, birdType]);
+
+    const createBirdTypeMutation = trpc.officer.docOrders.createBirdType.useMutation({
+        onSuccess: (data) => {
+            utils.officer.docOrders.getBirdTypes.invalidate();
+            setBirdType(data.name);
+            setNewBirdType("");
+            setIsBirdTypeOpen(false);
+            toast.success("Bird type added");
+        },
+        onError: (err: any) => {
+            toast.error(err.message || "Failed to add bird type");
+        }
+    });
 
     const mutation = trpc.officer.cycles.create.useMutation({
         onSuccess: () => {
@@ -115,7 +131,7 @@ export function CreateCycleModal({
             onRequestClose={() => onOpenChange(false)}
         >
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
                 className="flex-1"
             >
                 <Pressable
@@ -164,40 +180,55 @@ export function CreateCycleModal({
                                             <Icon as={ChevronDown} size={20} className={`text-muted-foreground transition-transform ${isFarmerOpen ? 'rotate-180' : ''}`} />
                                         </Pressable>
 
-                                        {isFarmerOpen && (
-                                            <View className="absolute top-16 left-0 right-0 bg-background border border-border/50 rounded-2xl shadow-xl z-[60] overflow-hidden max-h-60">
-                                                <ScrollView nestedScrollEnabled>
-                                                    {farmers.map((f: any) => (
-                                                        <Pressable
-                                                            key={f.id}
-                                                            onPress={() => {
-                                                                setFarmerId(f.id);
-                                                                setFarmerName(f.name);
-                                                                setIsFarmerOpen(false);
-                                                            }}
-                                                            className={`p-4 border-b border-border/20 active:bg-muted/30 ${farmerId === f.id ? 'bg-primary/5' : ''}`}
-                                                        >
-                                                            <View className="flex-row items-center justify-between">
-                                                                <View>
-                                                                    <Text className={`font-medium ${farmerId === f.id ? 'text-primary' : 'text-foreground'}`}>
-                                                                        {f.name}
-                                                                    </Text>
-                                                                    <Text className="text-xs text-muted-foreground">Stock: {f.mainStock}</Text>
+                                        {/* Modal for Farmer Selection */}
+                                        <Modal
+                                            visible={isFarmerOpen}
+                                            transparent={true}
+                                            animationType="slide"
+                                            onRequestClose={() => setIsFarmerOpen(false)}
+                                        >
+                                            <Pressable className="flex-1 bg-black/40 justify-end" onPress={() => setIsFarmerOpen(false)}>
+                                                <Pressable className="bg-card rounded-t-3xl h-[60%] p-4" onPress={(e) => e.stopPropagation()}>
+                                                    <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-border/50">
+                                                        <Text className="text-xl font-bold">Select Farmer</Text>
+                                                        <Button variant="ghost" size="icon" onPress={() => setIsFarmerOpen(false)}>
+                                                            <Icon as={X} size={20} className="text-muted-foreground" />
+                                                        </Button>
+                                                    </View>
+                                                    <FlatList
+                                                        data={farmers}
+                                                        keyExtractor={(f) => f.id}
+                                                        renderItem={({ item: f }) => (
+                                                            <Pressable
+                                                                onPress={() => {
+                                                                    setFarmerId(f.id);
+                                                                    setFarmerName(f.name);
+                                                                    setIsFarmerOpen(false);
+                                                                }}
+                                                                className={`p-4 border-b border-border/20 active:bg-muted/30 ${farmerId === f.id ? 'bg-primary/5' : ''}`}
+                                                            >
+                                                                <View className="flex-row items-center justify-between">
+                                                                    <View>
+                                                                        <Text className={`font-medium ${farmerId === f.id ? 'text-primary' : 'text-foreground'}`}>
+                                                                            {f.name}
+                                                                        </Text>
+                                                                        <Text className="text-xs text-muted-foreground">Stock: {f.mainStock}</Text>
+                                                                    </View>
+                                                                    {farmerId === f.id && (
+                                                                        <Icon as={Check} size={16} className="text-primary" />
+                                                                    )}
                                                                 </View>
-                                                                {farmerId === f.id && (
-                                                                    <Icon as={Check} size={16} className="text-primary" />
-                                                                )}
+                                                            </Pressable>
+                                                        )}
+                                                        ListEmptyComponent={() => (
+                                                            <View className="p-8 items-center">
+                                                                <Text className="text-muted-foreground">No farmers found</Text>
                                                             </View>
-                                                        </Pressable>
-                                                    ))}
-                                                    {farmers.length === 0 && (
-                                                        <View className="p-4 items-center">
-                                                            <Text className="text-muted-foreground">No farmers found</Text>
-                                                        </View>
-                                                    )}
-                                                </ScrollView>
-                                            </View>
-                                        )}
+                                                        )}
+                                                    />
+                                                </Pressable>
+                                            </Pressable>
+                                        </Modal>
                                     </View>
                                 </View>
 
@@ -252,36 +283,74 @@ export function CreateCycleModal({
                                             <Icon as={ChevronDown} size={20} className={`text-muted-foreground transition-transform ${isBirdTypeOpen ? 'rotate-180' : ''}`} />
                                         </Pressable>
 
-                                        {isBirdTypeOpen && (
-                                            <View className="absolute bottom-16 left-0 right-0 bg-background border border-border/50 rounded-2xl shadow-xl z-50 overflow-hidden max-h-48">
-                                                <ScrollView nestedScrollEnabled>
-                                                    {birdTypes?.map((type: any) => (
-                                                        <Pressable
-                                                            key={type.id}
-                                                            onPress={() => {
-                                                                setBirdType(type.name);
-                                                                setIsBirdTypeOpen(false);
-                                                            }}
-                                                            className={`p-4 border-b border-border/20 active:bg-muted/30 ${birdType === type.name ? 'bg-primary/5' : ''}`}
-                                                        >
-                                                            <View className="flex-row items-center justify-between">
-                                                                <Text className={`font-medium ${birdType === type.name ? 'text-primary' : 'text-foreground'}`}>
-                                                                    {type.name}
-                                                                </Text>
-                                                                {birdType === type.name && (
-                                                                    <Icon as={Bird} size={16} className="text-primary" />
-                                                                )}
-                                                            </View>
-                                                        </Pressable>
-                                                    ))}
-                                                    {(!birdTypes || birdTypes.length === 0) && (
-                                                        <View className="p-4 items-center">
-                                                            <Text className="text-muted-foreground">No bird types found</Text>
+                                        {/* Modal for Bird Type Selection */}
+                                        <Modal
+                                            visible={isBirdTypeOpen}
+                                            transparent={true}
+                                            animationType="slide"
+                                            onRequestClose={() => setIsBirdTypeOpen(false)}
+                                        >
+                                            <KeyboardAvoidingView
+                                                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                                                className="flex-1"
+                                            >
+                                                <Pressable className="flex-1 bg-black/40 justify-end" onPress={() => setIsBirdTypeOpen(false)}>
+                                                    <Pressable className="bg-card rounded-t-3xl h-[50%] p-4 flex-col" onPress={(e) => e.stopPropagation()}>
+                                                        <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-border/50">
+                                                            <Text className="text-xl font-bold">Select Bird Type</Text>
+                                                            <Button variant="ghost" size="icon" onPress={() => setIsBirdTypeOpen(false)}>
+                                                                <Icon as={X} size={20} className="text-muted-foreground" />
+                                                            </Button>
                                                         </View>
-                                                    )}
-                                                </ScrollView>
-                                            </View>
-                                        )}
+                                                        <FlatList
+                                                            data={birdTypes || []}
+                                                            keyExtractor={(t, idx) => t.id || idx.toString()}
+                                                            className="flex-1"
+                                                            renderItem={({ item: type }: any) => (
+                                                                <Pressable
+                                                                    onPress={() => {
+                                                                        setBirdType(type.name);
+                                                                        setIsBirdTypeOpen(false);
+                                                                    }}
+                                                                    className={`p-4 border-b border-border/20 active:bg-muted/30 ${birdType === type.name ? 'bg-primary/5' : ''}`}
+                                                                >
+                                                                    <View className="flex-row items-center justify-between">
+                                                                        <Text className={`font-medium ${birdType === type.name ? 'text-primary' : 'text-foreground'}`}>
+                                                                            {type.name}
+                                                                        </Text>
+                                                                        {birdType === type.name && (
+                                                                            <Icon as={Bird} size={16} className="text-primary" />
+                                                                        )}
+                                                                    </View>
+                                                                </Pressable>
+                                                            )}
+                                                            ListEmptyComponent={() => (
+                                                                <View className="p-4 items-center">
+                                                                    <Text className="text-muted-foreground">No bird types found</Text>
+                                                                </View>
+                                                            )}
+                                                        />
+                                                        <View className="p-4 border-t border-border/20 flex-row gap-2 bg-muted/10 items-center">
+                                                            <Input
+                                                                className="flex-1 h-12 bg-background"
+                                                                placeholder="New bird type..."
+                                                                value={newBirdType}
+                                                                onChangeText={setNewBirdType}
+                                                            />
+                                                            <Button
+                                                                onPress={() => createBirdTypeMutation.mutate({ name: newBirdType.trim() })}
+                                                                disabled={!newBirdType.trim() || createBirdTypeMutation.isPending}
+                                                                className="h-12 px-6 items-center justify-center bg-primary"
+                                                            >
+                                                                <Text className="text-primary-foreground font-bold">
+                                                                    {createBirdTypeMutation.isPending ? "Adding..." : "Add"}
+                                                                </Text>
+                                                            </Button>
+                                                        </View>
+                                                    </Pressable>
+                                                </Pressable>
+                                            </KeyboardAvoidingView>
+                                        </Modal>
                                     </View>
                                 </View>
 

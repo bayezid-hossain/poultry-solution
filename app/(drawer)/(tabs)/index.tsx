@@ -3,16 +3,43 @@ import { PerformanceInsights } from '@/components/dashboard/performance-insights
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { UrgentActions } from '@/components/dashboard/urgent-actions';
 import { ScreenHeader } from '@/components/screen-header';
+import { Icon } from '@/components/ui/icon';
 import { Separator } from '@/components/ui/separator';
 import { Text } from '@/components/ui/text';
 import { trpc } from '@/lib/trpc';
+import { useFocusEffect } from 'expo-router';
 import { Activity } from 'lucide-react-native';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { useCallback, useRef } from 'react';
+import { ActivityIndicator, BackHandler, ScrollView, ToastAndroid, View } from 'react-native';
 
 export default function HomeScreen() {
   const { data: session } = trpc.auth.getSession.useQuery();
   const { data: membership } = trpc.auth.getMyMembership.useQuery();
   const orgId = membership?.orgId || "";
+  const currentCount = useRef(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        setTimeout(() => {
+          currentCount.current = 0;
+        }, 2000); // Reset after 2 seconds
+
+        if (currentCount.current === 0) {
+          currentCount.current = 1;
+          ToastAndroid.show("Swipe again or press back to exit", ToastAndroid.SHORT);
+          return true; // Prevent default back (which usually does nothing at root)
+        } else if (currentCount.current === 1) {
+          BackHandler.exitApp();
+          return true;
+        }
+        return false;
+      };
+
+      const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      return () => subscription.remove();
+    }, [])
+  );
 
   const { data: stats, isLoading: statsLoading } = trpc.officer.getDashboardStats.useQuery(
     { orgId },
@@ -112,7 +139,7 @@ export default function HomeScreen() {
         {/* Premium Welcome Header */}
         <View className="flex-row items-center gap-3 mb-6">
           <View className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
-            <Activity className="h-6 w-6 text-primary" />
+            <Icon as={Activity} size={24} color="text-foreground" />
           </View>
           <View>
             <Text className="text-2xl font-black text-foreground tracking-tighter uppercase">

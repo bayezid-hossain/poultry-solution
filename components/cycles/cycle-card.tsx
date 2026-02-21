@@ -24,6 +24,7 @@ interface CycleCardProps {
     };
     onPress?: () => void;
     onAction?: (action: CycleAction, cycle: any) => void;
+    isGrouped?: boolean;
 }
 
 function formatDate(dateStr: string | Date | null | undefined): string {
@@ -38,7 +39,7 @@ function formatDate(dateStr: string | Date | null | undefined): string {
     }
 }
 
-export function CycleCard({ cycle, onPress, onAction }: CycleCardProps) {
+export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const docValue = Number(cycle.doc || 0);
@@ -60,24 +61,24 @@ export function CycleCard({ cycle, onPress, onAction }: CycleCardProps) {
     };
 
     return (
-        <Card className="mb-3 overflow-hidden border-border/50 border pb-1">
-            <Pressable onPress={onPress} className="active:bg-muted/50 pt-3 px-3">
+        <Card className={`${isGrouped ? 'mb-0 rounded-none border-x-0 border-t-0 border-b border-border/20 last:border-b-0 shadow-none' : 'mb-3 border-border/50 border rounded-2xl shadow-sm'} overflow-hidden pb-0 bg-card`}>
+            <Pressable onPress={onPress} className={`active:bg-muted/50 px-3`}>
                 {/* Header Area */}
-                <View className="flex-row items-start justify-between mb-2">
+                <View className="flex-row items-start justify-between mb-0">
                     <View className="flex-1 space-y-1">
-                        <View className="flex-row items-center flex-wrap gap-1.5">
-                            <Text className="font-bold text-foreground text-sm uppercase mr-1" numberOfLines={1}>
+                        <View className="flex-row items-center flex-wrap gap-1">
+                            {!isGrouped && <Text className="font-bold text-foreground text-sm uppercase mr-1" numberOfLines={1}>
                                 {cycleName}
-                            </Text>
+                            </Text>}
 
                             {soldValue > 0 && (
-                                <View className="bg-emerald-500/10 border border-emerald-500/20 px-1 py-0.5 rounded">
+                                <View className="bg-emerald-500/10 border border-emerald-500/20 px-1 rounded">
                                     <Text className="text-[9px] font-bold text-emerald-600 uppercase">{soldValue} SOLD</Text>
                                 </View>
                             )}
 
                             {cycle.birdType && (
-                                <View className="bg-amber-500/10 border border-amber-500/20 px-1 py-0.5 rounded">
+                                <View className="bg-amber-500/10 border border-amber-500/20 px-1 rounded">
                                     <Text className="text-[9px] font-bold text-amber-600 uppercase">{cycle.birdType}</Text>
                                 </View>
                             )}
@@ -108,7 +109,7 @@ export function CycleCard({ cycle, onPress, onAction }: CycleCardProps) {
                 </View>
 
                 {/* 4-Column Grid Layout matching mobile-cycle-card */}
-                <View className="flex-row border-y border-border/50 py-2.5 mt-1 -mx-3 px-3 gap-2">
+                <View className={`flex-row border-y border-border/50 -mx-3 px-3 gap-2 ${isGrouped ? 'py-1.5 mt-0' : 'py-2.5 mt-1'}`}>
 
                     {/* 1. Age */}
                     <View className="flex-1 justify-center border-r border-border/20 pr-1">
@@ -185,15 +186,15 @@ export function CycleCard({ cycle, onPress, onAction }: CycleCardProps) {
                                         <View className="w-8 items-center justify-center mr-3"><Icon as={Skull} size={20} className="text-foreground" /></View>
                                         <Text className="text-base font-medium text-foreground">Add Mortality</Text>
                                     </Pressable>
-                                    <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => handleAction('edit_doc')}>
+                                    <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('edit_doc')}>
                                         <View className="w-8 items-center justify-center mr-3"><Icon as={Pencil} size={20} className="text-foreground" /></View>
                                         <Text className="text-base font-medium text-foreground">Edit Initial Birds (DOC)</Text>
                                     </Pressable>
-                                    <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => handleAction('edit_age')}>
+                                    <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('edit_age')}>
                                         <View className="w-8 items-center justify-center mr-3"><Icon as={CalendarDays} size={20} className="text-foreground" /></View>
                                         <Text className="text-base font-medium text-foreground">Edit Age</Text>
                                     </Pressable>
-                                    <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => handleAction('correct_mortality')}>
+                                    <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('correct_mortality')}>
                                         <View className="w-8 items-center justify-center mr-3"><Icon as={Wrench} size={20} className="text-foreground" /></View>
                                         <Text className="text-base font-medium text-foreground">Correct Total Mortality</Text>
                                     </Pressable>

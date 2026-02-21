@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { CheckCircle2, Search, Sparkles, Trash2, X } from "lucide-react-native";
+import { CheckCircle2, Search, Sparkles, Trash2, Truck, X } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, TextInput, View } from "react-native";
 import { toast } from "sonner-native";
@@ -29,6 +29,7 @@ interface BulkImportModalProps {
 export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkImportModalProps) {
     const [step, setStep] = useState<"INPUT" | "REVIEW">("INPUT");
     const [inputText, setInputText] = useState("");
+    const [driverName, setDriverName] = useState("");
     const [parsedData, setParsedData] = useState<ParsedItem[]>([]);
     const [isExtracting, setIsExtracting] = useState(false);
 
@@ -45,6 +46,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
             onOpenChange(false);
             setStep("INPUT");
             setInputText("");
+            setDriverName("");
             setParsedData([]);
             onSuccess?.();
         },
@@ -124,6 +126,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
 
     const handleSubmit = () => {
         const payload = {
+            driverName: driverName.trim() || undefined,
             items: parsedData
                 .filter(p => p.matchedFarmerId)
                 .map(p => ({
@@ -201,6 +204,21 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                         ) : (
                             <View className="flex-1">
                                 <ScrollView className="flex-1 p-6">
+                                    <View className="mb-6">
+                                        <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2 ml-1">Driver Name</Text>
+                                        <View className="flex-row items-center bg-muted/30 border border-border/50 rounded-2xl px-3 h-14">
+                                            <Icon as={Truck} size={18} className="text-muted-foreground mr-3" />
+                                            <TextInput
+                                                placeholder="Driver Name (Optional)"
+                                                value={driverName}
+                                                onChangeText={setDriverName}
+                                                className="flex-1 text-foreground text-sm font-medium"
+                                                placeholderTextColor="rgba(255,255,255,0.3)"
+                                            />
+                                        </View>
+                                    </View>
+
+                                    <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3 ml-1">Import Items</Text>
                                     <View className="space-y-3 pb-8">
                                         {parsedData.map((item) => (
                                             <View

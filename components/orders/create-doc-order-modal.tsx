@@ -231,7 +231,6 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                                 <Icon as={Search} size={18} className="text-muted-foreground" />
                             </View>
                             <Input
-                                autoFocus
                                 placeholder="Search inventory to add..."
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}

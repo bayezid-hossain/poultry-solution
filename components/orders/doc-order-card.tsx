@@ -3,7 +3,7 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
-import { Bird, Calendar, ChevronDown, ChevronRight, ChevronUp, Copy } from "lucide-react-native";
+import { Bird, Calendar, ChevronDown, ChevronUp, Copy } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { toast } from "sonner-native";
@@ -141,7 +141,6 @@ export function DocOrderCard({
                                 </Text>
                                 <Icon as={isExpanded ? ChevronUp : ChevronDown} size={14} className="text-muted-foreground/50" />
                             </Pressable>
-                            <Icon as={ChevronRight} size={20} className="text-muted-foreground/30" />
                         </View>
                     </View>
 

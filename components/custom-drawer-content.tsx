@@ -17,7 +17,7 @@ const officerItems: NavItem[] = [
     { label: "Cycles", icon: "🔄", route: "/(drawer)/(tabs)/cycles" },
     { label: "Farmers", icon: "🧑‍🌾", route: "/(drawer)/(tabs)/farmers" },
     { label: "Sales", icon: "💰", route: "/(drawer)/sales" },
-    { label: "Stock Ledger", icon: "📋", route: "/(drawer)/stock-ledger" },
+    { label: "Stock & Import History", icon: "📋", route: "/(drawer)/stock-ledger" },
     { label: "Orders", icon: "📦", route: "/(drawer)/(tabs)/orders" },
     { label: "DOC Placements", icon: "📄", route: "/(drawer)/doc-placements" },
     { label: "Performance", icon: "📊", route: "/(drawer)/performance" },

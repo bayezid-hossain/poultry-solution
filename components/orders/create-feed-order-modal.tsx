@@ -263,7 +263,6 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                                 <Icon as={Search} size={18} className="text-muted-foreground" />
                             </View>
                             <Input
-                                autoFocus
                                 placeholder="Search inventory to add..."
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}

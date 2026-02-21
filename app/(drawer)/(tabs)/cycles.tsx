@@ -16,9 +16,9 @@ import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { router, useFocusEffect } from "expo-router";
-import { Bird, History, LayoutGrid, List, MoreHorizontal, Plus, Search, Sparkles, Table2 } from "lucide-react-native";
+import { Activity, Archive, Bird, History, LayoutGrid, List, Pencil, Plus, Search, ShoppingCart, Skull, Sparkles, Table2 } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Pressable, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, View } from "react-native";
 
 export default function CyclesScreen() {
     const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
@@ -44,6 +44,10 @@ export default function CyclesScreen() {
     const [isEditAgeOpen, setIsEditAgeOpen] = useState(false);
     const [isCorrectMortalityOpen, setIsCorrectMortalityOpen] = useState(false);
     const [isEndCycleOpen, setIsEndCycleOpen] = useState(false);
+
+    // Group Layout Action Menu
+    const [isGroupMenuOpen, setIsGroupMenuOpen] = useState(false);
+    const [groupMenuCycle, setGroupMenuCycle] = useState<any>(null);
 
     const handleCycleAction = useCallback((action: CycleAction, cycle: any) => {
         setSelectedCycle(cycle);
@@ -286,7 +290,7 @@ export default function CyclesScreen() {
                                 </Text>
                                 <View className="flex-row items-center">
                                     <View className="h-6 w-px bg-border/50 mr-3" />
-                                    <View className="bg-muted/50 border border-border/50 rounded-xl px-3 py-1.5 mt-1 active:bg-muted">
+                                    <View className="bg-muted/50 border border-border/50 rounded-xl px-3 mt-1 active:bg-muted">
                                         <Text className="text-xs font-black text-foreground text-center">{group.cycles.length}</Text>
                                         <Text className="text-[8px] font-bold text-muted-foreground uppercase text-center">{group.cycles.length === 1 ? 'Cycle' : 'Cycles'}</Text>
                                     </View>
@@ -294,33 +298,21 @@ export default function CyclesScreen() {
                             </View>
 
                             {/* Cycles within group */}
-                            {group.cycles.map((cycle: any, idx: number) => (
-                                <Pressable
-                                    key={cycle.id}
-                                    onPress={() => router.push(`/cycle/${cycle.id}` as any)}
-                                    className="active:bg-muted/50"
-                                >
-                                    <View className={`px-4 py-4 ${idx < group.cycles.length - 1 ? 'border-b border-border/20' : ''}`}>
-                                        {/* Breed + Date + Menu */}
-                                        <View className="flex-row items-center justify-between mb-2">
-                                            <View className="flex-row items-center gap-2">
-                                                {cycle.birdType && (
-                                                    <View className="bg-amber-500/10 border border-amber-500/20 rounded-md px-1.5 py-0.5">
-                                                        <Text className="text-[8px] font-black text-amber-600 uppercase">{cycle.birdType}</Text>
-                                                    </View>
-                                                )}
-                                                <Text className="text-xs text-muted-foreground">{formatDate(cycle.createdAt)}</Text>
-                                            </View>
-                                            <Pressable className="p-1">
-                                                <Icon as={MoreHorizontal} size={16} className="text-muted-foreground" />
-                                            </Pressable>
-                                        </View>
-
-                                        {/* Stats Row */}
-                                        <CycleStatsRow cycle={cycle} />
+                            <View className="bg-muted/5 py-1 px-1.5">
+                                {group.cycles.map((cycle: any, idx: number) => (
+                                    <View key={cycle.id} className={idx < group.cycles.length - 1 ? "border-b border-border/30 pb-1 mb-1" : ""}>
+                                        <CycleCard
+                                            isGrouped={true}
+                                            cycle={{
+                                                ...cycle,
+                                                intake: Number(cycle.intake ?? 0)
+                                            }}
+                                            onPress={() => router.push(`/cycle/${cycle.id}` as any)}
+                                            onAction={handleCycleAction}
+                                        />
                                     </View>
-                                </Pressable>
-                            ))}
+                                ))}
+                            </View>
                         </View>
                     )}
                     contentContainerClassName="pt-2 pb-20"
@@ -441,57 +433,64 @@ export default function CyclesScreen() {
                 orgId={membership?.orgId ?? ""}
                 onSuccess={() => { /* maybe refetch some pending orders list. nothing needed yet. */ }}
             />
+
+            {/* Group View Actions Modal */}
+            <Modal
+                transparent
+                visible={isGroupMenuOpen}
+                animationType="fade"
+                onRequestClose={() => setIsGroupMenuOpen(false)}
+            >
+                <Pressable className="flex-1 bg-black/50 justify-end" onPress={() => setIsGroupMenuOpen(false)}>
+                    <Pressable className="bg-card rounded-t-3xl pb-8 overflow-hidden border-t border-border/50" onPress={(e) => e.stopPropagation()}>
+                        <View className="items-center py-4">
+                            <View className="w-12 h-1.5 bg-muted rounded-full" />
+                        </View>
+                        <View className="px-6 pb-2">
+                            <Text className="text-lg font-black text-foreground mb-4">Cycle Actions</Text>
+                            {groupMenuCycle && (
+                                groupMenuCycle.status === 'active' ? (
+                                    <>
+                                        <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => { setIsGroupMenuOpen(false); handleCycleAction('sell', groupMenuCycle); }}>
+                                            <View className="w-8 items-center justify-center mr-3"><Icon as={ShoppingCart} size={20} className="text-primary" /></View>
+                                            <Text className="text-base font-bold text-foreground">Sell Birds</Text>
+                                        </Pressable>
+                                        <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => { setIsGroupMenuOpen(false); handleCycleAction('add_mortality', groupMenuCycle); }}>
+                                            <View className="w-8 items-center justify-center mr-3"><Icon as={Skull} size={20} className="text-foreground" /></View>
+                                            <Text className="text-base font-medium text-foreground">Add Mortality</Text>
+                                        </Pressable>
+                                        <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${(groupMenuCycle?.birdsSold || 0) > 0 ? 'opacity-50' : ''}`} onPress={() => { if ((groupMenuCycle?.birdsSold || 0) === 0) { setIsGroupMenuOpen(false); handleCycleAction('edit_doc', groupMenuCycle); } }}>
+                                            <View className="w-8 items-center justify-center mr-3"><Icon as={Pencil} size={20} className="text-foreground" /></View>
+                                            <Text className="text-base font-medium text-foreground">Edit Initial Birds (DOC)</Text>
+                                        </Pressable>
+                                        <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${(groupMenuCycle?.birdsSold || 0) > 0 ? 'opacity-50' : ''}`} onPress={() => { if ((groupMenuCycle?.birdsSold || 0) === 0) { setIsGroupMenuOpen(false); handleCycleAction('edit_age', groupMenuCycle); } }}>
+                                            <View className="w-8 items-center justify-center mr-3"><Icon as={Activity} size={20} className="text-foreground" /></View>
+                                            <Text className="text-base font-medium text-foreground">Edit Age</Text>
+                                        </Pressable>
+                                        <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${(groupMenuCycle?.birdsSold || 0) > 0 ? 'opacity-50' : ''}`} onPress={() => { if ((groupMenuCycle?.birdsSold || 0) === 0) { setIsGroupMenuOpen(false); handleCycleAction('correct_mortality', groupMenuCycle); } }}>
+                                            <View className="w-8 items-center justify-center mr-3"><Icon as={Pencil} size={20} className="text-foreground" /></View>
+                                            <Text className="text-base font-medium text-foreground">Correct Total Mortality</Text>
+                                        </Pressable>
+                                        <Pressable className="flex-row items-center py-4 mt-2 active:bg-red-500/10 rounded-xl" onPress={() => { setIsGroupMenuOpen(false); handleCycleAction('end_cycle', groupMenuCycle); }}>
+                                            <View className="w-8 items-center justify-center mr-3"><Icon as={Archive} size={20} className="text-destructive" /></View>
+                                            <Text className="text-base font-bold text-destructive">End Cycle</Text>
+                                        </Pressable>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Text className="text-sm text-muted-foreground mb-4">You must open this from the History cycles page to reopen or delete.</Text>
+                                    </>
+                                )
+                            )}
+                        </View>
+                    </Pressable>
+                </Pressable>
+            </Modal>
         </View>
     );
 }
 
-function CycleStatsRow({ cycle }: { cycle: any }) {
-    const liveBirds = Math.max(0, cycle.doc - cycle.mortality - (cycle.birdsSold || 0));
-    const feed = Number(cycle.intake ?? 0);
-    const hasFeed = feed > 0;
 
-    return (
-        <View className="flex-row items-center justify-between mt-2">
-            {/* Age */}
-            <View className="items-start">
-                <Text className="text-[10px] font-bold text-muted-foreground uppercase opacity-80 leading-tight">Age</Text>
-                <View className="flex-row items-baseline gap-1 mt-0.5">
-                    <Text className="text-xl font-black text-foreground">{cycle.age}</Text>
-                    <Text className="text-xs font-bold text-muted-foreground">d</Text>
-                </View>
-            </View>
-
-            <View className="flex-row items-center gap-2">
-                {/* DOC */}
-                <View className="items-center border border-border/40 bg-[#1A1A1A] rounded-xl px-4 py-2 min-w-[85px] justify-center">
-                    <Text className="text-[10px] font-black text-[#5C89A3] uppercase mb-0.5">DOC</Text>
-                    <View className="flex-row items-center gap-1.5">
-                        <Text className="text-[10px] text-muted-foreground/50">🐣</Text>
-                        <Text className="text-base font-black text-foreground">{cycle.doc.toLocaleString()}</Text>
-                    </View>
-                    <Text className="text-[9px] text-[#5C89A3] mt-1 font-medium">Live: {liveBirds.toLocaleString()}</Text>
-                </View>
-
-                {/* Feed */}
-                <View className={`items-center rounded-xl px-4 py-2 min-w-[85px] h-[64px] justify-center ${hasFeed ? 'border border-[#F59E0B]/20 bg-[#F59E0B]/5' : 'border border-border/40 bg-[#1A1A1A]'}`}>
-                    <Text className={`text-[10px] font-black uppercase mb-0.5 ${hasFeed ? 'text-[#F59E0B]' : 'text-muted-foreground'}`}>Feed</Text>
-                    <View className="flex-row items-center gap-1.5">
-                        <Text className="text-[10px] opacity-70">🌾</Text>
-                        <Text className={`text-base font-black ${hasFeed ? 'text-[#F59E0B]' : 'text-muted-foreground opacity-40'}`}>{feed.toFixed(1)}</Text>
-                    </View>
-                </View>
-            </View>
-
-            {/* Deaths */}
-            <View className="items-end">
-                <Text className="text-[10px] font-bold text-muted-foreground uppercase opacity-80 leading-tight">Deaths</Text>
-                <Text className={`text-base font-black mt-1 ${cycle.mortality > 0 ? 'text-destructive' : 'text-muted-foreground opacity-40'}`}>
-                    {cycle.mortality || '–'}
-                </Text>
-            </View>
-        </View>
-    );
-}
 
 function formatDate(dateStr: string | Date | null | undefined): string {
     if (!dateStr) return '';

@@ -299,23 +299,23 @@ export default function CycleDetailsScreen() {
                                     </View>
                                     <Text className="font-bold text-foreground text-base">Add Mortality</Text>
                                 </Button>
-                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsDocModalOpen(true); }}>
-                                    <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center mr-3">
-                                        <Icon as={Bird} size={16} className="text-primary" />
+                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsDocModalOpen(true); }} disabled={soldValue > 0}>
+                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${soldValue > 0 ? 'bg-muted' : 'bg-primary/10'}`}>
+                                        <Icon as={Bird} size={16} className={soldValue > 0 ? "text-muted-foreground" : "text-primary"} />
                                     </View>
-                                    <Text className="font-bold text-foreground text-base">Edit Initial Birds (DOC)</Text>
+                                    <Text className={`font-bold text-base ${soldValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Edit Initial Birds (DOC)</Text>
                                 </Button>
-                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsAgeModalOpen(true); }}>
-                                    <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center mr-3">
-                                        <Icon as={Activity} size={16} className="text-primary" />
+                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsAgeModalOpen(true); }} disabled={soldValue > 0}>
+                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${soldValue > 0 ? 'bg-muted' : 'bg-primary/10'}`}>
+                                        <Icon as={Activity} size={16} className={soldValue > 0 ? "text-muted-foreground" : "text-primary"} />
                                     </View>
-                                    <Text className="font-bold text-foreground text-base">Edit Age</Text>
+                                    <Text className={`font-bold text-base ${soldValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Edit Age</Text>
                                 </Button>
-                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsMortalityCorrectionOpen(true); }}>
-                                    <View className="w-8 h-8 rounded-full bg-amber-500/10 items-center justify-center mr-3">
-                                        <Icon as={Pencil} size={16} className="text-amber-600" />
+                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsMortalityCorrectionOpen(true); }} disabled={soldValue > 0}>
+                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${soldValue > 0 ? 'bg-muted' : 'bg-amber-500/10'}`}>
+                                        <Icon as={Pencil} size={16} className={soldValue > 0 ? "text-muted-foreground" : "text-amber-600"} />
                                     </View>
-                                    <Text className="font-bold text-foreground text-base">Correct Total Mortality</Text>
+                                    <Text className={`font-bold text-base ${soldValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Correct Total Mortality</Text>
                                 </Button>
                                 <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsEndCycleOpen(true); }}>
                                     <View className="w-8 h-8 rounded-full bg-amber-500/10 items-center justify-center mr-3">
