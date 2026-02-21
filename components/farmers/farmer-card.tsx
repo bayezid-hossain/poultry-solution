@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { format } from "date-fns";
-import { ArrowRight, ArrowRightLeft, Bird, Trash2, Wheat, Wrench } from "lucide-react-native";
+import { ArrowRight, ArrowRightLeft, Bird, RotateCcw, Trash2, Wheat, Wrench } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 
 interface FarmerCardProps {
@@ -24,6 +24,7 @@ interface FarmerCardProps {
     onTransfer?: () => void;
     onDelete?: () => void;
     onEdit?: () => void;
+    onRestore?: () => void;
 }
 
 export function FarmerCard({
@@ -32,7 +33,8 @@ export function FarmerCard({
     onRestock,
     onTransfer,
     onDelete,
-    onEdit
+    onEdit,
+    onRestore
 }: FarmerCardProps) {
     const totalSupplied = (Number(farmer.mainStock ?? 0) + Number(farmer.totalConsumed ?? 0));
     const joinedDate = farmer.createdAt ? format(new Date(farmer.createdAt), "dd/MM/yyyy") : "N/A";
@@ -112,22 +114,32 @@ export function FarmerCard({
                     </View>
 
                     {/* Quick Actions */}
-                    <View className="flex-row gap-2 mb-3">
+                    {onRestore ? (
                         <Pressable
-                            onPress={onTransfer}
-                            className="flex-1 flex-row items-center justify-center gap-2 h-10 bg-muted/40 border border-border rounded-xl active:bg-muted"
+                            onPress={onRestore}
+                            className="flex-row items-center justify-center gap-2 h-10 bg-emerald-500/10 border border-emerald-500/30 rounded-xl active:bg-emerald-500/20 mb-3"
                         >
-                            <Icon as={ArrowRightLeft} size={16} className="text-muted-foreground" />
-                            <Text className="text-foreground font-bold text-sm">Transfer</Text>
+                            <Icon as={RotateCcw} size={16} className="text-emerald-600" />
+                            <Text className="text-emerald-600 font-bold text-sm">Restore Farmer</Text>
                         </Pressable>
-                        <Pressable
-                            onPress={onRestock}
-                            className="flex-1 flex-row items-center justify-center gap-2 h-10 bg-muted/40 border border-border rounded-xl active:bg-muted"
-                        >
-                            <Icon as={Wheat} size={16} className="text-muted-foreground" />
-                            <Text className="text-foreground font-bold text-sm">Restock</Text>
-                        </Pressable>
-                    </View>
+                    ) : (
+                        <View className="flex-row gap-2 mb-3">
+                            <Pressable
+                                onPress={onTransfer}
+                                className="flex-1 flex-row items-center justify-center gap-2 h-10 bg-muted/40 border border-border rounded-xl active:bg-muted"
+                            >
+                                <Icon as={ArrowRightLeft} size={16} className="text-muted-foreground" />
+                                <Text className="text-foreground font-bold text-sm">Transfer</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={onRestock}
+                                className="flex-1 flex-row items-center justify-center gap-2 h-10 bg-muted/40 border border-border rounded-xl active:bg-muted"
+                            >
+                                <Icon as={Wheat} size={16} className="text-muted-foreground" />
+                                <Text className="text-foreground font-bold text-sm">Restock</Text>
+                            </Pressable>
+                        </View>
+                    )}
 
                     {/* Footer */}
                     <View className="flex-row justify-between items-center border-t border-border pt-2">

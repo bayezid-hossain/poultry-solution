@@ -272,12 +272,12 @@ This roadmap is designed for a solo developer to build, test, and ship "Poultry 
 
 ### Phase 4: Pro Systems - Orders & Automation
 > **Goal**: Scaling operations with advanced tools.
-- [ ] **PNP-4.1**: Feed Orders: Create/Confirm multi-farmer orders.
-- [ ] **PNP-4.2**: DOC Orders: Tracking placements and auto-creating cycles.
-- [ ] **PNP-4.3**: Bulk Actions: Bulk Stock Restock, Bulk Farmer Import (Pro features).
-- [ ] **PNP-4.4**: AI Data Extraction: Import cycle data from text/voice notes (Experimental).
-- [ ] **PNP-4.5**: Stock Import History: View details of bulk stock imports.
-- [ ] **Milestone**: "Large-scale logistics (Feed/Chicks) are managed directly from the field."
+- [X] **PNP-4.1**: Feed Orders: Create/Confirm multi-farmer orders.[done]
+- [X] **PNP-4.2**: DOC Orders: Tracking placements and auto-creating cycles.[done]
+- [X] **PNP-4.3**: Bulk Actions: Bulk Stock Restock, Bulk Farmer Import (Pro features).[done]
+- [X] **PNP-4.4**: AI Data Extraction: Import cycle data from text/voice notes (Experimental).[done]
+- [X] **PNP-4.5**: Stock Import History: View details of bulk stock imports.[done]
+- [X] **Milestone**: "Large-scale logistics (Feed/Chicks) are managed directly from the field.[reached]"
 
 ---
 

@@ -24,6 +24,49 @@ export default function TabsDrawerLayout() {
           options={{ title: "Officers", headerShown: false }}
         />
         <Drawer.Screen
+          name="members"
+          options={{ title: "Members", headerShown: false }}
+        />
+        <Drawer.Screen
+          name="reports"
+          options={{ title: "Reports", headerShown: false }}
+        />
+        <Drawer.Screen
+          name="sales"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false
+          }}
+        />
+        <Drawer.Screen
+          name="stock-ledger"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false
+          }}
+        />
+        <Drawer.Screen
+          name="doc-placements"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false
+          }}
+        />
+        <Drawer.Screen
+          name="performance"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false
+          }}
+        />
+        <Drawer.Screen
+          name="production"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false
+          }}
+        />
+        <Drawer.Screen
           name="explore"
           options={{
             drawerItemStyle: { display: "none" },

@@ -16,13 +16,25 @@ const officerItems: NavItem[] = [
     { label: "Home", icon: "🏠", route: "/(drawer)/(tabs)" },
     { label: "Cycles", icon: "🔄", route: "/(drawer)/(tabs)/cycles" },
     { label: "Farmers", icon: "🧑‍🌾", route: "/(drawer)/(tabs)/farmers" },
+    { label: "Sales", icon: "💰", route: "/(drawer)/sales" },
+    { label: "Stock Ledger", icon: "📋", route: "/(drawer)/stock-ledger" },
+    { label: "Orders", icon: "📦", route: "/(drawer)/(tabs)/orders" },
+    { label: "DOC Placements", icon: "📄", route: "/(drawer)/doc-placements" },
+    { label: "Performance", icon: "📊", route: "/(drawer)/performance" },
+    { label: "Production", icon: "🏭", route: "/(drawer)/production" },
 ];
 
 const managementItems: NavItem[] = [
     { label: "Overview", icon: "📊", route: "/(drawer)/(tabs)/overview" },
     { label: "Officers", icon: "👥", route: "/(drawer)/officers" },
+    { label: "Members", icon: "🛡️", route: "/(drawer)/members" },
     { label: "Farmers", icon: "🧑‍🌾", route: "/(drawer)/(tabs)/farmers" },
     { label: "Cycles", icon: "🔄", route: "/(drawer)/(tabs)/cycles" },
+    { label: "Orders", icon: "📦", route: "/(drawer)/(tabs)/orders" },
+    { label: "Sales & Stock", icon: "📈", route: "/(drawer)/reports" },
+    { label: "DOC Placements", icon: "📄", route: "/(drawer)/doc-placements" },
+    { label: "Performance", icon: "📊", route: "/(drawer)/performance" },
+    { label: "Production", icon: "🏭", route: "/(drawer)/production" },
 ];
 
 export function CustomDrawerContent(props: any) {

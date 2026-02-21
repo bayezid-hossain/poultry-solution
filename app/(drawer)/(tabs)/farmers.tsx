@@ -4,6 +4,7 @@ import { EditFarmerModal } from "@/components/farmers/edit-farmer-modal";
 import { FarmerCard } from "@/components/farmers/farmer-card";
 import { RegisterFarmerModal } from "@/components/farmers/register-farmer-modal";
 import { RestockModal } from "@/components/farmers/restock-modal";
+import { RestoreFarmerModal } from "@/components/farmers/restore-farmer-modal";
 import { TransferStockModal } from "@/components/farmers/transfer-stock-modal";
 import { CreateFeedOrderModal } from "@/components/orders/create-feed-order-modal";
 import { ScreenHeader } from "@/components/screen-header";
@@ -36,6 +37,7 @@ export default function FarmersScreen() {
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
     const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
     const [isFeedOrderOpen, setIsFeedOrderOpen] = useState(false);
+    const [restoringFarmer, setRestoringFarmer] = useState<{ id: string; name: string } | null>(null);
     const { data, isLoading, refetch } = trpc.officer.farmers.listWithStock.useQuery(
         {
             orgId: membership?.orgId ?? "",
@@ -147,10 +149,11 @@ export default function FarmersScreen() {
                         <FarmerCard
                             farmer={item}
                             onPress={() => router.push(`/farmer/${item.id}` as any)}
-                            onRestock={() => setRestockingFarmer({ id: item.id, name: item.name })}
-                            onTransfer={() => setTransferringFarmer({ id: item.id, name: item.name })}
-                            onDelete={() => setDeleteFarmer({ id: item.id, name: item.name, organizationId: item.organizationId })}
-                            onEdit={() => setEditingFarmer(item)}
+                            onRestock={activeTab === 'archived' ? undefined : () => setRestockingFarmer({ id: item.id, name: item.name })}
+                            onTransfer={activeTab === 'archived' ? undefined : () => setTransferringFarmer({ id: item.id, name: item.name })}
+                            onDelete={activeTab === 'archived' ? undefined : () => setDeleteFarmer({ id: item.id, name: item.name, organizationId: item.organizationId })}
+                            onEdit={activeTab === 'archived' ? undefined : () => setEditingFarmer(item)}
+                            onRestore={activeTab === 'archived' ? () => setRestoringFarmer({ id: item.id, name: item.name }) : undefined}
                         />
                     )}
                     contentContainerClassName="p-4 pt-4 pb-20" // Extra padding for tab bar
@@ -222,6 +225,17 @@ export default function FarmersScreen() {
                 <CreateFeedOrderModal
                     open={isFeedOrderOpen}
                     onOpenChange={setIsFeedOrderOpen}
+                    orgId={membership.orgId}
+                    onSuccess={() => refetch()}
+                />
+            )}
+
+            {restoringFarmer && membership?.orgId && (
+                <RestoreFarmerModal
+                    open={!!restoringFarmer}
+                    onOpenChange={(open) => !open && setRestoringFarmer(null)}
+                    farmerId={restoringFarmer.id}
+                    farmerName={restoringFarmer.name}
                     orgId={membership.orgId}
                     onSuccess={() => refetch()}
                 />

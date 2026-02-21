@@ -6,16 +6,16 @@ import { EndCycleModal } from "@/components/cycles/end-cycle-modal";
 import { LogsTimeline } from "@/components/cycles/logs-timeline";
 import { SalesHistoryList } from "@/components/cycles/sales-history-list";
 import { SellModal } from "@/components/cycles/sell-modal";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
+import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { Archive, ArrowLeft, Bird, ExternalLink, Pencil, ShoppingCart, Skull, TrendingUp, Wheat } from "lucide-react-native";
+import { Activity, Archive, ArrowLeft, Bird, ChevronDown, ChevronUp, LineChart, MoreHorizontal, Package, Pencil, ShoppingCart, Skull, Wheat } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, View } from "react-native";
 
 export default function CycleDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,6 +25,12 @@ export default function CycleDetailsScreen() {
     const [isAgeModalOpen, setIsAgeModalOpen] = useState(false);
     const [isMortalityCorrectionOpen, setIsMortalityCorrectionOpen] = useState(false);
     const [isSellModalOpen, setIsSellModalOpen] = useState(false);
+
+    // Accordions
+    const [openSection, setOpenSection] = useState<'activity' | 'sales' | 'other' | 'insights' | null>(null);
+
+    // Action Menu
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const { data: response, isLoading, error, refetch } = trpc.officer.cycles.getDetails.useQuery({ id: id as string });
 
@@ -51,208 +57,281 @@ export default function CycleDetailsScreen() {
         );
     }
 
-    const isArchived = response.type === 'history';
     const { data: cycle, farmerContext: farmer, logs } = response;
-    const liveBirds = Math.max(0, (cycle.doc ?? 0) - (cycle.mortality ?? 0) - (cycle.birdsSold ?? 0));
+
+    // Status setup check - ensure we correctly map historical tags
+    const isArchived = response.type === 'history';
+
+    const docValue = cycle.doc ?? 0;
+    const mortalityValue = cycle.mortality ?? 0;
+    const soldValue = cycle.birdsSold ?? 0;
+    const liveBirds = Math.max(0, docValue - mortalityValue - soldValue);
+
+    const survivalRate = docValue > 0 ? (((docValue - mortalityValue) / docValue) * 100).toFixed(2) : "0.00";
+
+    const feedIntake = Number(cycle.intake ?? 0).toFixed(2);
+    const startDateFormatted = cycle.createdAt ? format(new Date(cycle.createdAt), "dd MMM yyyy") : "";
+
+    const toggleSection = (section: 'activity' | 'sales' | 'other' | 'insights') => {
+        setOpenSection(openSection === section ? null : section);
+    };
 
     return (
         <View className="flex-1 bg-background">
-            {/* Custom Header */}
-            <View className="pt-12 pb-4 px-4 border-b border-border/50 bg-card flex-row items-center gap-4">
-                <Button variant="ghost" size="icon" className="h-10 w-10 p-0" onPress={() => router.back()}>
-                    <Icon as={ArrowLeft} size={20} className="text-foreground" />
-                </Button>
-                <Pressable
-                    className="flex-1"
-                    onPress={() => router.push(`/farmer/${farmer.id}` as any)}
-                >
-                    <View className="flex-row items-center gap-1.5">
-                        <Text className="font-bold text-lg text-foreground uppercase tracking-tight" numberOfLines={1}>
-                            {farmer.name}
-                        </Text>
-                        <Icon as={ExternalLink} size={14} className="text-primary/50" />
+            <ScrollView contentContainerClassName="p-4 pt-12 pb-20 gap-4">
+
+                {/* 1. Header Card */}
+                <Card className="bg-card/70 border-border/20 rounded-[20px] p-5 shadow-sm">
+                    <View className="flex-row items-start gap-4 mb-3">
+                        <Pressable onPress={() => router.back()} className="mt-1">
+                            <Icon as={ArrowLeft} size={20} className="text-foreground" />
+                        </Pressable>
+                        <Pressable className="flex-1" onPress={() => router.push(`/farmer/${farmer.id}` as any)}>
+                            <Text className="text-xl font-bold text-foreground uppercase tracking-tight leading-tight">
+                                {farmer.name}
+                            </Text>
+                        </Pressable>
                     </View>
-                    <View className="flex-row items-center gap-2">
+
+                    <View className="ml-9 flex-row items-center gap-2 mb-6">
                         {isArchived ? (
-                            <Badge variant="outline" className="h-4 px-1.5 border-amber-500 bg-amber-500/10">
-                                <Text className="text-[8px] font-bold uppercase text-amber-600">Archived</Text>
-                            </Badge>
-                        ) : (
-                            <Badge variant="outline" className={`h-4 px-1.5 ${cycle.status === 'active' ? 'border-emerald-500 bg-emerald-500/5' : 'border-muted-foreground'}`}>
-                                <Text className={`text-[8px] font-bold uppercase ${cycle.status === 'active' ? 'text-emerald-600' : 'text-muted-foreground'}`}>
-                                    {cycle.status}
-                                </Text>
-                            </Badge>
-                        )}
-                        {cycle.birdType && (
-                            <Badge variant="outline" className="h-4 px-1.5 bg-amber-500/10 border-amber-500/20">
-                                <Text className="text-amber-600 text-[8px] font-bold uppercase">{cycle.birdType}</Text>
-                            </Badge>
-                        )}
-                    </View>
-                </Pressable>
-            </View>
-
-            <ScrollView contentContainerClassName="p-4 pb-20 gap-6">
-                {/* Archived Banner */}
-                {isArchived && (
-                    <View className="flex-row items-center gap-3 p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
-                        <Icon as={Archive} size={20} className="text-amber-600" />
-                        <View className="flex-1">
-                            <Text className="font-bold text-sm text-amber-700 dark:text-amber-400">Archived Cycle</Text>
-                            <Text className="text-xs text-muted-foreground">This cycle has been completed and is read-only.</Text>
-                        </View>
-                    </View>
-                )}
-
-                {/* Stats Grid */}
-                <View className="gap-4">
-                    {/* Row 1: Age, DOC, Live Birds */}
-                    <View className="flex-row gap-3">
-                        <Pressable className="flex-1" onPress={!isArchived ? () => setIsAgeModalOpen(true) : undefined} disabled={isArchived}>
-                            <Card className="border-border/50">
-                                <CardContent className="p-3 items-center">
-                                    <View className="flex-row items-center gap-1 mb-1">
-                                        <Text className="text-[9px] text-muted-foreground font-bold uppercase">Age</Text>
-                                        {!isArchived && <Icon as={Pencil} size={8} className="text-muted-foreground/50" />}
-                                    </View>
-                                    <View className="flex-row items-baseline gap-0.5">
-                                        <Text className="font-bold text-xl text-foreground">{cycle.age}</Text>
-                                        <Text className="text-[10px] text-muted-foreground">d</Text>
-                                    </View>
-                                </CardContent>
-                            </Card>
-                        </Pressable>
-
-                        <Pressable className="flex-1" onPress={!isArchived ? () => setIsDocModalOpen(true) : undefined} disabled={isArchived}>
-                            <Card className="border-border/50">
-                                <CardContent className="p-3 items-center">
-                                    <View className="flex-row items-center gap-1 mb-1">
-                                        <Text className="text-[9px] text-muted-foreground font-bold uppercase">DOC</Text>
-                                        {!isArchived && <Icon as={Pencil} size={8} className="text-muted-foreground/50" />}
-                                    </View>
-                                    <View className="flex-row items-center gap-1">
-                                        <Icon as={Bird} size={14} className="text-primary/70" />
-                                        <Text className="font-bold text-xl text-foreground">{cycle.doc}</Text>
-                                    </View>
-                                </CardContent>
-                            </Card>
-                        </Pressable>
-
-                        <View className="flex-1">
-                            <Card className="border-border/50 bg-emerald-500/5">
-                                <CardContent className="p-3 items-center">
-                                    <Text className="text-[9px] text-emerald-600 font-bold uppercase mb-1">{isArchived ? "Sold" : "Live"}</Text>
-                                    <Text className="font-bold text-xl text-emerald-600">
-                                        {isArchived ? (cycle.birdsSold ?? 0) : liveBirds}
-                                    </Text>
-                                </CardContent>
-                            </Card>
-                        </View>
-                    </View>
-
-                    {/* Row 2: Feed Intake, Main Stock, Mortality */}
-                    <View className="flex-row gap-3">
-                        <View className="flex-1">
-                            <Card className="border-border/50">
-                                <CardContent className="p-3 items-center">
-                                    <Text className="text-[9px] text-muted-foreground font-bold uppercase mb-1">Intake</Text>
-                                    <View className="flex-row items-center gap-1">
-                                        <Icon as={Wheat} size={14} className="text-amber-500/70" />
-                                        <Text className="font-bold text-xl text-amber-600">{Number(cycle.intake ?? 0).toFixed(1)}</Text>
-                                    </View>
-                                </CardContent>
-                            </Card>
-                        </View>
-
-                        <View className="flex-1">
-                            <Card className="border-border/50">
-                                <CardContent className="p-3 items-center text-center">
-                                    <Text className="text-[9px] text-muted-foreground font-bold uppercase mb-1" numberOfLines={1}>Total Stock</Text>
-                                    <View className="flex-row items-center gap-1">
-                                        <Icon as={Wheat} size={14} className="text-blue-500/50" />
-                                        <Text className="font-bold text-xl text-blue-600">{(farmer as any)?.mainStock || 0}</Text>
-                                    </View>
-                                </CardContent>
-                            </Card>
-                        </View>
-
-                        <Pressable className="flex-1" onPress={!isArchived ? () => setIsMortalityCorrectionOpen(true) : undefined} disabled={isArchived}>
-                            <Card className="border-border/50">
-                                <CardContent className="p-3 items-center">
-                                    <View className="flex-row items-center gap-1 mb-1">
-                                        <Text className="text-[9px] text-muted-foreground font-bold uppercase">Dead</Text>
-                                        {!isArchived && <Icon as={Pencil} size={8} className="text-muted-foreground/50" />}
-                                    </View>
-                                    <View className="flex-row items-center gap-1">
-                                        <Icon as={Skull} size={14} className={cycle.mortality > 0 ? "text-destructive" : "text-muted-foreground/30"} />
-                                        <Text className={`font-bold text-xl ${cycle.mortality > 0 ? "text-destructive" : "text-muted-foreground/30"}`}>
-                                            {cycle.mortality || 0}
-                                        </Text>
-                                    </View>
-                                </CardContent>
-                            </Card>
-                        </Pressable>
-                    </View>
-                </View>
-
-                {/* Quick Actions — Only for active cycles */}
-                {!isArchived && cycle.status === 'active' && (
-                    <View className="flex-row gap-4 flex-wrap">
-                        <Button
-                            className="flex-1 h-14 flex-row gap-2 bg-primary shadow-none rounded-2xl min-w-[140px]"
-                            onPress={() => setIsSellModalOpen(true)}
-                        >
-                            <Icon as={ShoppingCart} size={18} className="text-primary-foreground" />
-                            <Text className="text-white font-bold">Sell Birds</Text>
-                        </Button>
-                        <Button
-                            className="flex-1 h-14 flex-row gap-2 bg-destructive shadow-none rounded-2xl min-w-[140px]"
-                            onPress={() => setIsMortalityModalOpen(true)}
-                        >
-                            <Icon as={Skull} size={18} className="text-destructive-foreground" />
-                            <Text className="text-white font-bold">Add Mortality</Text>
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="flex-1 h-14 flex-row gap-2 border-amber-500/20 bg-amber-500/5 rounded-2xl"
-                            onPress={() => setIsEndCycleOpen(true)}
-                        >
-                            <Icon as={Archive} size={18} className="text-amber-600" />
-                            <Text className="text-amber-600 font-bold">End Cycle</Text>
-                        </Button>
-                    </View>
-                )}
-
-                {/* Sales & Adjustments */}
-                <View className="space-y-4 mb-6">
-                    <View className="flex-row items-center gap-2 mb-2 px-1">
-                        <Icon as={ShoppingCart} size={20} className="text-foreground" />
-                        <Text className="text-lg font-bold">Sales & History</Text>
-                    </View>
-                    <SalesHistoryList
-                        cycleId={isArchived ? undefined : (id as string)}
-                        historyId={isArchived ? (id as string) : undefined}
-                    />
-                </View>
-
-                {/* Activity Timeline */}
-                <View className="mt-4">
-                    <View className="flex-row items-center justify-between mb-4 px-1">
-                        <View className="flex-row items-center gap-2">
-                            <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center">
-                                <ActivityIndicator size="small" color="hsl(var(--primary))" style={{ display: 'none' }} />
-                                <Icon as={TrendingUp} size={16} className="text-primary" />
+                            <View className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10">
+                                <Icon as={Archive} size={12} className="text-amber-500" />
+                                <Text className="text-xs font-bold text-amber-500">History Cycle</Text>
                             </View>
-                            <Text className="font-bold text-xl text-foreground">Activity Timeline</Text>
-                        </View>
-                        <Button variant="ghost" size="sm" className="h-8 pr-0" onPress={() => refetch()}>
-                            <Text className="text-primary text-xs font-bold font-mono">REFRESH</Text>
-                        </Button>
+                        ) : (
+                            <View className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10">
+                                <Icon as={Activity} size={12} className="text-emerald-500" />
+                                <Text className="text-xs font-bold text-emerald-500">Active Cycle</Text>
+                            </View>
+                        )}
+
+                        {cycle.birdType && (
+                            <View className="px-2.5 py-1 rounded-full border border-amber-500/20 bg-amber-500/10">
+                                <Text className="text-xs font-bold text-amber-600 uppercase tracking-wider">{cycle.birdType}</Text>
+                            </View>
+                        )}
                     </View>
-                    <LogsTimeline logs={logs as any} onRefresh={refetch} />
+
+                    <View className="ml-9 flex-row justify-between items-end">
+                        <View className="bg-background/50 rounded-lg p-2.5 px-3">
+                            <Text className="text-[10px] text-muted-foreground font-bold uppercase mb-0.5 tracking-wider">Started</Text>
+                            <Text className="font-bold text-foreground">{startDateFormatted}</Text>
+                        </View>
+
+                        <Pressable
+                            className="bg-background/50 border border-border/30 h-10 w-12 rounded-xl items-center justify-center active:bg-muted/50"
+                            onPress={() => setIsMenuOpen(true)}
+                        >
+                            <Icon as={MoreHorizontal} size={20} className="text-foreground" />
+                        </Pressable>
+                    </View>
+                </Card>
+
+                {/* 2. Cycle Summary */}
+                <Card className="bg-card border-border/40 rounded-[20px] overflow-hidden">
+                    <View className="p-4 border-b border-border/20">
+                        <Text className="text-lg font-bold text-foreground">Cycle Summary</Text>
+                    </View>
+                    <View className="p-4">
+                        <View className="flex-row justify-between items-center py-3 border-b border-border/10">
+                            <Text className="text-sm text-muted-foreground font-medium">Cycle Age</Text>
+                            <Text className="text-lg font-bold text-foreground">{cycle.age} Days</Text>
+                        </View>
+
+                        <View className="flex-row justify-between items-center py-3 border-b border-border/10">
+                            <Text className="text-sm text-muted-foreground font-medium">Birds Status</Text>
+                            <View className="items-end">
+                                <Text className="text-lg font-bold text-foreground">{liveBirds.toLocaleString()}</Text>
+                                <Text className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">OF {docValue.toLocaleString()} DOC</Text>
+                            </View>
+                        </View>
+
+                        <View className="flex-row justify-between items-center py-3 border-b border-border/10">
+                            <Text className="text-sm text-muted-foreground font-medium">Birds Sold</Text>
+                            <Text className="text-[15px] font-bold text-foreground">{soldValue.toLocaleString()} birds</Text>
+                        </View>
+
+                        <View className="flex-row justify-between items-center py-3 border-b border-border/10">
+                            <Text className="text-sm text-muted-foreground font-medium">Mortality</Text>
+                            <Text className="text-[15px] font-bold text-foreground">{mortalityValue.toLocaleString()} birds</Text>
+                        </View>
+
+                        <View className="flex-row justify-between items-center pt-3 pb-1">
+                            <Text className="text-sm text-muted-foreground font-medium">Survival Rate</Text>
+                            <Text className="text-[15px] font-bold text-emerald-500">{survivalRate}%</Text>
+                        </View>
+                    </View>
+                </Card>
+
+                {/* 3. Consumption */}
+                <Card className="bg-[#2A1B0E] border-[#4A2D12] overflow-hidden rounded-[20px]">
+                    <View className="p-5 relative">
+                        <View className="flex-row items-center gap-2 mb-6">
+                            <Icon as={Wheat} size={18} className="text-[#FF9900]" />
+                            <Text className="text-sm font-bold text-[#FF9900]">Consumption</Text>
+                        </View>
+
+                        <View className="flex-row items-baseline gap-2 mb-2">
+                            <Text className="text-4xl font-black text-[#FF9900] tracking-tight">{feedIntake}</Text>
+                            <Text className="text-sm text-[#FF9900]/70 font-medium">Bags</Text>
+                        </View>
+
+                        <Text className="text-xs text-[#FF9900]/60 font-medium">
+                            Total current consumption records found.
+                        </Text>
+                    </View>
+                </Card>
+
+                {/* 4. Accordions */}
+                <View className="space-y-3 mt-2">
+                    {/* Activity Logs */}
+                    <View className="bg-card w-full border border-border/30 rounded-[16px] overflow-hidden">
+                        <Pressable
+                            className="flex-row justify-between items-center p-4 active:bg-muted/30"
+                            onPress={() => toggleSection('activity')}
+                        >
+                            <View className="flex-row items-center gap-3">
+                                <Icon as={Archive} size={18} className="text-foreground" />
+                                <Text className="font-bold text-lg text-foreground">Activity Logs</Text>
+                            </View>
+                            <Icon as={openSection === 'activity' ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
+                        </Pressable>
+                        {openSection === 'activity' && (
+                            <View className="p-4 border-t border-border/20">
+                                <LogsTimeline logs={logs as any} onRefresh={refetch} />
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Sales History */}
+                    <View className="bg-card w-full border border-border/30 rounded-[16px] overflow-hidden">
+                        <Pressable
+                            className="flex-row justify-between items-center p-4 active:bg-muted/30"
+                            onPress={() => toggleSection('sales')}
+                        >
+                            <View className="flex-row items-center gap-3">
+                                <Icon as={ShoppingCart} size={18} className="text-foreground" />
+                                <Text className="font-bold text-lg text-foreground">Sales History</Text>
+                            </View>
+                            <Icon as={openSection === 'sales' ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
+                        </Pressable>
+                        {openSection === 'sales' && (
+                            <View className="p-4 border-t border-border/20">
+                                <SalesHistoryList
+                                    cycleId={isArchived ? undefined : (id as string)}
+                                    historyId={isArchived ? (id as string) : undefined}
+                                />
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Other Cycles */}
+                    <View className="bg-card w-full border border-border/30 rounded-[16px] overflow-hidden">
+                        <Pressable
+                            className="flex-row justify-between items-center p-4 active:bg-muted/30"
+                            onPress={() => toggleSection('other')}
+                        >
+                            <View className="flex-row items-center gap-3">
+                                <Icon as={Package} size={18} className="text-foreground" />
+                                <Text className="font-bold text-lg text-foreground">Other Cycles</Text>
+                            </View>
+                            <Icon as={openSection === 'other' ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
+                        </Pressable>
+                        {openSection === 'other' && (
+                            <View className="p-4 border-t border-border/20">
+                                <Text className="text-muted-foreground italic text-center text-sm py-4">No other cycles found to display.</Text>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Analysis Insights */}
+                    <View className="bg-card w-full border border-border/30 rounded-[16px] overflow-hidden">
+                        <Pressable
+                            className="flex-row justify-between items-center p-4 active:bg-muted/30"
+                            onPress={() => toggleSection('insights')}
+                        >
+                            <View className="flex-row items-center gap-3">
+                                <Icon as={LineChart} size={18} className="text-foreground" />
+                                <Text className="font-bold text-lg text-foreground">Analysis Insights</Text>
+                            </View>
+                            <Icon as={openSection === 'insights' ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
+                        </Pressable>
+                        {openSection === 'insights' && (
+                            <View className="p-4 border-t border-border/20">
+                                <Text className="text-muted-foreground italic text-center text-sm py-4">Insights currently unavailable.</Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
             </ScrollView>
+
+            {/* Action Menu Bottom Sheet */}
+            <Modal
+                transparent={true}
+                visible={isMenuOpen}
+                animationType="fade"
+                onRequestClose={() => setIsMenuOpen(false)}
+            >
+                <Pressable
+                    className="flex-1 bg-black/60 justify-end"
+                    onPress={() => setIsMenuOpen(false)}
+                >
+                    <Pressable
+                        className="bg-card dark:bg-zinc-900 rounded-t-3xl pt-2 pb-8 px-4"
+                        onPress={(e) => e.stopPropagation()}
+                    >
+                        <View className="w-12 h-1.5 bg-muted rounded-full self-center mb-6" />
+
+                        <Text className="text-lg font-bold text-foreground mb-4 px-2">Cycle Actions</Text>
+
+                        {!isArchived ? (
+                            <View className="space-y-1">
+                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsSellModalOpen(true); }}>
+                                    <View className="w-8 h-8 rounded-full bg-emerald-500/10 items-center justify-center mr-3">
+                                        <Icon as={ShoppingCart} size={16} className="text-emerald-600" />
+                                    </View>
+                                    <Text className="font-bold text-foreground text-base">Sell Birds</Text>
+                                </Button>
+                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsMortalityModalOpen(true); }}>
+                                    <View className="w-8 h-8 rounded-full bg-destructive/10 items-center justify-center mr-3">
+                                        <Icon as={Skull} size={16} className="text-destructive" />
+                                    </View>
+                                    <Text className="font-bold text-foreground text-base">Add Mortality</Text>
+                                </Button>
+                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsDocModalOpen(true); }}>
+                                    <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center mr-3">
+                                        <Icon as={Bird} size={16} className="text-primary" />
+                                    </View>
+                                    <Text className="font-bold text-foreground text-base">Edit Initial Birds (DOC)</Text>
+                                </Button>
+                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsAgeModalOpen(true); }}>
+                                    <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center mr-3">
+                                        <Icon as={Activity} size={16} className="text-primary" />
+                                    </View>
+                                    <Text className="font-bold text-foreground text-base">Edit Age</Text>
+                                </Button>
+                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsMortalityCorrectionOpen(true); }}>
+                                    <View className="w-8 h-8 rounded-full bg-amber-500/10 items-center justify-center mr-3">
+                                        <Icon as={Pencil} size={16} className="text-amber-600" />
+                                    </View>
+                                    <Text className="font-bold text-foreground text-base">Correct Total Mortality</Text>
+                                </Button>
+                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsEndCycleOpen(true); }}>
+                                    <View className="w-8 h-8 rounded-full bg-amber-500/10 items-center justify-center mr-3">
+                                        <Icon as={Archive} size={16} className="text-amber-600" />
+                                    </View>
+                                    <Text className="font-bold text-amber-600 text-base">End Cycle</Text>
+                                </Button>
+                            </View>
+                        ) : (
+                            <View className="space-y-1">
+                                <Text className="px-4 text-muted-foreground mb-4">You must open this from the History cycles page to reopen or delete.</Text>
+                            </View>
+                        )}
+                    </Pressable>
+                </Pressable>
+            </Modal>
 
             {/* Modals — Only rendered for active cycles */}
             {!isArchived && (
