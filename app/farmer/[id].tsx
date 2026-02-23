@@ -1,12 +1,21 @@
 /// <reference types="nativewind/types" />
-import { CycleCard } from "@/components/cycles/cycle-card";
+import { AddMortalityModal } from "@/components/cycles/add-mortality-modal";
+import { CorrectAgeModal } from "@/components/cycles/correct-age-modal";
+import { CorrectDocModal } from "@/components/cycles/correct-doc-modal";
+import { CorrectMortalityModal } from "@/components/cycles/correct-mortality-modal";
+import { CycleAction, CycleCard } from "@/components/cycles/cycle-card";
+import { DeleteCycleModal } from "@/components/cycles/delete-cycle-modal";
+import { EndCycleModal } from "@/components/cycles/end-cycle-modal";
+import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
 import { SaleEventCard } from "@/components/cycles/sale-event-card";
+import { SellModal } from "@/components/cycles/sell-modal";
 import { DeleteFarmerModal } from "@/components/farmers/delete-farmer-modal";
 import { EditFarmerModal } from "@/components/farmers/edit-farmer-modal";
 import { RestockModal } from "@/components/farmers/restock-modal";
 import { SecurityMoneyModal } from "@/components/farmers/security-money-modal";
 import { StartCycleModal } from "@/components/farmers/start-cycle-modal";
 import { StockCorrectionModal } from "@/components/farmers/stock-correction-modal";
+import { TransferStockModal } from "@/components/farmers/transfer-stock-modal";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,22 +24,38 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { Activity, Archive, ArrowLeft, Bird, ChevronDown, ChevronUp, History, Link, MoreVertical, Pencil, Scale, ShoppingCart, Trash2 } from "lucide-react-native";
-import { useState } from "react";
+import { Activity, Archive, ArrowLeft, ArrowRightLeft, Bird, ChevronDown, ChevronUp, History, Link, MoreVertical, Package, Pencil, Plus, Scale, ShoppingCart, Trash2, Wrench } from "lucide-react-native";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
 export default function FarmerDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
+
+    // Farmer-level modal states
     const [isRestockOpen, setIsRestockOpen] = useState(false);
     const [isCorrectionOpen, setIsCorrectionOpen] = useState(false);
     const [isSecurityOpen, setIsSecurityOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isStartCycleOpen, setIsStartCycleOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [isTransferOpen, setIsTransferOpen] = useState(false);
+
+    // Accordion states
     const [activeExpanded, setActiveExpanded] = useState(true);
     const [salesExpanded, setSalesExpanded] = useState(false);
     const [historyExpanded, setHistoryExpanded] = useState(false);
     const [ledgerExpanded, setLedgerExpanded] = useState(false);
+
+    // Cycle action modal states
+    const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
+    const [isSellOpen, setIsSellOpen] = useState(false);
+    const [isAddMortalityOpen, setIsAddMortalityOpen] = useState(false);
+    const [isEditDocOpen, setIsEditDocOpen] = useState(false);
+    const [isEditAgeOpen, setIsEditAgeOpen] = useState(false);
+    const [isCorrectMortalityOpen, setIsCorrectMortalityOpen] = useState(false);
+    const [isEndCycleOpen, setIsEndCycleOpen] = useState(false);
+    const [isReopenModalOpen, setIsReopenModalOpen] = useState(false);
+    const [isDeleteCycleOpen, setIsDeleteCycleOpen] = useState(false);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
 
@@ -58,9 +83,19 @@ export default function FarmerDetailScreen() {
         { enabled: !!id && ledgerExpanded }
     );
 
-    const handleDelete = () => {
-        setIsDeleteOpen(true);
-    };
+    const handleCycleAction = useCallback((action: CycleAction, cycle: any) => {
+        setSelectedCycleId(cycle.id);
+        switch (action) {
+            case 'sell': setIsSellOpen(true); break;
+            case 'add_mortality': setIsAddMortalityOpen(true); break;
+            case 'edit_doc': setIsEditDocOpen(true); break;
+            case 'edit_age': setIsEditAgeOpen(true); break;
+            case 'correct_mortality': setIsCorrectMortalityOpen(true); break;
+            case 'end_cycle': setIsEndCycleOpen(true); break;
+            case 'reopen': setIsReopenModalOpen(true); break;
+            case 'delete': setIsDeleteCycleOpen(true); break;
+        }
+    }, []);
 
     if (isLoading) {
         return (
@@ -88,6 +123,15 @@ export default function FarmerDetailScreen() {
     const { cycles: activeCycles = [] } = farmer;
     const archivedCycles = historyData?.items ?? [];
 
+    const selectedCycle = (() => {
+        if (!selectedCycleId) return null;
+        const active = activeCycles.find((c: any) => c.id === selectedCycleId);
+        if (active) return active;
+        const archived = archivedCycles.find((c: any) => c.id === selectedCycleId);
+        if (archived) return { ...archived, type: 'history' };
+        return null;
+    })();
+
     return (
         <View className="flex-1 bg-background">
             <ScreenHeader
@@ -109,6 +153,9 @@ export default function FarmerDetailScreen() {
                         <View className="flex-1">
                             <Text className="text-3xl font-black text-foreground uppercase tracking-tight">{farmer.name}</Text>
                             <Text className="text-base text-muted-foreground">{farmer.location || "No location"}</Text>
+                            {farmer.createdAt && (
+                                <Text className="text-sm font-bold text-primary mt-1">Joined {format(new Date(farmer.createdAt), "dd MMM yyyy")}</Text>
+                            )}
                         </View>
                         <Pressable onPress={() => setIsEditOpen(true)} className="h-10 w-10 items-center justify-center rounded-xl bg-muted/30 border border-border/50">
                             <Icon as={MoreVertical} size={20} className="text-muted-foreground" />
@@ -146,6 +193,38 @@ export default function FarmerDetailScreen() {
                         </View>
                     </CardContent>
                 </Card>
+
+                {/* QUICK ACTIONS BAR */}
+                <View className="flex-row gap-2 mb-4">
+                    <Pressable
+                        onPress={() => setIsRestockOpen(true)}
+                        className="flex-1 bg-emerald-500/10 h-12 rounded-xl items-center justify-center flex-row gap-1.5 border border-emerald-500/20 active:bg-emerald-500/20"
+                    >
+                        <Icon as={Package} size={14} className="text-emerald-500" />
+                        <Text className="text-emerald-500 font-bold text-[10px] uppercase tracking-wider">Restock</Text>
+                    </Pressable>
+                    <Pressable
+                        onPress={() => setIsCorrectionOpen(true)}
+                        className="flex-1 bg-amber-500/10 h-12 rounded-xl items-center justify-center flex-row gap-1.5 border border-amber-500/20 active:bg-amber-500/20"
+                    >
+                        <Icon as={Wrench} size={14} className="text-amber-500" />
+                        <Text className="text-amber-500 font-bold text-[10px] uppercase tracking-wider">Fix</Text>
+                    </Pressable>
+                    <Pressable
+                        onPress={() => setIsTransferOpen(true)}
+                        className="flex-1 bg-blue-500/10 h-12 rounded-xl items-center justify-center flex-row gap-1.5 border border-blue-500/20 active:bg-blue-500/20"
+                    >
+                        <Icon as={ArrowRightLeft} size={14} className="text-blue-500" />
+                        <Text className="text-blue-500 font-bold text-[10px] uppercase tracking-wider">Transfer</Text>
+                    </Pressable>
+                    <Pressable
+                        onPress={() => setIsStartCycleOpen(true)}
+                        className="flex-1 bg-primary/10 h-12 rounded-xl items-center justify-center flex-row gap-1.5 border border-primary/20 active:bg-primary/20"
+                    >
+                        <Icon as={Plus} size={14} className="text-primary" />
+                        <Text className="text-primary font-bold text-[10px] uppercase tracking-wider">Cycle</Text>
+                    </Pressable>
+                </View>
 
                 {/* SECURITY DEPOSIT Card */}
                 <Card className="mb-8 border-border/50 bg-card overflow-hidden">
@@ -191,6 +270,7 @@ export default function FarmerDetailScreen() {
                                                 intake: Number(cycle.intake)
                                             }}
                                             onPress={() => router.push(`/cycle/${cycle.id}` as any)}
+                                            onAction={handleCycleAction}
                                         />
                                     ))
                                 ) : (
@@ -253,6 +333,7 @@ export default function FarmerDetailScreen() {
                                             key={cycle.id}
                                             cycle={cycle as any}
                                             onPress={() => router.push(`/cycle/${cycle.id}` as any)}
+                                            onAction={handleCycleAction}
                                         />
                                     ))
                                 ) : (
@@ -310,7 +391,7 @@ export default function FarmerDetailScreen() {
                 <View className="mt-10 pt-6 border-t border-border/50">
                     <Button
                         variant="ghost"
-                        onPress={handleDelete}
+                        onPress={() => setIsDeleteOpen(true)}
                         className="h-14 flex-row items-center justify-center gap-2"
                     >
                         <Icon as={Trash2} size={18} className="text-destructive" />
@@ -319,7 +400,7 @@ export default function FarmerDetailScreen() {
                 </View>
             </ScrollView>
 
-            {/* Modals */}
+            {/* Farmer-level Modals */}
             <RestockModal
                 open={isRestockOpen}
                 onOpenChange={setIsRestockOpen}
@@ -359,6 +440,87 @@ export default function FarmerDetailScreen() {
                 organizationId={farmer.organizationId}
                 farmerName={farmer.name}
             />
+            <TransferStockModal
+                open={isTransferOpen}
+                onOpenChange={setIsTransferOpen}
+                sourceFarmerId={farmer.id}
+                sourceFarmerName={farmer.name}
+                onSuccess={refetch}
+            />
+
+            {/* Cycle-level Modals */}
+            {selectedCycle && (
+                <>
+                    <SellModal
+                        cycleId={selectedCycle.id}
+                        farmerId={selectedCycle.farmerId || farmer.id}
+                        cycleName={selectedCycle.name}
+                        farmerName={selectedCycle.farmerName || farmer.name}
+                        farmerLocation={selectedCycle.farmerLocation || farmer.location || ''}
+                        farmerMobile={selectedCycle.farmerMobile || farmer.mobile || ''}
+                        cycleAge={selectedCycle.age || 0}
+                        doc={selectedCycle.doc}
+                        mortality={selectedCycle.mortality || 0}
+                        birdsSold={selectedCycle.birdsSold || 0}
+                        intake={parseFloat(String(selectedCycle.intake || 0))}
+                        startDate={selectedCycle.createdAt ? new Date(selectedCycle.createdAt) : new Date()}
+                        open={isSellOpen}
+                        onOpenChange={setIsSellOpen}
+                    />
+
+                    <AddMortalityModal
+                        cycleId={selectedCycle.id}
+                        farmerName={selectedCycle.farmerName || farmer.name}
+                        open={isAddMortalityOpen}
+                        onOpenChange={setIsAddMortalityOpen}
+                    />
+
+                    <CorrectDocModal
+                        cycleId={selectedCycle.id}
+                        currentDoc={parseInt(String(selectedCycle.doc || 0))}
+                        open={isEditDocOpen}
+                        onOpenChange={setIsEditDocOpen}
+                    />
+
+                    <CorrectAgeModal
+                        cycleId={selectedCycle.id}
+                        currentAge={selectedCycle.age}
+                        open={isEditAgeOpen}
+                        onOpenChange={setIsEditAgeOpen}
+                    />
+
+                    <CorrectMortalityModal
+                        cycleId={selectedCycle.id}
+                        currentMortality={selectedCycle.mortality || 0}
+                        open={isCorrectMortalityOpen}
+                        onOpenChange={setIsCorrectMortalityOpen}
+                    />
+
+                    <EndCycleModal
+                        cycle={selectedCycle}
+                        farmerName={selectedCycle.farmerName || farmer.name}
+                        open={isEndCycleOpen}
+                        onOpenChange={setIsEndCycleOpen}
+                        onRecordSale={() => setIsSellOpen(true)}
+                    />
+
+                    <ReopenCycleModal
+                        open={isReopenModalOpen}
+                        onOpenChange={setIsReopenModalOpen}
+                        historyId={selectedCycle.id}
+                        cycleName={selectedCycle.cycle?.name || selectedCycle.name || "Unknown Cycle"}
+                        onSuccess={refetch}
+                    />
+
+                    <DeleteCycleModal
+                        open={isDeleteCycleOpen}
+                        onOpenChange={setIsDeleteCycleOpen}
+                        historyId={selectedCycle.id}
+                        cycleName={selectedCycle.cycle?.name || selectedCycle.name || "Unknown Cycle"}
+                        onSuccess={refetch}
+                    />
+                </>
+            )}
         </View>
     );
 }

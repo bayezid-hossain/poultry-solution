@@ -7,7 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Banknote, Bird, Box, FileText, ShoppingCart, Truck } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
+import { toast } from "sonner-native";
 import { z } from "zod";
 import { SaleDetailsContent } from "./sale-details-content";
 import { FarmerInfoHeader, FeedFieldArray, SaleMetricsBar } from "./sale-form-sections";
@@ -175,13 +176,13 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
 
     const generateReport = trpc.officer.sales.generateReport.useMutation({
         onSuccess: () => {
-            Alert.alert("Success", "Sale adjustment saved successfully!");
+            toast.success("Sale adjustment saved successfully!");
             onSuccess?.();
             utils.officer.sales.invalidate();
             onOpenChange(false);
         },
         onError: (err) => {
-            Alert.alert("Error", err.message || "Failed to make adjustment.");
+            toast.error(err.message || "Failed to make adjustment.");
         }
     });
 
@@ -191,14 +192,14 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
             setStep("preview");
         },
         onError: (error) => {
-            Alert.alert("Error", error.message || "Failed to preview.");
+            toast.error(error.message || "Failed to preview.");
         }
     });
 
     const handlePreview = async () => {
         const isValid = await form.trigger();
         if (!isValid) {
-            Alert.alert("Validation Error", "Please check the form for errors before previewing.");
+            toast.error("Please check the form for errors before previewing.");
             return;
         }
 

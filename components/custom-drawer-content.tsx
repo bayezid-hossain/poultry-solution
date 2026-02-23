@@ -22,6 +22,7 @@ const officerItems: NavItem[] = [
     { label: "DOC Placements", icon: "📄", route: "/(drawer)/doc-placements" },
     { label: "Performance", icon: "📊", route: "/(drawer)/performance" },
     { label: "Production", icon: "🏭", route: "/(drawer)/production" },
+    { label: "Settings", icon: "⚙️", route: "/(drawer)/settings" },
 ];
 
 const managementItems: NavItem[] = [
@@ -35,6 +36,7 @@ const managementItems: NavItem[] = [
     { label: "DOC Placements", icon: "📄", route: "/(drawer)/doc-placements" },
     { label: "Performance", icon: "📊", route: "/(drawer)/performance" },
     { label: "Production", icon: "🏭", route: "/(drawer)/production" },
+    { label: "Settings", icon: "⚙️", route: "/(drawer)/settings" },
 ];
 
 export function CustomDrawerContent(props: any) {

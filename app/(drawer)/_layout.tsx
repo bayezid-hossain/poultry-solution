@@ -68,13 +68,7 @@ export default function TabsDrawerLayout() {
             headerShown: false
           }}
         />
-        <Drawer.Screen
-          name="explore"
-          options={{
-            drawerItemStyle: { display: "none" },
-            headerShown: false
-          }}
-        />
+
       </Drawer>
     </View>
   );

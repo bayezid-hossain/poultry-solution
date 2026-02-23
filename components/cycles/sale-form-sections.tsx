@@ -2,9 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
-import { CalendarIcon, MapPin, Phone, Plus, X } from "lucide-react-native";
+import { CalendarIcon, MapPin, Pencil, Phone, Plus, X } from "lucide-react-native";
 import { Control, Controller, UseFieldArrayReturn } from "react-hook-form";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 
 // --- Farmer Info Header ---
 
@@ -14,6 +14,7 @@ interface FarmerInfoHeaderProps {
     farmerMobile?: string | null;
     cycleAge: number;
     colorScheme?: "blue" | "orange";
+    onEditAgePress?: () => void;
 }
 
 export const FarmerInfoHeader = ({
@@ -22,6 +23,7 @@ export const FarmerInfoHeader = ({
     farmerMobile,
     cycleAge,
     colorScheme = "blue",
+    onEditAgePress,
 }: FarmerInfoHeaderProps) => {
     const isBlue = colorScheme === "blue";
 
@@ -49,10 +51,14 @@ export const FarmerInfoHeader = ({
             </View>
 
             <View className="mt-4 flex-row items-center justify-center">
-                <View className="flex-row items-center gap-1.5 px-3 py-1.5 bg-background/50 rounded-full">
+                <Pressable
+                    onPress={onEditAgePress}
+                    className="flex-row items-center gap-1.5 px-3 py-1.5 bg-background/50 rounded-full border border-border/20"
+                >
                     <Icon as={CalendarIcon} size={14} className="text-muted-foreground" />
                     <Text className="text-sm font-bold text-foreground">Age: {cycleAge} days</Text>
-                </View>
+                    {onEditAgePress && <Icon as={Pencil} size={12} className="text-muted-foreground ml-1" />}
+                </Pressable>
             </View>
         </View>
     );

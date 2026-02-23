@@ -3,7 +3,8 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Trash2 } from "lucide-react-native";
-import { ActivityIndicator, Alert, Modal, View } from "react-native";
+import { ActivityIndicator, Modal, View } from "react-native";
+import { toast } from "sonner-native";
 
 interface DeleteCycleModalProps {
     historyId: string;
@@ -18,10 +19,10 @@ export const DeleteCycleModal = ({ historyId, cycleName, open, onOpenChange, onS
         onSuccess: () => {
             onOpenChange(false);
             onSuccess?.();
-            Alert.alert("Success", "Cycle history deleted successfully.");
+            toast.success("Cycle history deleted successfully.");
         },
         onError: (err) => {
-            Alert.alert("Error", err.message || "Failed to delete cycle history");
+            toast.error(err.message || "Failed to delete cycle history");
         }
     });
 

@@ -1,7 +1,7 @@
 import { useTheme } from "@/context/theme-context";
 import { trpc } from "@/lib/trpc";
 import { Tabs } from "expo-router";
-import { Home, Repeat, Settings, ShoppingCart, Users } from "lucide-react-native";
+import { Banknote, ClipboardList, Home, Repeat, Users } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabsLayout() {
@@ -66,14 +66,14 @@ export default function TabsLayout() {
                 name="orders"
                 options={{
                     title: "Orders",
-                    tabBarIcon: ({ color, size }) => <ShoppingCart color={color} size={size} />,
+                    tabBarIcon: ({ color, size }) => <ClipboardList color={color} size={size} />,
                 }}
             />
             <Tabs.Screen
-                name="settings"
+                name="sales"
                 options={{
-                    title: "Settings",
-                    tabBarIcon: ({ color, size }) => <Settings color={color} size={size} />,
+                    title: "Sales",
+                    tabBarIcon: ({ color, size }) => <Banknote color={color} size={size} />,
                 }}
             />
         </Tabs>

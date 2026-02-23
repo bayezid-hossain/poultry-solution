@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
 import { Calendar as CalendarIcon, CheckCircle2, Copy, Edit2, Factory, Plus, Search, Trash2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { Alert, FlatList, Modal, Pressable, ScrollView, View } from "react-native";
+import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
@@ -106,7 +106,7 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
             onOpenChange(false);
         },
         onError: (error) => {
-            Alert.alert("Error", error.message);
+            toast.error(error.message);
         }
     });
 
@@ -121,7 +121,7 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
             onOpenChange(false);
         },
         onError: (error) => {
-            Alert.alert("Error", error.message);
+            toast.error(error.message);
         }
     });
 
@@ -217,7 +217,7 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
     const handleCreate = () => {
         // Validation: at least one farmer, and at least one valid feed entry total
         if (items.length === 0) {
-            Alert.alert("Validation", "Please add at least one farmer to the order.");
+            toast.error("Please add at least one farmer to the order.");
             return;
         }
 
@@ -232,7 +232,7 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
         })).filter(item => item.feeds.length > 0);
 
         if (formattedItems.length === 0) {
-            Alert.alert("Validation", "Please enter at least one valid feed quantity for the selected farmers.");
+            toast.error("Please enter at least one valid feed quantity for the selected farmers.");
             return;
         }
 
@@ -330,137 +330,140 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                 </View>
 
                 {/* Content */}
-                <ScrollView className="flex-1 p-4" contentContainerStyle={{ gap: 24, paddingBottom: 40 }}>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
+                    <ScrollView className="flex-1 p-4" contentContainerStyle={{ gap: 24, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
 
-                    {/* Dates */}
-                    <View className="flex-row gap-4">
-                        <View className="flex-1 gap-2">
-                            <Text className="text-sm font-semibold">Order Date</Text>
-                            <Pressable
-                                onPress={() => setShowOrderDatePicker(true)}
-                                className="h-12 bg-muted/50 rounded-lg flex-row items-center px-4 border border-border/50"
-                            >
-                                <Icon as={CalendarIcon} size={18} className="text-muted-foreground mr-2" />
-                                <Text>{format(orderDate, "MMM dd, yyyy")}</Text>
-                            </Pressable>
-                            {showOrderDatePicker && (
-                                <DateTimePicker
-                                    value={orderDate}
-                                    mode="date"
-                                    display="default"
-                                    onChange={(event: any, date?: Date) => {
-                                        setShowOrderDatePicker(false);
-                                        if (date) setOrderDate(date);
-                                    }}
-                                />
-                            )}
-                        </View>
-                        <View className="flex-1 gap-2">
-                            <Text className="text-sm font-semibold">Delivery Date</Text>
-                            <Pressable
-                                onPress={() => setShowDeliveryDatePicker(true)}
-                                className="h-12 bg-muted/50 rounded-lg flex-row items-center px-4 border border-border/50"
-                            >
-                                <Icon as={CalendarIcon} size={18} className="text-muted-foreground mr-2" />
-                                <Text>{format(deliveryDate, "MMM dd, yyyy")}</Text>
-                            </Pressable>
-                            {showDeliveryDatePicker && (
-                                <DateTimePicker
-                                    value={deliveryDate}
-                                    mode="date"
-                                    display="default"
-                                    onChange={(event: any, date?: Date) => {
-                                        setShowDeliveryDatePicker(false);
-                                        if (date) setDeliveryDate(date);
-                                    }}
-                                />
-                            )}
-                        </View>
-                    </View>
-
-                    {/* Farmers & Feeds List */}
-                    <View className="gap-4">
-                        <View className="flex-row justify-between items-center">
-                            <Text className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Selected Inventories</Text>
-                        </View>
-
-                        {items.length === 0 ? (
-                            <View className="bg-muted/30 p-8 rounded-2xl items-center border border-dashed border-border/50">
-                                <Text className="text-muted-foreground mb-4 text-center">No farmers selected yet.</Text>
-                                <Button variant="outline" onPress={() => setIsSearchOpen(true)}>
-                                    <Icon as={Plus} size={16} className="mr-2" />
-                                    <Text>Add Farmers</Text>
-                                </Button>
+                        {/* Dates */}
+                        <View className="flex-row gap-4">
+                            <View className="flex-1 gap-2">
+                                <Text className="text-sm font-semibold">Order Date</Text>
+                                <Pressable
+                                    onPress={() => setShowOrderDatePicker(true)}
+                                    className="h-12 bg-muted/50 rounded-lg flex-row items-center px-4 border border-border/50"
+                                >
+                                    <Icon as={CalendarIcon} size={18} className="text-muted-foreground mr-2" />
+                                    <Text>{format(orderDate, "MMM dd, yyyy")}</Text>
+                                </Pressable>
+                                {showOrderDatePicker && (
+                                    <DateTimePicker
+                                        value={orderDate}
+                                        mode="date"
+                                        display="default"
+                                        onChange={(event: any, date?: Date) => {
+                                            setShowOrderDatePicker(false);
+                                            if (date) setOrderDate(date);
+                                        }}
+                                    />
+                                )}
                             </View>
-                        ) : (
-                            <View className="gap-6">
-                                {items.map((item) => (
-                                    <View key={item.id} className="bg-card border border-border/50 rounded-2xl overflow-hidden p-4">
-                                        <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-border/50">
-                                            <Text className="font-bold text-lg text-primary">{item.farmerName}</Text>
-                                            <Pressable onPress={() => handleToggleFarmer({ id: item.farmerId })} className="p-2">
-                                                <Icon as={Trash2} size={18} className="text-destructive" />
-                                            </Pressable>
-                                        </View>
+                            <View className="flex-1 gap-2">
+                                <Text className="text-sm font-semibold">Delivery Date</Text>
+                                <Pressable
+                                    onPress={() => setShowDeliveryDatePicker(true)}
+                                    className="h-12 bg-muted/50 rounded-lg flex-row items-center px-4 border border-border/50"
+                                >
+                                    <Icon as={CalendarIcon} size={18} className="text-muted-foreground mr-2" />
+                                    <Text>{format(deliveryDate, "MMM dd, yyyy")}</Text>
+                                </Pressable>
+                                {showDeliveryDatePicker && (
+                                    <DateTimePicker
+                                        value={deliveryDate}
+                                        mode="date"
+                                        display="default"
+                                        onChange={(event: any, date?: Date) => {
+                                            setShowDeliveryDatePicker(false);
+                                            if (date) setDeliveryDate(date);
+                                        }}
+                                    />
+                                )}
+                            </View>
+                        </View>
 
-                                        <View className="gap-3">
-                                            <View className="flex-row gap-2 px-1">
-                                                <Text className="flex-1 text-xs text-muted-foreground uppercase font-bold tracking-widest pl-2">Type</Text>
-                                                <Text className="w-24 text-xs text-muted-foreground uppercase font-bold tracking-widest pl-2">Qty (Bags)</Text>
-                                                <View className="w-10" />
+                        {/* Farmers & Feeds List */}
+                        <View className="gap-4">
+                            <View className="flex-row justify-between items-center">
+                                <Text className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Selected Inventories</Text>
+                            </View>
+
+                            {items.length === 0 ? (
+                                <View className="bg-muted/30 p-8 rounded-2xl items-center border border-dashed border-border/50">
+                                    <Text className="text-muted-foreground mb-4 text-center">No farmers selected yet.</Text>
+                                    <Button variant="outline" onPress={() => setIsSearchOpen(true)}>
+                                        <Icon as={Plus} size={16} className="mr-2" />
+                                        <Text>Add Farmers</Text>
+                                    </Button>
+                                </View>
+                            ) : (
+                                <View className="gap-6">
+                                    {items.map((item) => (
+                                        <View key={item.id} className="bg-card border border-border/50 rounded-2xl overflow-hidden p-4">
+                                            <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-border/50">
+                                                <Text className="font-bold text-lg text-primary">{item.farmerName}</Text>
+                                                <Pressable onPress={() => handleToggleFarmer({ id: item.farmerId })} className="p-2">
+                                                    <Icon as={Trash2} size={18} className="text-destructive" />
+                                                </Pressable>
                                             </View>
 
-                                            {item.feeds.map((feed, index) => (
-                                                <View key={index} className="flex-row gap-2 items-center">
-                                                    <Input
-                                                        className="flex-1 h-12 bg-background"
-                                                        placeholder="e.g. B1"
-                                                        value={feed.type}
-                                                        onChangeText={(val) => handleUpdateFeed(item.id, index, 'type', val)}
-                                                    />
-                                                    <Input
-                                                        className="w-24 h-12 bg-background"
-                                                        placeholder="0"
-                                                        keyboardType="numeric"
-                                                        value={feed.quantity}
-                                                        onChangeText={(val) => handleUpdateFeed(item.id, index, 'quantity', val)}
-                                                    />
-                                                    <Pressable
-                                                        onPress={() => handleRemoveFeedRow(item.id, index)}
-                                                        className="w-10 h-12 items-center justify-center rounded-lg bg-destructive/10 active:bg-destructive/20"
-                                                    >
-                                                        <Icon as={Trash2} size={16} className="text-destructive" />
-                                                    </Pressable>
+                                            <View className="gap-3">
+                                                <View className="flex-row gap-2 px-1">
+                                                    <Text className="flex-1 text-xs text-muted-foreground uppercase font-bold tracking-widest pl-2">Type</Text>
+                                                    <Text className="w-24 text-xs text-muted-foreground uppercase font-bold tracking-widest pl-2">Qty (Bags)</Text>
+                                                    <View className="w-10" />
                                                 </View>
-                                            ))}
 
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="mt-2 border-dashed border-border"
-                                                onPress={() => handleAddFeedRow(item.id)}
-                                            >
-                                                <Icon as={Plus} size={14} className="mr-2 text-muted-foreground" />
-                                                <Text className="text-muted-foreground">Add Feed Row</Text>
-                                            </Button>
+                                                {item.feeds.map((feed, index) => (
+                                                    <View key={index} className="flex-row gap-2 items-center">
+                                                        <Input
+                                                            className="flex-1 h-12 bg-background"
+                                                            placeholder="e.g. B1"
+                                                            value={feed.type}
+                                                            onChangeText={(val) => handleUpdateFeed(item.id, index, 'type', val)}
+                                                        />
+                                                        <Input
+                                                            className="w-24 h-12 bg-background"
+                                                            placeholder="0"
+                                                            keyboardType="numeric"
+                                                            value={feed.quantity}
+                                                            onChangeText={(val) => handleUpdateFeed(item.id, index, 'quantity', val)}
+                                                        />
+                                                        <Pressable
+                                                            onPress={() => handleRemoveFeedRow(item.id, index)}
+                                                            className="w-10 h-12 items-center justify-center rounded-lg bg-destructive/10 active:bg-destructive/20"
+                                                        >
+                                                            <Icon as={Trash2} size={16} className="text-destructive" />
+                                                        </Pressable>
+                                                    </View>
+                                                ))}
+
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="mt-2 border-dashed border-border"
+                                                    onPress={() => handleAddFeedRow(item.id)}
+                                                >
+                                                    <Icon as={Plus} size={14} className="mr-2 text-muted-foreground" />
+                                                    <Text className="text-muted-foreground">Add Feed Row</Text>
+                                                </Button>
+                                            </View>
                                         </View>
-                                    </View>
-                                ))}
+                                    ))}
 
-                                <Button variant="secondary" className="border border-border h-12" onPress={() => setIsSearchOpen(true)}>
-                                    <Icon as={Plus} size={16} className="mr-2" />
-                                    <Text>Add Another Farmer</Text>
-                                </Button>
-                            </View>
-                        )}
-                    </View>
-                </ScrollView>
+                                    <Button variant="secondary" className="border border-border h-12" onPress={() => setIsSearchOpen(true)}>
+                                        <Icon as={Plus} size={16} className="mr-2" />
+                                        <Text>Add Another Farmer</Text>
+                                    </Button>
+                                </View>
+                            )}
+                        </View>
+                    </ScrollView>
+                </KeyboardAvoidingView>
 
                 {/* Footer */}
                 <View className="p-4 border-t border-border/50 bg-card flex-row justify-between items-center pb-8">
                     <View>
                         <Text className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Total Selection</Text>
                         <Text className="text-xl font-black">{items.length} <Text className="text-sm font-medium text-muted-foreground">Farmers</Text></Text>
+                        <Text className="text-sm font-bold text-primary">{items.reduce((sum, item) => sum + item.feeds.reduce((s, f) => s + (Number(f.quantity) || 0), 0), 0)} <Text className="text-xs font-medium text-muted-foreground">Bags</Text></Text>
                     </View>
                     <Button
                         onPress={handleCreate}

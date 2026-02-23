@@ -3,7 +3,8 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Trash2 } from "lucide-react-native";
-import { Alert, Modal, View } from "react-native";
+import { Modal, View } from "react-native";
+import { toast } from "sonner-native";
 
 interface DeleteDocOrderModalProps {
     open: boolean;
@@ -19,7 +20,7 @@ export function DeleteDocOrderModal({ open, onOpenChange, docOrderId, onSuccess 
             onOpenChange(false);
         },
         onError: (error) => {
-            Alert.alert("Error", error.message);
+            toast.error(error.message);
         }
     });
 

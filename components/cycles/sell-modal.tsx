@@ -19,7 +19,9 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
+import { toast } from "sonner-native";
 import { z } from "zod";
+import { CorrectAgeModal } from "./correct-age-modal";
 import { SaleDetailsContent } from "./sale-details-content";
 import { FarmerInfoHeader, FeedFieldArray, SaleMetricsBar } from "./sale-form-sections";
 
@@ -129,6 +131,7 @@ export const SellModal = ({
 
     const [step, setStep] = useState<"form" | "preview">("form");
     const [previewData, setPreviewData] = useState<any>(null);
+    const [isAgeModalOpen, setIsAgeModalOpen] = useState(false);
 
     const utils = trpc.useUtils();
 
@@ -186,12 +189,17 @@ export const SellModal = ({
             utils.officer.cycles.listActive.invalidate();
             utils.officer.cycles.listPast.invalidate();
             utils.officer.sales.getSaleEvents.invalidate();
+            utils.officer.farmers.getDetails.invalidate({ farmerId });
+            utils.officer.cycles.getDetails.invalidate({ id: cycleId });
             // TODO: show toast/alert logic
 
             onOpenChange(false);
             form.reset();
         },
-        onError: (error) => setGeneralError(error.message),
+        onError: (error) => {
+            setGeneralError(error.message);
+            toast.error(error.message);
+        },
     });
 
     const previewMutation = trpc.officer.sales.previewSale.useMutation({
@@ -199,7 +207,10 @@ export const SellModal = ({
             setPreviewData(data);
             setStep("preview");
         },
-        onError: (error) => setGeneralError(`Preview failed: ${error.message}`),
+        onError: (error) => {
+            setGeneralError(`Preview failed: ${error.message}`);
+            toast.error(`Preview failed: ${error.message}`);
+        },
     });
 
     const handlePreview = async () => {
@@ -231,6 +242,7 @@ export const SellModal = ({
             });
         } else {
             setGeneralError("Please fix form errors before continuing");
+            toast.error("Please fix form errors before continuing");
         }
     };
 
@@ -427,6 +439,7 @@ export const SellModal = ({
                                     farmerMobile={farmerMobile}
                                     cycleAge={cycleAge}
                                     colorScheme="blue"
+                                    onEditAgePress={() => setIsAgeModalOpen(true)}
                                 />
 
                                 <View className="flex-row items-center gap-2 mt-2 ml-1">
@@ -786,6 +799,19 @@ export const SellModal = ({
                 onOpenChange={setShowRestockModal}
                 onSuccess={() => {
                     utils.officer.farmers.getDetails.invalidate({ farmerId });
+                }}
+            />
+
+            <CorrectAgeModal
+                cycleId={cycleId}
+                currentAge={cycleAge}
+                open={isAgeModalOpen}
+                onOpenChange={setIsAgeModalOpen}
+                onSuccess={() => {
+                    utils.officer.cycles.getDetails.invalidate({ id: cycleId });
+                    utils.officer.cycles.listActive.invalidate();
+                    utils.officer.farmers.getDetails.invalidate({ farmerId });
+
                 }}
             />
         </Modal>

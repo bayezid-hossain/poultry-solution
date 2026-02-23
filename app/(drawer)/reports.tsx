@@ -5,21 +5,32 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
+import { useFocusEffect } from "expo-router";
 import { BarChart3, Bird, DollarSign, Scale, Wheat } from "lucide-react-native";
+import { useCallback } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
 
 export default function ReportsScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const orgId = membership?.orgId ?? "";
 
-    const { data: salesSummary, isLoading: salesLoading } = trpc.management.reports.getSalesSummary.useQuery(
+    const { data: salesSummary, isLoading: salesLoading, refetch: refetchSales } = trpc.management.reports.getSalesSummary.useQuery(
         { orgId },
         { enabled: !!orgId }
     );
 
-    const { data: stockSummary, isLoading: stockLoading } = trpc.management.reports.getStockSummary.useQuery(
+    const { data: stockSummary, isLoading: stockLoading, refetch: refetchStock } = trpc.management.reports.getStockSummary.useQuery(
         { orgId },
         { enabled: !!orgId }
+    );
+
+    useFocusEffect(
+        useCallback(() => {
+            if (orgId) {
+                refetchSales();
+                refetchStock();
+            }
+        }, [orgId, refetchSales, refetchStock])
     );
 
     const isLoading = salesLoading || stockLoading;

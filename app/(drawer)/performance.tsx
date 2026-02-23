@@ -5,8 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
+import { useFocusEffect } from "expo-router";
 import { ChevronDown } from "lucide-react-native";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, View } from "react-native";
 
 const MONTHS_SHORT = ["January", "February", "March", "April", "May", "June",
@@ -17,8 +18,14 @@ export default function PerformanceScreen() {
     const [year, setYear] = useState(now.getFullYear());
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
 
-    const { data, isLoading } = trpc.officer.performanceReports.getAnnualPerformance.useQuery(
+    const { data, isLoading, refetch } = trpc.officer.performanceReports.getAnnualPerformance.useQuery(
         { year },
+    );
+
+    useFocusEffect(
+        useCallback(() => {
+            refetch();
+        }, [refetch])
     );
 
     const YEARS = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);

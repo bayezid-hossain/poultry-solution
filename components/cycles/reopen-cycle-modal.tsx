@@ -3,7 +3,8 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Info, RotateCcw } from "lucide-react-native";
-import { ActivityIndicator, Alert, Modal, View } from "react-native";
+import { ActivityIndicator, Modal, View } from "react-native";
+import { toast } from "sonner-native";
 
 interface ReopenCycleModalProps {
     historyId: string;
@@ -18,10 +19,10 @@ export const ReopenCycleModal = ({ historyId, cycleName, open, onOpenChange, onS
         onSuccess: () => {
             onOpenChange(false);
             onSuccess?.();
-            Alert.alert("Success", "Cycle reopened successfully.");
+            toast.success("Cycle reopened successfully.");
         },
         onError: (err) => {
-            Alert.alert("Error", err.message || "Failed to reopen cycle");
+            toast.error(err.message || "Failed to reopen cycle");
         }
     });
 

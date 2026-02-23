@@ -13,13 +13,14 @@ import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { router } from "expo-router";
-import { Archive, List, Plus, Search, ShoppingCart, Sparkles, X } from "lucide-react-native";
-import { useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { Archive, ChevronDown, ChevronUp, List, Plus, Search, ShoppingCart, Sparkles, X } from "lucide-react-native";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
 
 export default function FarmersScreen() {
     const [search, setSearch] = useState("");
+    const [actionsExpanded, setActionsExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
@@ -50,9 +51,13 @@ export default function FarmersScreen() {
         }
     );
 
-
-
-
+    useFocusEffect(
+        useCallback(() => {
+            if (membership?.orgId) {
+                refetch();
+            }
+        }, [membership?.orgId, refetch])
+    );
 
     const farmers = data?.items ?? [];
 
@@ -63,51 +68,61 @@ export default function FarmersScreen() {
             {/* Controls Section */}
             <View className="bg-card border-b border-border/50 px-3 pb-3 pt-2">
                 {/* Search Bar */}
-                <View className="relative mb-6">
-                    <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                        <Icon as={Search} size={18} className="text-muted-foreground opacity-50" />
+                <View className="relative flex-row items-center gap-2">
+                    <View className="flex-1 relative">
+                        <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                            <Icon as={Search} size={18} className="text-muted-foreground opacity-50" />
+                        </View>
+                        <Input
+                            placeholder="Search inventories..."
+                            className="pl-12 pr-12 h-12 bg-muted/30 border-border/50 rounded-2xl text-base font-bold"
+                            value={search}
+                            onChangeText={setSearch}
+                            placeholderTextColor="rgba(255,255,255,0.2)"
+                        />
+                        {search.length > 0 && (
+                            <Pressable
+                                onPress={() => setSearch("")}
+                                className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full active:bg-muted/50 z-20"
+                            >
+                                <Icon as={X} size={20} className="text-muted-foreground" />
+                            </Pressable>
+                        )}
                     </View>
-                    <Input
-                        placeholder="Search inventories..."
-                        className="pl-12 pr-12 h-14 bg-muted/30 border-border/50 rounded-2xl text-base font-bold"
-                        value={search}
-                        onChangeText={setSearch}
-                        placeholderTextColor="rgba(255,255,255,0.2)"
-                    />
-                    {search.length > 0 && (
-                        <Pressable
-                            onPress={() => setSearch("")}
-                            className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full active:bg-muted/50 z-20"
-                        >
-                            <Icon as={X} size={20} className="text-muted-foreground" />
-                        </Pressable>
-                    )}
+                    <Pressable
+                        onPress={() => setActionsExpanded(!actionsExpanded)}
+                        className="h-12 w-12 rounded-2xl bg-muted/30 border border-border/50 items-center justify-center active:bg-muted"
+                    >
+                        <Icon as={actionsExpanded ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
+                    </Pressable>
                 </View>
 
-                {/* Action Buttons Row */}
-                <View className="flex-row gap-3">
-                    <Pressable
-                        onPress={() => setIsBulkImportOpen(true)}
-                        className="flex-1 bg-emerald-500/10 h-14 rounded-2xl items-center justify-center flex-row gap-2 border border-emerald-500/20 active:bg-emerald-500/20"
-                    >
-                        <Icon as={Sparkles} size={16} className="text-emerald-500" />
-                        <Text className="text-emerald-500 font-black text-[10px] uppercase tracking-widest">Import</Text>
-                    </Pressable>
-                    <Pressable
-                        onPress={() => setIsFeedOrderOpen(true)}
-                        className="flex-1 bg-muted/50 h-14 rounded-2xl items-center justify-center flex-row gap-2 border border-border active:bg-muted"
-                    >
-                        <Icon as={ShoppingCart} size={16} className="text-muted-foreground" />
-                        <Text className="text-muted-foreground font-black text-[10px] uppercase tracking-widest">Order</Text>
-                    </Pressable>
-                    <Pressable
-                        onPress={() => setIsRegisterModalOpen(true)}
-                        className="flex-1 bg-primary h-14 rounded-2xl items-center justify-center flex-row gap-2 active:opacity-90"
-                    >
-                        <Icon as={Plus} size={16} className="text-white" />
-                        <Text className="text-white font-black text-[10px] uppercase tracking-widest">Register</Text>
-                    </Pressable>
-                </View>
+                {/* Collapsible Action Buttons */}
+                {actionsExpanded && (
+                    <View className="flex-row gap-3 mt-3">
+                        <Pressable
+                            onPress={() => setIsBulkImportOpen(true)}
+                            className="flex-1 bg-emerald-500/10 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-emerald-500/20 active:bg-emerald-500/20"
+                        >
+                            <Icon as={Sparkles} size={16} className="text-emerald-500" />
+                            <Text className="text-emerald-500 font-black text-[10px] uppercase tracking-widest">Import</Text>
+                        </Pressable>
+                        <Pressable
+                            onPress={() => setIsFeedOrderOpen(true)}
+                            className="flex-1 bg-muted/50 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-border active:bg-muted"
+                        >
+                            <Icon as={ShoppingCart} size={16} className="text-muted-foreground" />
+                            <Text className="text-muted-foreground font-black text-[10px] uppercase tracking-widest">Order</Text>
+                        </Pressable>
+                        <Pressable
+                            onPress={() => setIsRegisterModalOpen(true)}
+                            className="flex-1 bg-primary h-12 rounded-2xl items-center justify-center flex-row gap-2 active:opacity-90"
+                        >
+                            <Icon as={Plus} size={16} className="text-white" />
+                            <Text className="text-white font-black text-[10px] uppercase tracking-widest">Register</Text>
+                        </Pressable>
+                    </View>
+                )}
 
                 {/* Segmented Tabs - Only for Management */}
                 {isManagement && (

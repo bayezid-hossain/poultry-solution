@@ -3,8 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { format } from "date-fns";
-import { ArrowRight, ArrowRightLeft, Bird, RotateCcw, Trash2, Wheat, Wrench } from "lucide-react-native";
-import { Pressable, View } from "react-native";
+import { AlertCircle, ArrowRightLeft, Bird, RotateCcw, Trash2, Wheat, Wrench } from "lucide-react-native";
+import { Alert, Pressable, View } from "react-native";
 
 interface FarmerCardProps {
     farmer: {
@@ -49,6 +49,14 @@ export function FarmerCard({
                             <Text className='font-black text-lg text-foreground uppercase tracking-tight flex-1' numberOfLines={2}>
                                 {farmer.name}
                             </Text>
+                            {(!farmer.location || !farmer.mobile) && (
+                                <Pressable
+                                    onPress={() => Alert.alert("Missing Info", "This farmer is missing location or mobile number.")}
+                                    className="p-1"
+                                >
+                                    <Icon as={AlertCircle} size={16} className="text-destructive" />
+                                </Pressable>
+                            )}
                             <View className="flex-row items-center gap-2 ml-1">
                                 <Pressable
                                     onPress={onEdit}
@@ -140,18 +148,6 @@ export function FarmerCard({
                             </Pressable>
                         </View>
                     )}
-
-                    {/* Footer */}
-                    <View className="flex-row justify-between items-center border-t border-border pt-2">
-                        <Text className="text-muted-foreground text-xs font-medium">Joined {joinedDate}</Text>
-                        <Pressable
-                            onPress={onPress}
-                            className="flex-row items-center gap-1.5"
-                        >
-                            <Text className="text-foreground font-black text-sm">View</Text>
-                            <Icon as={ArrowRight} size={14} className="text-foreground" />
-                        </Pressable>
-                    </View>
                 </CardContent>
             </Card>
         </Pressable>

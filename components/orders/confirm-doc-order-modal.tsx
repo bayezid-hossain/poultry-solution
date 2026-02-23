@@ -6,7 +6,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, CheckCircle2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, View } from "react-native";
+import { Modal, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
@@ -44,7 +44,7 @@ export function ConfirmDocOrderModal({ open, onOpenChange, order, onSuccess }: C
             onOpenChange(false);
         },
         onError: (error) => {
-            Alert.alert("Error", error.message);
+            toast.error(error.message);
         }
     });
 

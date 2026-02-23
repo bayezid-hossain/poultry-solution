@@ -5,8 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
+import { useFocusEffect } from "expo-router";
 import { ChevronDown, ChevronRight, FileText, Filter } from "lucide-react-native";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, View } from "react-native";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June",
@@ -27,8 +28,14 @@ export default function DocPlacementsScreen() {
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
     const [expandedFarmers, setExpandedFarmers] = useState<Record<string, boolean>>({});
 
-    const { data, isLoading } = trpc.officer.reports.getMonthlyDocPlacements.useQuery(
+    const { data, isLoading, refetch } = trpc.officer.reports.getMonthlyDocPlacements.useQuery(
         { month, year },
+    );
+
+    useFocusEffect(
+        useCallback(() => {
+            refetch();
+        }, [refetch])
     );
 
     const toggleExpand = (id: string) => {

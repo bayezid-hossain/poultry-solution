@@ -5,7 +5,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { CheckCircle2, Truck } from "lucide-react-native";
 import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, ScrollView, View } from "react-native";
 import { toast } from "sonner-native";
 
 interface ConfirmFeedOrderModalProps {
@@ -26,7 +26,7 @@ export function ConfirmFeedOrderModal({ open, onOpenChange, feedOrderId, onSucce
             onOpenChange(false);
         },
         onError: (error) => {
-            Alert.alert("Error", error.message);
+            toast.error(error.message);
         }
     });
 
