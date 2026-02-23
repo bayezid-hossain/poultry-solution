@@ -364,6 +364,7 @@ export default function CycleDetailsScreen() {
                         open={isMortalityModalOpen}
                         onOpenChange={setIsMortalityModalOpen}
                         cycleId={cycle.id}
+                        startDate={cycle.createdAt ? new Date(cycle.createdAt) : null}
                         farmerName={farmer.name}
                         onSuccess={refetch}
                     />
@@ -418,7 +419,6 @@ export default function CycleDetailsScreen() {
                         open={isMortalityCorrectionOpen}
                         onOpenChange={setIsMortalityCorrectionOpen}
                         cycleId={cycle.id}
-                        currentMortality={cycle.mortality || 0}
                         onSuccess={refetch}
                     />
 

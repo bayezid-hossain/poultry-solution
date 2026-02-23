@@ -145,6 +145,7 @@ export function AddMortalityModal({
                                     display="default"
                                     onChange={onDateChange}
                                     maximumDate={new Date()}
+                                    minimumDate={startDate ? new Date(startDate) : undefined}
                                 />
                             )}
 

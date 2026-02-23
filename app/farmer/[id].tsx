@@ -471,7 +471,7 @@ export default function FarmerDetailScreen() {
 
                     <AddMortalityModal
                         cycleId={selectedCycle.id}
-                        startDate={selectedCycle.startDate}
+                        startDate={selectedCycle.createdAt ? new Date(selectedCycle.createdAt) : null}
                         farmerName={selectedCycle.farmerName || farmer.name}
                         open={isAddMortalityOpen}
                         onOpenChange={setIsAddMortalityOpen}

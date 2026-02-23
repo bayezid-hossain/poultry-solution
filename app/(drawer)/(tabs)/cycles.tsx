@@ -377,6 +377,7 @@ export default function CyclesScreen() {
 
                         <AddMortalityModal
                             cycleId={selectedCycle.id}
+                            startDate={selectedCycle.createdAt ? new Date(selectedCycle.createdAt) : null}
                             farmerName={selectedCycle.farmerName || selectedCycle.name}
                             open={isAddMortalityOpen}
                             onOpenChange={setIsAddMortalityOpen}
@@ -398,7 +399,6 @@ export default function CyclesScreen() {
 
                         <CorrectMortalityModal
                             cycleId={selectedCycle.id}
-                            currentMortality={selectedCycle.mortality || 0}
                             open={isCorrectMortalityOpen}
                             onOpenChange={setIsCorrectMortalityOpen}
                         />
