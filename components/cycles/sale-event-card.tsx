@@ -29,7 +29,7 @@ export const formatFeedBreakdown = (feedData: any) => {
 };
 
 const safeParseJSON = (data: any) => {
-    console.log(data)
+    // console.log(data)
     if (!data) return [];
     if (typeof data === 'string') {
         try { return JSON.parse(data); } catch (e) { return []; }
@@ -354,9 +354,6 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                             displayPricePerKg={displayPricePerKg}
                             displayTotalAmount={displayTotalAmount}
                             displayMortality={displayMortality}
-                            displayCash={displayCash}
-                            displayDeposit={displayDeposit}
-                            displayMedicine={displayMedicine}
                             selectedReport={selectedReport}
                         />
                     </View>
