@@ -14,6 +14,7 @@ interface AddMortalityModalProps {
     cycleId: string;
     farmerName: string;
     open: boolean;
+    startDate: Date | null;
     onOpenChange: (open: boolean) => void;
     onSuccess?: () => void;
 }
@@ -22,6 +23,7 @@ export function AddMortalityModal({
     cycleId,
     farmerName,
     open,
+    startDate,
     onOpenChange,
     onSuccess,
 }: AddMortalityModalProps) {
@@ -49,6 +51,18 @@ export function AddMortalityModal({
             toast.error("Please enter a valid amount");
             return;
         }
+
+        if (date && startDate) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            const s = new Date(startDate);
+            s.setHours(0, 0, 0, 0);
+            if (d < s) {
+                toast.error("Date cannot be before cycle start");
+                return;
+            }
+        }
+
         mutation.mutate({
             id: cycleId,
             amount: numAmount,
