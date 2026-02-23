@@ -3,6 +3,7 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
+import { useRouter } from "expo-router";
 import { Calendar, ChevronDown, ChevronUp, Copy, ShoppingBag } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
@@ -15,6 +16,7 @@ export function SaleOrderCard({
     order: any,
     onPress?: () => void,
 }) {
+    const router = useRouter();
     const [isExpanded, setIsExpanded] = useState(false);
 
     const totalWeight = order.items?.reduce((s: number, i: any) => s + (i.totalWeight || 0), 0) || 0;
@@ -135,7 +137,18 @@ export function SaleOrderCard({
                     </View>
 
                     {isExpanded && (
-                        <View className="mt-3 p-3 bg-muted/40 rounded-xl border border-dashed border-border">
+                        <View className="mt-3 p-3 bg-muted/40 rounded-xl border border-dashed border-border gap-y-3">
+                            <View className="flex-row flex-wrap gap-2">
+                                {order.items?.map((item: any, idx: number) => (
+                                    <Pressable
+                                        key={idx}
+                                        onPress={() => router.push({ pathname: "/farmer/[id]", params: { id: item.farmer.id } } as any)}
+                                        className="bg-primary/5 px-2 py-1 rounded border border-primary/10 active:opacity-70 active:bg-primary/10"
+                                    >
+                                        <Text className="text-[10px] font-bold text-primary uppercase">{item.farmer.name}</Text>
+                                    </Pressable>
+                                ))}
+                            </View>
                             <Text className="text-[10px] font-mono text-muted-foreground leading-relaxed">
                                 {generateCopyText()}
                             </Text>

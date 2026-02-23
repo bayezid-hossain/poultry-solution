@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
-import { Bird, CalendarDays, MoreHorizontal, Pencil, Power, RotateCcw, ShoppingCart, Skull, Trash2, Wheat, Wrench } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { Bird, CalendarDays, MoreHorizontal, Pencil, Power, RefreshCw, RotateCcw, ShoppingCart, Skull, Trash2, Wheat, Wrench } from "lucide-react-native";
 import { useState } from "react";
 import { Modal, Pressable, View } from "react-native";
 
@@ -21,6 +22,7 @@ interface CycleCardProps {
         status: string;
         createdAt?: string | Date | null;
         endDate?: string | Date | null;
+        farmerId?: string;
     };
     onPress?: () => void;
     onAction?: (action: CycleAction, cycle: any) => void;
@@ -40,6 +42,7 @@ function formatDate(dateStr: string | Date | null | undefined): string {
 }
 
 export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProps) {
+    const router = useRouter();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const docValue = Number(cycle.doc || 0);
@@ -67,13 +70,28 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                 <View className="flex-row items-start justify-between mb-0">
                     <View className="flex-1 space-y-1">
                         <View className="flex-row items-center flex-wrap gap-1">
-                            {!isGrouped && <Text className="font-bold text-foreground text-sm uppercase mr-1" numberOfLines={1}>
-                                {cycleName}
-                            </Text>}
+                            {!isGrouped && (
+                                <Pressable
+                                    className="active:opacity-70"
+                                    onPress={(e) => {
+                                        if (cycle.farmerId) {
+                                            e.stopPropagation();
+                                            router.push({ pathname: "/farmer/[id]", params: { id: cycle.farmerId } } as any);
+                                        }
+                                    }}
+                                >
+                                    <Text className="font-bold text-foreground text-sm uppercase mr-1 active:text-primary" numberOfLines={1}>
+                                        {cycleName}
+                                    </Text>
+                                </Pressable>
+                            )}
 
                             {soldValue > 0 && (
-                                <View className="bg-emerald-500/10 border border-emerald-500/20 px-1 rounded">
-                                    <Text className="text-[9px] font-bold text-emerald-600 uppercase">{soldValue} SOLD</Text>
+                                <View className={`flex-row items-center gap-1 px-1.5 py-0.5 rounded ${isActive ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-muted/30 border border-border/50'}`}>
+                                    {isActive && <Icon as={RefreshCw} size={10} className="text-emerald-500 animate-spin" />}
+                                    <Text className={`text-[9px] font-bold uppercase ${isActive ? 'text-emerald-600' : 'text-muted-foreground'}`}>
+                                        {soldValue} SOLD {isActive ? '• RUNNING' : ''}
+                                    </Text>
                                 </View>
                             )}
 

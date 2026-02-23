@@ -350,7 +350,7 @@ export default function FarmerDetailScreen() {
                         <Pressable className="flex-row items-center justify-between py-5" onPress={() => setLedgerExpanded(!ledgerExpanded)}>
                             <View className="flex-row items-center gap-3">
                                 <Icon as={Scale} size={20} className="text-orange-500" />
-                                <Text className="text-lg font-black text-foreground">Stock Ledger & Import History</Text>
+                                <Text className="text-lg font-black text-foreground">Stock Ledger</Text>
                             </View>
                             <Icon as={ledgerExpanded ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
                         </Pressable>
@@ -466,6 +466,7 @@ export default function FarmerDetailScreen() {
                         startDate={selectedCycle.createdAt ? new Date(selectedCycle.createdAt) : new Date()}
                         open={isSellOpen}
                         onOpenChange={setIsSellOpen}
+                        onSuccess={refetch}
                     />
 
                     <AddMortalityModal
@@ -473,6 +474,7 @@ export default function FarmerDetailScreen() {
                         farmerName={selectedCycle.farmerName || farmer.name}
                         open={isAddMortalityOpen}
                         onOpenChange={setIsAddMortalityOpen}
+                        onSuccess={refetch}
                     />
 
                     <CorrectDocModal
@@ -480,6 +482,7 @@ export default function FarmerDetailScreen() {
                         currentDoc={parseInt(String(selectedCycle.doc || 0))}
                         open={isEditDocOpen}
                         onOpenChange={setIsEditDocOpen}
+                        onSuccess={refetch}
                     />
 
                     <CorrectAgeModal
@@ -487,6 +490,7 @@ export default function FarmerDetailScreen() {
                         currentAge={selectedCycle.age}
                         open={isEditAgeOpen}
                         onOpenChange={setIsEditAgeOpen}
+                        onSuccess={refetch}
                     />
 
                     <CorrectMortalityModal
@@ -494,6 +498,7 @@ export default function FarmerDetailScreen() {
                         currentMortality={selectedCycle.mortality || 0}
                         open={isCorrectMortalityOpen}
                         onOpenChange={setIsCorrectMortalityOpen}
+                        onSuccess={refetch}
                     />
 
                     <EndCycleModal
@@ -502,6 +507,7 @@ export default function FarmerDetailScreen() {
                         open={isEndCycleOpen}
                         onOpenChange={setIsEndCycleOpen}
                         onRecordSale={() => setIsSellOpen(true)}
+                        onSuccess={refetch}
                     />
 
                     <ReopenCycleModal

@@ -8,7 +8,7 @@ import { Calendar as CalendarIcon, CheckCircle2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { toast } from "sonner-native";
+import { toast, Toaster } from "sonner-native";
 
 interface ConfirmDocOrderModalProps {
     open: boolean;
@@ -64,6 +64,7 @@ export function ConfirmDocOrderModal({ open, onOpenChange, order, onSuccess }: C
 
     return (
         <Modal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => !confirmMutation.isPending && onOpenChange(false)}>
+
             <View className="flex-1 bg-background" style={{ paddingBottom: insets.bottom }}>
                 {/* Header */}
                 <View className="px-4 py-4 border-b border-border/50 flex-row justify-between items-center bg-card">
@@ -134,6 +135,7 @@ export function ConfirmDocOrderModal({ open, onOpenChange, order, onSuccess }: C
                     </Button>
                 </View>
             </View>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

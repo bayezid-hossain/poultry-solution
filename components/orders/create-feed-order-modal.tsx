@@ -10,7 +10,7 @@ import { Calendar as CalendarIcon, CheckCircle2, Copy, Edit2, Factory, Plus, Sea
 import { useEffect, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { toast } from "sonner-native";
+import { toast, Toaster } from "sonner-native";
 
 interface CreateFeedOrderModalProps {
     open: boolean;
@@ -256,6 +256,7 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
     if (isSearchOpen) {
         return (
             <Modal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setIsSearchOpen(false)}>
+
                 <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
                     <View className="px-4 py-4 border-b border-border/50 flex-row gap-2 items-center">
                         <View className="flex-1 relative justify-center">
@@ -307,12 +308,14 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                         />
                     )}
                 </View>
+                <Toaster position="bottom-center" offset={40} />
             </Modal>
         );
     }
 
     return (
         <Modal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => !isSubmitting && onOpenChange(false)}>
+
             <View className="flex-1 bg-background" style={{ paddingBottom: insets.bottom }}>
                 {/* Header */}
                 <View className="px-4 py-4 border-b border-border/50 flex-row justify-between items-center bg-card">
@@ -481,6 +484,7 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                     </Button>
                 </View>
             </View>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

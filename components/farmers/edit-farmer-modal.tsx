@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { MapPin, Phone, User, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { toast, Toaster } from "sonner-native";
 
 interface EditFarmerModalProps {
     farmer: {
@@ -29,7 +30,6 @@ export function EditFarmerModal({
     const [name, setName] = useState(farmer.name);
     const [location, setLocation] = useState(farmer.location || "");
     const [mobile, setMobile] = useState(farmer.mobile || "");
-    const [error, setError] = useState<string | null>(null);
 
     const nameRef = useRef<TextInput>(null);
     const locationRef = useRef<TextInput>(null);
@@ -40,7 +40,6 @@ export function EditFarmerModal({
             setName(farmer.name);
             setLocation(farmer.location || "");
             setMobile(farmer.mobile || "");
-            setError(null);
         }
     }, [open, farmer]);
 
@@ -50,16 +49,15 @@ export function EditFarmerModal({
             onSuccess?.();
         },
         onError: (err: any) => {
-            setError(err.message);
+            toast.error(err.message);
         },
     });
 
     const handleSubmit = () => {
         if (name.length < 2) {
-            setError("Name must be at least 2 characters");
+            toast.error("Name must be at least 2 characters");
             return;
         }
-        setError(null);
         mutation.mutate({
             id: farmer.id,
             name: name.toUpperCase(),
@@ -76,6 +74,7 @@ export function EditFarmerModal({
             visible={open}
             onRequestClose={() => onOpenChange(false)}
         >
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
                 className="flex-1"
@@ -157,11 +156,7 @@ export function EditFarmerModal({
                                 </Text>
                             </View>
 
-                            {error && (
-                                <View className="bg-destructive/10 p-3 rounded-lg border border-destructive/20 mt-2">
-                                    <Text className="text-destructive text-xs text-center font-medium">{error}</Text>
-                                </View>
-                            )}
+
 
                             <View className="flex-row gap-3 pt-6">
                                 <Button
@@ -185,6 +180,7 @@ export function EditFarmerModal({
                     </Pressable>
                 </Pressable>
             </KeyboardAvoidingView>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

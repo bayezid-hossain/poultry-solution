@@ -2,8 +2,10 @@ import { AddMortalityModal } from "@/components/cycles/add-mortality-modal";
 import { CorrectAgeModal } from "@/components/cycles/correct-age-modal";
 import { CorrectDocModal } from "@/components/cycles/correct-doc-modal";
 import { CorrectMortalityModal } from "@/components/cycles/correct-mortality-modal";
+import { DeleteCycleModal } from "@/components/cycles/delete-cycle-modal";
 import { EndCycleModal } from "@/components/cycles/end-cycle-modal";
 import { LogsTimeline } from "@/components/cycles/logs-timeline";
+import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
 import { SalesHistoryList } from "@/components/cycles/sales-history-list";
 import { SellModal } from "@/components/cycles/sell-modal";
 import { Button } from "@/components/ui/button";
@@ -13,7 +15,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { Activity, Archive, ArrowLeft, Bird, ChevronDown, ChevronUp, LineChart, MoreHorizontal, Package, Pencil, ShoppingCart, Skull, Wheat } from "lucide-react-native";
+import { Activity, Archive, ArrowLeft, Bird, ChevronDown, ChevronUp, LineChart, MoreHorizontal, Package, Pencil, Power, RotateCcw, ShoppingCart, Skull, Trash2, Wheat } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, View } from "react-native";
 
@@ -25,6 +27,8 @@ export default function CycleDetailsScreen() {
     const [isAgeModalOpen, setIsAgeModalOpen] = useState(false);
     const [isMortalityCorrectionOpen, setIsMortalityCorrectionOpen] = useState(false);
     const [isSellModalOpen, setIsSellModalOpen] = useState(false);
+    const [isReopenModalOpen, setIsReopenModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     // Accordions
     const [openSection, setOpenSection] = useState<'activity' | 'sales' | 'other' | 'insights' | null>(null);
@@ -184,7 +188,7 @@ export default function CycleDetailsScreen() {
                 </Card>
 
                 {/* 4. Accordions */}
-                <View className="space-y-3 mt-2">
+                <View className="space-y-3 gap-y-2 mt-2">
                     {/* Activity Logs */}
                     <View className="bg-card w-full border border-border/30 rounded-[16px] overflow-hidden">
                         <Pressable
@@ -286,47 +290,67 @@ export default function CycleDetailsScreen() {
                         <Text className="text-lg font-bold text-foreground mb-4 px-2">Cycle Actions</Text>
 
                         {!isArchived ? (
-                            <View className="space-y-1">
-                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsSellModalOpen(true); }}>
-                                    <View className="w-8 h-8 rounded-full bg-emerald-500/10 items-center justify-center mr-3">
-                                        <Icon as={ShoppingCart} size={16} className="text-emerald-600" />
+                            <View className="">
+                                <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => { setIsMenuOpen(false); setIsSellModalOpen(true); }}>
+                                    <View className="w-8 items-center justify-center mr-3">
+                                        <Icon as={ShoppingCart} size={20} className="text-primary" />
                                     </View>
-                                    <Text className="font-bold text-foreground text-base">Sell Birds</Text>
-                                </Button>
-                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsMortalityModalOpen(true); }}>
-                                    <View className="w-8 h-8 rounded-full bg-destructive/10 items-center justify-center mr-3">
-                                        <Icon as={Skull} size={16} className="text-destructive" />
+                                    <Text className="font-medium text-foreground text-base flex-1">Sell Birds</Text>
+                                </Pressable>
+                                <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => { setIsMenuOpen(false); setIsMortalityModalOpen(true); }}>
+                                    <View className="w-8 items-center justify-center mr-3">
+                                        <Icon as={Skull} size={20} className="text-foreground" />
                                     </View>
-                                    <Text className="font-bold text-foreground text-base">Add Mortality</Text>
-                                </Button>
-                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsDocModalOpen(true); }} disabled={soldValue > 0}>
-                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${soldValue > 0 ? 'bg-muted' : 'bg-primary/10'}`}>
-                                        <Icon as={Bird} size={16} className={soldValue > 0 ? "text-muted-foreground" : "text-primary"} />
+                                    <Text className="font-medium text-foreground text-base flex-1">Add Mortality</Text>
+                                </Pressable>
+                                <Pressable
+                                    className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`}
+                                    onPress={() => { if (soldValue === 0) { setIsMenuOpen(false); setIsDocModalOpen(true); } }}
+                                >
+                                    <View className="w-8 items-center justify-center mr-3">
+                                        <Icon as={Bird} size={20} className={soldValue > 0 ? "text-muted-foreground" : "text-foreground"} />
                                     </View>
-                                    <Text className={`font-bold text-base ${soldValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Edit Initial Birds (DOC)</Text>
-                                </Button>
-                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsAgeModalOpen(true); }} disabled={soldValue > 0}>
-                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${soldValue > 0 ? 'bg-muted' : 'bg-primary/10'}`}>
-                                        <Icon as={Activity} size={16} className={soldValue > 0 ? "text-muted-foreground" : "text-primary"} />
+                                    <Text className={`font-medium text-base flex-1 ${soldValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Edit Initial Birds (DOC)</Text>
+                                </Pressable>
+                                <Pressable
+                                    className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`}
+                                    onPress={() => { if (soldValue === 0) { setIsMenuOpen(false); setIsAgeModalOpen(true); } }}
+                                >
+                                    <View className="w-8 items-center justify-center mr-3">
+                                        <Icon as={Activity} size={20} className={soldValue > 0 ? "text-muted-foreground" : "text-foreground"} />
                                     </View>
-                                    <Text className={`font-bold text-base ${soldValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Edit Age</Text>
-                                </Button>
-                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsMortalityCorrectionOpen(true); }} disabled={soldValue > 0}>
-                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${soldValue > 0 ? 'bg-muted' : 'bg-amber-500/10'}`}>
-                                        <Icon as={Pencil} size={16} className={soldValue > 0 ? "text-muted-foreground" : "text-amber-600"} />
+                                    <Text className={`font-medium text-base flex-1 ${soldValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Edit Age</Text>
+                                </Pressable>
+                                <Pressable
+                                    className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`}
+                                    onPress={() => { if (soldValue === 0) { setIsMenuOpen(false); setIsMortalityCorrectionOpen(true); } }}
+                                >
+                                    <View className="w-8 items-center justify-center mr-3">
+                                        <Icon as={Pencil} size={20} className={soldValue > 0 ? "text-muted-foreground" : "text-foreground"} />
                                     </View>
-                                    <Text className={`font-bold text-base ${soldValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Correct Total Mortality</Text>
-                                </Button>
-                                <Button variant="ghost" className="justify-start px-4 h-14" onPress={() => { setIsMenuOpen(false); setIsEndCycleOpen(true); }}>
-                                    <View className="w-8 h-8 rounded-full bg-amber-500/10 items-center justify-center mr-3">
-                                        <Icon as={Archive} size={16} className="text-amber-600" />
+                                    <Text className={`font-medium text-base flex-1 ${soldValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Correct Total Mortality</Text>
+                                </Pressable>
+                                <Pressable className="flex-row items-center py-4 mt-2 active:bg-red-500/10 rounded-xl" onPress={() => { setIsMenuOpen(false); setIsEndCycleOpen(true); }}>
+                                    <View className="w-8 items-center justify-center mr-3">
+                                        <Icon as={Power} size={20} className="text-destructive" />
                                     </View>
-                                    <Text className="font-bold text-amber-600 text-base">End Cycle</Text>
-                                </Button>
+                                    <Text className="font-bold text-destructive text-base flex-1">End Cycle</Text>
+                                </Pressable>
                             </View>
                         ) : (
-                            <View className="space-y-1">
-                                <Text className="px-4 text-muted-foreground mb-4">You must open this from the History cycles page to reopen or delete.</Text>
+                            <View className="">
+                                <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => { setIsMenuOpen(false); setIsReopenModalOpen(true); }}>
+                                    <View className="w-8 items-center justify-center mr-3">
+                                        <Icon as={RotateCcw} size={20} className="text-foreground" />
+                                    </View>
+                                    <Text className="font-medium text-foreground text-base flex-1">Reopen Cycle</Text>
+                                </Pressable>
+                                <Pressable className="flex-row items-center py-4 mt-2 active:bg-red-500/10 rounded-xl" onPress={() => { setIsMenuOpen(false); setIsDeleteModalOpen(true); }}>
+                                    <View className="w-8 items-center justify-center mr-3">
+                                        <Icon as={Trash2} size={20} className="text-destructive" />
+                                    </View>
+                                    <Text className="font-bold text-destructive text-base flex-1">Delete Record</Text>
+                                </Pressable>
                             </View>
                         )}
                     </Pressable>
@@ -344,6 +368,21 @@ export default function CycleDetailsScreen() {
                         onSuccess={refetch}
                     />
 
+                    <ReopenCycleModal
+                        open={isReopenModalOpen}
+                        onOpenChange={setIsReopenModalOpen}
+                        historyId={cycle.id}
+                        cycleName={farmer.name}
+                        onSuccess={() => refetch()}
+                    />
+
+                    <DeleteCycleModal
+                        open={isDeleteModalOpen}
+                        onOpenChange={setIsDeleteModalOpen}
+                        historyId={cycle.id}
+                        cycleName={farmer.name}
+                        onSuccess={() => router.back()}
+                    />
                     <EndCycleModal
                         open={isEndCycleOpen}
                         onOpenChange={setIsEndCycleOpen}

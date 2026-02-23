@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { format } from "date-fns";
+import { useRouter } from "expo-router";
 import { AlertCircle, ArrowRightLeft, Bird, RotateCcw, Trash2, Wheat, Wrench } from "lucide-react-native";
 import { Alert, Pressable, View } from "react-native";
 
@@ -36,6 +37,7 @@ export function FarmerCard({
     onEdit,
     onRestore
 }: FarmerCardProps) {
+    const router = useRouter();
     const totalSupplied = (Number(farmer.mainStock ?? 0) + Number(farmer.totalConsumed ?? 0));
     const joinedDate = farmer.createdAt ? format(new Date(farmer.createdAt), "dd/MM/yyyy") : "N/A";
 
@@ -46,9 +48,17 @@ export function FarmerCard({
                     {/* Header Area */}
                     <View className='flex-row justify-between items-center mb-1'>
                         <View className='flex-row items-center gap-2 flex-1'>
-                            <Text className='font-black text-lg text-foreground uppercase tracking-tight flex-1' numberOfLines={2}>
-                                {farmer.name}
-                            </Text>
+                            <Pressable
+                                className="flex-1 active:opacity-70"
+                                onPress={(e) => {
+                                    e.stopPropagation();
+                                    router.push({ pathname: "/farmer/[id]", params: { id: farmer.id } } as any);
+                                }}
+                            >
+                                <Text className='font-black text-lg text-foreground uppercase tracking-tight active:text-primary' numberOfLines={2}>
+                                    {farmer.name}
+                                </Text>
+                            </Pressable>
                             {(!farmer.location || !farmer.mobile) && (
                                 <Pressable
                                     onPress={() => Alert.alert("Missing Info", "This farmer is missing location or mobile number.")}

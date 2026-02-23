@@ -83,7 +83,7 @@ export const OfficerKpiCards = ({
             {items.map((item, i) => (
                 <Card key={i} className={cn(
                     "relative overflow-hidden border-border/50 bg-card flex-1 min-w-[160px]",
-                    item.isAlert && "border-destructive/20 bg-destructive/5"
+                    item.isAlert && "border-destructive/20 "
                 )}>
                     <View className={cn(
                         "absolute top-0 left-0 w-1 h-full opacity-40",

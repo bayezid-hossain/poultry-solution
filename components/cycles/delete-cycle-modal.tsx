@@ -4,7 +4,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Trash2 } from "lucide-react-native";
 import { ActivityIndicator, Modal, View } from "react-native";
-import { toast } from "sonner-native";
+import { toast, Toaster } from "sonner-native";
 
 interface DeleteCycleModalProps {
     historyId: string;
@@ -33,6 +33,7 @@ export const DeleteCycleModal = ({ historyId, cycleName, open, onOpenChange, onS
             transparent={true}
             onRequestClose={() => onOpenChange(false)}
         >
+
             <View className="flex-1 justify-center items-center bg-black/50 px-4">
                 <View className="bg-background w-full max-w-sm rounded-2xl overflow-hidden shadow-xl">
                     <View className="p-6">
@@ -73,6 +74,7 @@ export const DeleteCycleModal = ({ historyId, cycleName, open, onOpenChange, onS
                     </View>
                 </View>
             </View>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 };

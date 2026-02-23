@@ -99,7 +99,7 @@ export function CorrectAgeModal({
                         </Button>
                     </View>
 
-                    <View className="p-6 space-y-4">
+                    <View className="p-6 space-y-4 gap-y-2">
                         <View className="gap-2">
                             <View className="flex-row justify-between items-center ml-1">
                                 <Text className="text-sm font-bold text-foreground">New Age (Days)</Text>

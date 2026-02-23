@@ -13,13 +13,22 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Bird, Factory, Plus, ShoppingBag } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
 
 export default function OrdersScreen() {
+    const router = useRouter();
+    const { tab } = useLocalSearchParams<{ tab: 'feed' | 'doc' | 'sale' }>();
     const [activeTab, setActiveTab] = useState<'feed' | 'doc' | 'sale'>('feed');
+
+    useEffect(() => {
+        if (tab && (tab === 'feed' || tab === 'doc' || tab === 'sale')) {
+            setActiveTab(tab);
+        }
+    }, [tab]);
+
     const [isCreateFeedOpen, setIsCreateFeedOpen] = useState(false);
 
     // Feed Action States
@@ -142,7 +151,10 @@ export default function OrdersScreen() {
                     <Button
                         variant={activeTab === 'feed' ? 'default' : 'outline'}
                         className='flex-1 flex-row gap-2 h-11 border-border/50'
-                        onPress={() => setActiveTab('feed')}
+                        onPress={() => {
+                            setActiveTab('feed');
+                            router.setParams({ tab: 'feed' });
+                        }}
                     >
                         <Icon as={Factory} className={activeTab === 'feed' ? "text-primary-foreground" : "text-muted-foreground"} size={14} />
                         <Text className={`font-bold uppercase tracking-wider text-xs ${activeTab === 'feed' ? "text-primary-foreground" : "text-muted-foreground"}`}>
@@ -152,7 +164,10 @@ export default function OrdersScreen() {
                     <Button
                         variant={activeTab === 'doc' ? 'default' : 'outline'}
                         className='flex-1 flex-row gap-2 h-11 border-border/50'
-                        onPress={() => setActiveTab('doc')}
+                        onPress={() => {
+                            setActiveTab('doc');
+                            router.setParams({ tab: 'doc' });
+                        }}
                     >
                         <Icon as={Bird} className={activeTab === 'doc' ? "text-primary-foreground" : "text-muted-foreground"} size={14} />
                         <Text className={`font-bold uppercase tracking-wider text-xs ${activeTab === 'doc' ? "text-primary-foreground" : "text-muted-foreground"}`}>
@@ -162,7 +177,10 @@ export default function OrdersScreen() {
                     <Button
                         variant={activeTab === 'sale' ? 'default' : 'outline'}
                         className='flex-1 flex-row gap-2 h-11 border-border/50'
-                        onPress={() => setActiveTab('sale')}
+                        onPress={() => {
+                            setActiveTab('sale');
+                            router.setParams({ tab: 'sale' });
+                        }}
                     >
                         <Icon as={ShoppingBag} className={activeTab === 'sale' ? "text-primary-foreground" : "text-muted-foreground"} size={14} />
                         <Text className={`font-bold uppercase tracking-wider text-xs ${activeTab === 'sale' ? "text-primary-foreground" : "text-muted-foreground"}`}>

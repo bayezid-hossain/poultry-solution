@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { ChevronDown, ChevronRight, FileText, Filter } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, View } from "react-native";
@@ -21,6 +21,7 @@ const formatDate = (date: any) => {
 };
 
 export default function DocPlacementsScreen() {
+    const router = useRouter();
     const now = new Date();
     const [month, setMonth] = useState(now.getMonth() + 1); // 1-12
     const [year, setYear] = useState(now.getFullYear());
@@ -162,7 +163,12 @@ export default function DocPlacementsScreen() {
                                                         />
                                                     </View>
                                                     <View>
-                                                        <Text className="font-black text-sm uppercase tracking-tight text-foreground" numberOfLines={1}>{f.farmerName}</Text>
+                                                        <Pressable
+                                                            className="active:opacity-70"
+                                                            onPress={() => router.push({ pathname: "/farmer/[id]", params: { id: f.farmerId } } as any)}
+                                                        >
+                                                            <Text className="font-black text-sm uppercase tracking-tight text-foreground active:text-primary" numberOfLines={1}>{f.farmerName}</Text>
+                                                        </Pressable>
                                                         <Text className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase mt-0.5">
                                                             {f.cycles?.length ?? 0} {f.cycles?.length === 1 ? 'BATCH' : 'BATCHES'}
                                                         </Text>

@@ -11,6 +11,7 @@ import "../global.css";
 import { Text } from "@/components/ui/text";
 import { ThemeProvider, useTheme } from "@/context/theme-context";
 import { authClient } from "@/lib/auth-client";
+import { Platform } from "react-native";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { data: session, isPending: isSessionPending } = authClient.useSession();
@@ -131,10 +132,15 @@ export const unstable_settings = {
 import { queryClient, trpc, trpcClient } from "@/lib/trpc";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { FullWindowOverlay } from "react-native-screens";
 import { Toaster } from "sonner-native";
 
 function RootLayoutInner() {
   const { colorScheme } = useTheme();
+
+  // FullWindowOverlay is iOS only. Android Modals are handled differently, but React Native Screens
+  // exports this component. To be safe, we only use it on iOS.
+  const TopOverlay = Platform.OS === 'ios' ? FullWindowOverlay : View;
 
   return (
     <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
@@ -151,7 +157,10 @@ function RootLayoutInner() {
       </AuthGuard>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <PortalHost />
-      <Toaster position="bottom-center" />
+      {/* TopOverlay ensures toasts render above Modals, especially on iOS */}
+      <TopOverlay style={Platform.OS === 'ios' ? undefined : { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'box-none' }}>
+        <Toaster position="bottom-center" offset={40} />
+      </TopOverlay>
     </NavigationThemeProvider>
   );
 }

@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { CheckCircle2, Truck } from "lucide-react-native";
 import { useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, View } from "react-native";
-import { toast } from "sonner-native";
+import { toast, Toaster } from "sonner-native";
 
 interface ConfirmFeedOrderModalProps {
     open: boolean;
@@ -39,6 +39,7 @@ export function ConfirmFeedOrderModal({ open, onOpenChange, feedOrderId, onSucce
 
     return (
         <Modal visible={open} animationType="fade" transparent onRequestClose={() => !confirmMutation.isPending && onOpenChange(false)}>
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
                 className="flex-1 justify-center items-center bg-black/50 px-4"
@@ -91,6 +92,7 @@ export function ConfirmFeedOrderModal({ open, onOpenChange, feedOrderId, onSucce
                     </ScrollView>
                 </View>
             </KeyboardAvoidingView>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { AlertTriangle, Archive, ShoppingCart, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, TextInput, View } from "react-native";
+import { toast, Toaster } from "sonner-native";
 
 interface EndCycleModalProps {
     cycle: {
@@ -29,14 +30,12 @@ export function EndCycleModal({
     onRecordSale,
 }: EndCycleModalProps) {
     const [intake, setIntake] = useState("");
-    const [error, setError] = useState<string | null>(null);
 
     const intakeRef = useRef<TextInput>(null);
 
     useEffect(() => {
         if (open) {
             setIntake(cycle.intake.toString());
-            setError(null);
         }
     }, [open, cycle]);
 
@@ -46,17 +45,16 @@ export function EndCycleModal({
             onSuccess?.();
         },
         onError: (err: any) => {
-            setError(err.message);
+            toast.error(err.message);
         },
     });
 
     const handleSubmit = () => {
         const numIntake = parseFloat(intake);
         if (isNaN(numIntake) || numIntake < 0) {
-            setError("Please enter a valid final feed intake");
+            toast.error("Please enter a valid final feed intake");
             return;
         }
-        setError(null);
         mutation.mutate({
             id: cycle.id,
             intake: numIntake,
@@ -70,6 +68,7 @@ export function EndCycleModal({
             visible={open}
             onRequestClose={() => onOpenChange(false)}
         >
+
             <Pressable
                 className="flex-1 bg-black/60 items-center justify-center p-4"
                 onPress={() => onOpenChange(false)}
@@ -122,11 +121,7 @@ export function EndCycleModal({
                             </Text>
                         </View>
 
-                        {error && (
-                            <View className="bg-destructive/10 p-3 rounded-lg border border-destructive/20">
-                                <Text className="text-destructive text-xs text-center font-medium">{error}</Text>
-                            </View>
-                        )}
+
 
                         <View className="gap-3 pt-2">
                             <Button
@@ -162,6 +157,7 @@ export function EndCycleModal({
                     </View>
                 </Pressable>
             </Pressable>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

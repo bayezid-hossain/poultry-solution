@@ -8,7 +8,7 @@ import { ArrowLeft, Banknote, Bird, Box, FileText, ShoppingCart, Truck } from "l
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
-import { toast } from "sonner-native";
+import { toast, Toaster } from "sonner-native";
 import { z } from "zod";
 import { SaleDetailsContent } from "./sale-details-content";
 import { FarmerInfoHeader, FeedFieldArray, SaleMetricsBar } from "./sale-form-sections";
@@ -270,6 +270,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
             presentationStyle="pageSheet"
             onRequestClose={() => onOpenChange(false)}
         >
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
                 className="flex-1 bg-background"
@@ -294,6 +295,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                             <SaleDetailsContent
                                 sale={previewData}
                                 isLatest={true}
+
                                 displayBirdsSold={previewData.birdsSold}
                                 displayTotalWeight={previewData.totalWeight}
                                 displayAvgWeight={previewData.avgWeight}
@@ -340,7 +342,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                 colorScheme="orange"
                             />
 
-                            <View className="space-y-4">
+                            <View className="space-y-4 gap-y-2">
                                 <View className="flex-row items-center gap-2 mb-2">
                                     <Icon as={Truck} size={16} className="text-muted-foreground" />
                                     <Text className="font-bold text-muted-foreground">Sale Details</Text>
@@ -431,7 +433,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                 </View>
                             </View>
 
-                            <View className="space-y-4">
+                            <View className="space-y-4 gap-y-2">
                                 <View className="flex-row items-center gap-2 mb-2">
                                     <Icon as={Banknote} size={16} className="text-muted-foreground" />
                                     <Text className="font-bold text-muted-foreground">Finance</Text>
@@ -480,7 +482,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                 />
                             </View>
 
-                            <View className="space-y-4">
+                            <View className="space-y-4 gap-y-2">
                                 <View className="flex-row items-center gap-2 mb-2">
                                     <Icon as={Box} size={16} className="text-muted-foreground" />
                                     <Text className="font-bold text-muted-foreground">Inventory</Text>
@@ -555,6 +557,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                     </View>
                 )}
             </KeyboardAvoidingView>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 };

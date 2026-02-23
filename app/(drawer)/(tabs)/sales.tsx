@@ -5,8 +5,8 @@ import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { useFocusEffect } from "expo-router";
-import { CheckCircle2, ChevronDown, ChevronUp, FileText, Search, Trash2, User } from "lucide-react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { CheckCircle2, ChevronDown, ChevronUp, FileText, RefreshCw, Search, Trash2, User } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, View } from "react-native";
 
@@ -117,6 +117,7 @@ export default function SalesScreen() {
 }
 
 function FarmerSalesAccordion({ farmer, onRefresh }: { farmer: any, onRefresh: () => void }) {
+    const router = useRouter();
     const [isOpen, setIsOpen] = useState(true);
     const cycleList = Object.values(farmer.cycles);
 
@@ -131,7 +132,12 @@ function FarmerSalesAccordion({ farmer, onRefresh }: { farmer: any, onRefresh: (
                         <Icon as={User} size={20} className="text-foreground/70" />
                     </View>
                     <View>
-                        <Text className="text-sm font-bold text-foreground uppercase tracking-tight">{farmer.name}</Text>
+                        <Pressable
+                            className="active:opacity-70"
+                            onPress={() => router.push({ pathname: "/farmer/[id]", params: { id: farmer.id } } as any)}
+                        >
+                            <Text className="text-sm font-bold text-foreground uppercase tracking-tight active:text-primary">{farmer.name}</Text>
+                        </Pressable>
                         <Text className="text-xs text-muted-foreground font-medium">{cycleList.length} Cycles</Text>
                     </View>
                 </View>
@@ -196,7 +202,7 @@ function CycleRowAccordion({ cycle, isLast, onRefresh }: { cycle: any, isLast: b
                 onPress={() => setIsOpen(!isOpen)}
             >
                 <View className="flex-row items-center gap-1.5 flex-[1.5]">
-                    <Icon as={CheckCircle2} size={14} className="text-emerald-500" />
+                    <Icon as={cycle.isEnded ? CheckCircle2 : RefreshCw} size={14} className={cycle.isEnded ? "text-emerald-500" : "text-amber-500"} />
                     <Text className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">
                         {cycle.sales.length} {cycle.sales.length === 1 ? 'SALE' : 'SALES'}
                     </Text>

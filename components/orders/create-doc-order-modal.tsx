@@ -10,7 +10,7 @@ import { Bird, Calendar as CalendarIcon, CheckCircle2, ChevronDown, Copy, Edit2,
 import { useEffect, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Switch, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { toast } from "sonner-native";
+import { toast, Toaster } from "sonner-native";
 
 interface CreateDocOrderModalProps {
     open: boolean;
@@ -57,6 +57,9 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
 
     // Bird type picker state
     const [birdTypePickerItemId, setBirdTypePickerItemId] = useState<{ itemId: string, batchId: string } | null>(null);
+    const [newBirdType, setNewBirdType] = useState("");
+
+    const utils = trpc.useUtils();
 
     useEffect(() => {
         if (open) {
@@ -112,6 +115,21 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
     );
 
     const { data: birdTypes } = trpc.officer.docOrders.getBirdTypes.useQuery();
+
+    const createBirdTypeMutation = trpc.officer.docOrders.createBirdType.useMutation({
+        onSuccess: (data) => {
+            utils.officer.docOrders.getBirdTypes.invalidate();
+            if (birdTypePickerItemId) {
+                handleUpdateBatch(birdTypePickerItemId.itemId, birdTypePickerItemId.batchId, 'birdType', data.name);
+            }
+            setNewBirdType("");
+            setBirdTypePickerItemId(null);
+            toast.success("Bird type added");
+        },
+        onError: (err: any) => {
+            toast.error(err.message || "Failed to add bird type");
+        }
+    });
 
     const createMutation = trpc.officer.docOrders.create.useMutation({
         onSuccess: (data, variables) => {
@@ -300,6 +318,7 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
     if (isSearchOpen) {
         return (
             <Modal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setIsSearchOpen(false)}>
+
                 <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
                     <View className="px-4 py-4 border-b border-border/50 flex-row gap-2 items-center">
                         <View className="flex-1 relative justify-center">
@@ -351,6 +370,7 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                         />
                     )}
                 </View>
+                <Toaster position="bottom-center" offset={40} />
             </Modal>
         );
     }
@@ -358,6 +378,7 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
     return (
         <>
             <Modal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => !isSubmitting && onOpenChange(false)}>
+
                 <View className="flex-1 bg-background" style={{ paddingBottom: insets.bottom }}>
                     {/* Header */}
                     <View className="px-4 py-4 border-b border-border/50 flex-row justify-between items-center bg-card">
@@ -535,6 +556,7 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                     </View>
                 </View>
             </Modal>
+            <Toaster position="bottom-center" offset={40} />
 
             <Modal
                 transparent
@@ -542,34 +564,61 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                 animationType="fade"
                 onRequestClose={() => setBirdTypePickerItemId(null)}
             >
-                <Pressable className="flex-1 bg-black/50 justify-end" onPress={() => setBirdTypePickerItemId(null)}>
-                    <Pressable className="bg-card rounded-t-3xl pb-8 overflow-hidden border-t border-border/50" onPress={(e) => e.stopPropagation()}>
-                        <View className="items-center py-4">
-                            <View className="w-12 h-1.5 bg-muted rounded-full" />
-                        </View>
-                        <View className="px-6 pb-2">
-                            <Text className="text-lg font-black text-foreground mb-4">Select Bird Type</Text>
-                            {birdTypes?.map((bt: any) => (
-                                <Pressable
-                                    key={bt.id || bt.name}
-                                    className="flex-row items-center py-3.5 border-b border-border/30 active:bg-muted/50"
-                                    onPress={() => {
-                                        if (birdTypePickerItemId) {
-                                            handleUpdateBatch(birdTypePickerItemId.itemId, birdTypePickerItemId.batchId, 'birdType', bt.name);
-                                        }
-                                        setBirdTypePickerItemId(null);
-                                    }}
-                                >
-                                    <Icon as={Bird} size={18} className="text-primary mr-3" />
-                                    <Text className="text-base font-medium text-foreground">{bt.name}</Text>
-                                </Pressable>
-                            ))}
-                            {(!birdTypes || birdTypes.length === 0) && (
-                                <Text className="text-muted-foreground py-4 text-center">No bird types found</Text>
-                            )}
-                        </View>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : undefined}
+                    className="flex-1"
+                >
+                    <Pressable className="flex-1 bg-black/50 justify-end" onPress={() => setBirdTypePickerItemId(null)}>
+                        <Pressable className="bg-card rounded-t-3xl pb-8 overflow-hidden border-t border-border/50" onPress={(e) => e.stopPropagation()}>
+                            <View className="items-center py-4">
+                                <View className="w-12 h-1.5 bg-muted rounded-full" />
+                            </View>
+                            <View className="px-6 pb-2">
+                                <Text className="text-lg font-black text-foreground mb-4">Select Bird Type</Text>
+                                <FlatList
+                                    data={birdTypes || []}
+                                    keyExtractor={(bt: any) => bt.id || bt.name}
+                                    renderItem={({ item: bt }) => (
+                                        <Pressable
+                                            className="flex-row items-center py-3.5 border-b border-border/30 active:bg-muted/50"
+                                            onPress={() => {
+                                                if (birdTypePickerItemId) {
+                                                    handleUpdateBatch(birdTypePickerItemId.itemId, birdTypePickerItemId.batchId, 'birdType', bt.name);
+                                                }
+                                                setBirdTypePickerItemId(null);
+                                            }}
+                                        >
+                                            <Icon as={Bird} size={18} className="text-primary mr-3" />
+                                            <Text className="text-base font-medium text-foreground">{bt.name}</Text>
+                                        </Pressable>
+                                    )}
+                                    ListEmptyComponent={() => (
+                                        <Text className="text-muted-foreground py-4 text-center">No bird types found</Text>
+                                    )}
+                                    style={{ maxHeight: 300 }}
+                                />
+
+                                <View className="mt-4 pt-4 border-t border-border/20 flex-row gap-2 items-center">
+                                    <Input
+                                        className="flex-1 h-12 bg-muted/30"
+                                        placeholder="New bird type..."
+                                        value={newBirdType}
+                                        onChangeText={setNewBirdType}
+                                    />
+                                    <Button
+                                        onPress={() => createBirdTypeMutation.mutate({ name: newBirdType.trim() })}
+                                        disabled={!newBirdType.trim() || createBirdTypeMutation.isPending}
+                                        className="h-12 px-6 bg-primary"
+                                    >
+                                        <Text className="text-primary-foreground font-bold">
+                                            {createBirdTypeMutation.isPending ? "Adding..." : "Add"}
+                                        </Text>
+                                    </Button>
+                                </View>
+                            </View>
+                        </Pressable>
                     </Pressable>
-                </Pressable>
+                </KeyboardAvoidingView>
             </Modal>
         </>
     );

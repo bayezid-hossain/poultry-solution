@@ -314,7 +314,8 @@ export default function CyclesScreen() {
                                                 isGrouped={true}
                                                 cycle={{
                                                     ...cycle,
-                                                    intake: Number(cycle.intake ?? 0)
+                                                    intake: Number(cycle.intake ?? 0),
+                                                    farmerId: cycle.farmerId
                                                 }}
                                                 onPress={() => router.push(`/cycle/${cycle.id}` as any)}
                                                 onAction={handleCycleAction}
@@ -337,7 +338,8 @@ export default function CyclesScreen() {
                             <CycleCard
                                 cycle={{
                                     ...item,
-                                    intake: Number(item.intake ?? 0)
+                                    intake: Number(item.intake ?? 0),
+                                    farmerId: item.farmerId
                                 }}
                                 onPress={() => router.push(`/cycle/${item.id}` as any)}
                                 onAction={handleCycleAction}

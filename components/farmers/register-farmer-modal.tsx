@@ -9,7 +9,7 @@ import { X } from "lucide-react-native";
 import { useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { ActivityIndicator, Modal, Pressable, TextInput, View } from "react-native";
-import { toast } from "sonner-native";
+import { toast, Toaster } from "sonner-native";
 import { z } from "zod";
 
 const createFarmerSchema = z.object({
@@ -87,6 +87,7 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
             animationType="fade"
             onRequestClose={() => onOpenChange(false)}
         >
+
             <View className="flex-1 bg-black/60 items-center justify-center p-4">
                 <View className="bg-background w-full max-w-md rounded-3xl overflow-hidden border border-border/50 shadow-2xl">
                     {/* Header */}
@@ -201,6 +202,7 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
                     </View>
                 </View>
             </View>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

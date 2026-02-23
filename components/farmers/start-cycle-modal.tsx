@@ -3,10 +3,11 @@ import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
+import { useRouter } from "expo-router";
 import { Activity, Bird, ChevronDown, Hash, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
-import { toast } from "sonner-native";
+import { toast, Toaster } from "sonner-native";
 
 interface StartCycleModalProps {
     farmer: {
@@ -30,8 +31,8 @@ export function StartCycleModal({
     const [birdType, setBirdType] = useState("");
     const [isBirdTypeOpen, setIsBirdTypeOpen] = useState(false);
     const [newBirdType, setNewBirdType] = useState("");
-    const [error, setError] = useState<string | null>(null);
 
+    const router = useRouter();
     const utils = trpc.useUtils();
 
     // Fetch available bird types from DB
@@ -43,7 +44,6 @@ export function StartCycleModal({
         if (open) {
             setDoc("");
             setAge("0");
-            setError(null);
             setIsBirdTypeOpen(false);
         }
     }, [open]);
@@ -84,7 +84,7 @@ export function StartCycleModal({
             onSuccess?.();
         },
         onError: (err: any) => {
-            setError(err.message);
+            toast.error(err.message);
         },
     });
 
@@ -93,19 +93,17 @@ export function StartCycleModal({
         const numAge = parseInt(age, 10);
 
         if (isNaN(numDoc) || numDoc <= 0) {
-            setError("Please enter a valid bird count (DOC)");
+            toast.error("Please enter a valid bird count (DOC)");
             return;
         }
         if (isNaN(numAge) || numAge < 0 || numAge > 40) {
-            setError("Age must be between 0 and 40 days");
+            toast.error("Age must be between 0 and 40 days");
             return;
         }
         if (!birdType) {
-            setError("Please select a bird type");
+            toast.error("Please select a bird type");
             return;
         }
-
-        setError(null);
         mutation.mutate({
             // Name is optional now, server will default to Farmer Name
             farmerId: farmer.id,
@@ -124,6 +122,7 @@ export function StartCycleModal({
             visible={open}
             onRequestClose={() => onOpenChange(false)}
         >
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
                 className="flex-1"
@@ -144,9 +143,17 @@ export function StartCycleModal({
                                 </View>
                                 <View>
                                     <Text className="text-2xl font-bold text-foreground">Start New Cycle</Text>
-                                    <Text className="text-sm text-muted-foreground">
-                                        Launch production for {farmer.name}
-                                    </Text>
+                                    <Pressable
+                                        onPress={() => {
+                                            onOpenChange(false);
+                                            router.push({ pathname: "/farmer/[id]", params: { id: farmer.id } } as any);
+                                        }}
+                                        className="active:opacity-60"
+                                    >
+                                        <Text className="text-sm text-muted-foreground active:text-primary">
+                                            Launch production for {farmer.name}
+                                        </Text>
+                                    </Pressable>
                                 </View>
                             </View>
                             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full" onPress={() => onOpenChange(false)}>
@@ -156,7 +163,7 @@ export function StartCycleModal({
 
                         {/* Form */}
                         <ScrollView className="p-8 pt-2" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
-                            <View className="space-y-6">
+                            <View className="space-y-6 gap-y-2">
                                 <View className="flex-row gap-4">
                                     <View className="flex-1 gap-2">
                                         <View className="flex-row items-center gap-2 ml-1">
@@ -207,7 +214,6 @@ export function StartCycleModal({
                                         <Modal
                                             visible={isBirdTypeOpen}
                                             transparent={true}
-                                            animationType="slide"
                                             onRequestClose={() => setIsBirdTypeOpen(false)}
                                         >
                                             <KeyboardAvoidingView
@@ -270,15 +276,12 @@ export function StartCycleModal({
                                                     </Pressable>
                                                 </Pressable>
                                             </KeyboardAvoidingView>
+                                            <Toaster position="bottom-center" offset={40} />
                                         </Modal>
                                     </View>
                                 </View>
 
-                                {error && (
-                                    <View className="bg-destructive/10 p-4 rounded-2xl border border-destructive/20 mt-2">
-                                        <Text className="text-destructive text-sm text-center font-bold">{error}</Text>
-                                    </View>
-                                )}
+
 
                                 <View className="flex-row gap-4 pt-4 pb-4">
                                     <Button
@@ -303,6 +306,7 @@ export function StartCycleModal({
                     </Pressable>
                 </Pressable>
             </KeyboardAvoidingView>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

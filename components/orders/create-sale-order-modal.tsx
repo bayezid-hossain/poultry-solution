@@ -10,7 +10,7 @@ import { Calendar as CalendarIcon, CheckCircle2, Copy, MapPin, Plus, Search, Sho
 import { useEffect, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { toast } from "sonner-native";
+import { toast, Toaster } from "sonner-native";
 
 interface CreateSaleOrderModalProps {
     open: boolean;
@@ -222,7 +222,7 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
                     farmerId: item.farmerId,
                     totalWeight: Number(batch.totalWeight) || 0,
                     totalDoc: Number(batch.totalDoc) || 0,
-                    avgWeight: batch.avgWeight || undefined,
+                    avgWeight: batch.avgWeight ? Number(batch.avgWeight) : undefined,
                     age: Number(batch.age) || 0,
                 }))
         );
@@ -246,6 +246,7 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
     if (isSearchOpen) {
         return (
             <Modal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setIsSearchOpen(false)}>
+
                 <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
                     <View className="px-4 py-4 border-b border-border/50 flex-row gap-2 items-center">
                         <View className="flex-1 relative justify-center">
@@ -297,12 +298,14 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
                         />
                     )}
                 </View>
+                <Toaster position="bottom-center" offset={40} />
             </Modal>
         );
     }
 
     return (
         <Modal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => !isSubmitting && onOpenChange(false)}>
+
             <View className="flex-1 bg-background" style={{ paddingBottom: insets.bottom }}>
                 {/* Header */}
                 <View className="px-4 py-4 border-b border-border/50 flex-row justify-between items-center bg-card">
@@ -484,6 +487,7 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
                     </Button>
                 </View>
             </View>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

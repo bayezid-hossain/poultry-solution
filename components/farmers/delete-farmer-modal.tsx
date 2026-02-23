@@ -5,8 +5,8 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { router } from "expo-router";
 import { AlertTriangle, Trash2 } from "lucide-react-native";
-import { useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, View } from "react-native";
+import { toast, Toaster } from "sonner-native";
 
 interface DeleteFarmerModalProps {
     farmerId: string;
@@ -23,7 +23,6 @@ export function DeleteFarmerModal({
     open,
     onOpenChange,
 }: DeleteFarmerModalProps) {
-    const [error, setError] = useState<string | null>(null);
 
     const mutation = trpc.officer.farmers.delete.useMutation({
         onSuccess: () => {
@@ -32,16 +31,15 @@ export function DeleteFarmerModal({
             if (router.canGoBack()) {
                 router.back();
             } else {
-                router.replace("/(tabs)/farmers");
+                router.replace("/(drawer)/(tabs)/farmers");
             }
         },
         onError: (err: any) => {
-            setError(err.message);
+            toast.error(err.message);
         },
     });
 
     const handleDelete = () => {
-        setError(null);
         mutation.mutate({ id: farmerId, orgId: organizationId });
     };
 
@@ -52,6 +50,7 @@ export function DeleteFarmerModal({
             visible={open}
             onRequestClose={() => onOpenChange(false)}
         >
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
                 className="flex-1"
@@ -76,12 +75,7 @@ export function DeleteFarmerModal({
                             </Text>
                         </View>
 
-                        {/* Error Message */}
-                        {error && (
-                            <View className="mx-6 mt-4 bg-destructive/10 p-3 rounded-lg border border-destructive/20">
-                                <Text className="text-destructive text-xs text-center font-medium">{error}</Text>
-                            </View>
-                        )}
+
 
                         {/* Actions */}
                         <View className="p-6 flex-row gap-3">
@@ -110,6 +104,7 @@ export function DeleteFarmerModal({
                     </Pressable>
                 </Pressable>
             </KeyboardAvoidingView>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

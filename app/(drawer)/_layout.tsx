@@ -11,7 +11,7 @@ export default function TabsDrawerLayout() {
           headerShown: false,
           drawerType: "front",
           swipeEnabled: true,
-          swipeEdgeWidth: 200,
+          swipeEdgeWidth: 100,
           drawerStyle: {
             width: 280,
           },
@@ -63,6 +63,13 @@ export default function TabsDrawerLayout() {
         />
         <Drawer.Screen
           name="production"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false
+          }}
+        />
+        <Drawer.Screen
+          name="settings"
           options={{
             drawerItemStyle: { display: "none" },
             headerShown: false

@@ -127,6 +127,14 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
     const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
         sale.selectedReportId || null
     );
+
+    // Sync local state if prop changes from outside (e.g. after mutation)
+    const [prevReportId, setPrevReportId] = useState(sale.selectedReportId);
+    if (sale.selectedReportId !== prevReportId) {
+        setPrevReportId(sale.selectedReportId);
+        setSelectedVersionId(sale.selectedReportId);
+    }
+
     const selectedReport = selectedVersionId
         ? sortedReports.find((r: any) => r.id === selectedVersionId) || sortedReports[0]
         : sortedReports[0];
@@ -134,8 +142,12 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
     // Backend mutation to persist version selection
     const setActiveMutation = trpc.officer.sales.setActiveVersion.useMutation({
         onSuccess: () => {
+            // Broad invalidation to ensure all screens (Farmer Detail, Sales History, Cycles) update
             utils.officer.sales.getSaleEvents.invalidate();
+            utils.officer.sales.getRecentSales.invalidate();
             utils.officer.cycles.getDetails.invalidate();
+            utils.officer.cycles.listPast.invalidate();
+            utils.officer.farmers.getDetails.invalidate();
         },
     });
 
@@ -160,6 +172,10 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
     const displayPricePerKg = String(displayReport.pricePerKg ?? "0");
     const displayTotalAmount = String(displayReport.totalAmount ?? "0");
     const displayMortality = displayReport.mortalityChange ?? sale.mortalityChange ?? 0;
+    const displayCash = String(displayReport.cashReceived ?? sale.cashReceived ?? "0");
+    const displayDeposit = String(displayReport.depositReceived ?? sale.depositReceived ?? "0");
+    const displayMedicine = String(displayReport.medicineCost ?? sale.medicineCost ?? "0");
+
     const isLatestVersion = selectedReport?.id === sortedReports[0]?.id;
 
     return (
@@ -184,74 +200,74 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                     <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 px-3 border-primary/20 bg-primary/5 flex-row gap-1.5"
+                        className="h-8 px-3 border-amber-500/20 bg-amber-500/5 flex-row gap-1.5 active:bg-amber-500/10"
                         onPress={() => setIsAdjustModalOpen(true)}
                     >
-                        <Icon as={Edit} size={14} className="text-primary" />
-                        <Text className="text-primary font-bold text-xs">Adjust</Text>
+                        <Icon as={Edit} size={14} className="text-amber-600" />
+                        <Text className="text-amber-600 font-bold text-xs">Adjust</Text>
                     </Button>
                 </View>
 
                 {/* Active Version Summary */}
                 <View className="p-4">
-                    <View className="p-3 rounded-lg border bg-primary/5 border-primary/20">
+                    <View className="p-3 rounded-xl border bg-muted/40 border-border/50">
                         {/* Version selector header */}
                         <Pressable
                             onPress={() => sortedReports.length > 1 && setShowVersionPicker(!showVersionPicker)}
-                            className="flex-row justify-between items-center mb-2"
+                            className="flex-row justify-between items-center mb-3"
                         >
                             <View className="flex-row items-center gap-2">
-                                <View className="w-6 h-6 rounded-full items-center justify-center bg-primary/20">
-                                    <Text className="text-xs font-bold text-primary">
-                                        v{selectedReport?.version || 1}
+                                <View className="w-6 h-6 rounded-full items-center justify-center bg-muted border border-border/50">
+                                    <Text className="text-[10px] font-black text-foreground/70">
+                                        V{selectedReport?.version || 1}
                                     </Text>
                                 </View>
-                                <Text className="text-xs text-muted-foreground">
-                                    {selectedReport ? format(new Date(selectedReport.createdAt), "HH:mm a, d MMM") : ""}
+                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                    {selectedReport ? format(new Date(selectedReport.createdAt), "HH:mm | d MMM") : ""}
                                 </Text>
                                 {sortedReports.length > 1 && (
-                                    <View className="flex-row items-center">
-                                        <Icon as={showVersionPicker ? ChevronUp : ChevronDown} size={14} className="text-primary" />
-                                        <Text className="text-[10px] text-primary font-bold ml-0.5">
-                                            {sortedReports.length} versions
+                                    <View className="flex-row items-center bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10">
+                                        <Icon as={showVersionPicker ? ChevronUp : ChevronDown} size={12} className="text-primary" />
+                                        <Text className="text-[9px] text-primary font-black ml-1 uppercase">
+                                            {sortedReports.length} Ver
                                         </Text>
                                     </View>
                                 )}
                                 {setActiveMutation.isPending && (
-                                    <Icon as={Loader2} size={12} className="text-primary animate-spin" />
+                                    <Icon as={Loader2} size={10} className="text-primary animate-spin" />
                                 )}
                             </View>
                             <View className="flex-row items-center gap-1">
                                 {isLatestVersion ? (
-                                    <>
-                                        <Icon as={CheckCircle2} size={12} className="text-primary" />
-                                        <Text className="text-[10px] font-bold text-primary uppercase">Latest</Text>
-                                    </>
+                                    <View className="flex-row items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/10">
+                                        <Icon as={CheckCircle2} size={10} className="text-emerald-500" />
+                                        <Text className="text-[9px] font-black text-emerald-600 uppercase">Settled</Text>
+                                    </View>
                                 ) : (
-                                    <Badge variant="outline" className="h-4 px-1.5 border-amber-500/40 bg-amber-500/10">
-                                        <Text className="text-[8px] text-amber-600 font-bold uppercase">Older Version</Text>
+                                    <Badge variant="outline" className="h-5 px-1.5 border-amber-500/30 bg-amber-500/5">
+                                        <Text className="text-[8px] text-amber-600 font-black uppercase">Archived</Text>
                                     </Badge>
                                 )}
                             </View>
                         </Pressable>
 
                         {/* Compact stats row */}
-                        <View className="flex-row justify-between pt-2 border-t border-border/30">
+                        <View className="flex-row justify-between pt-2 border-t border-border/10">
                             <View>
                                 <Text className="text-[10px] text-muted-foreground font-bold uppercase mb-0.5">Birds</Text>
-                                <Text className="font-bold">{displayBirdsSold}</Text>
+                                <Text className="font-bold text-foreground">{displayBirdsSold}</Text>
                             </View>
                             <View>
                                 <Text className="text-[10px] text-muted-foreground font-bold uppercase mb-0.5">Weight</Text>
-                                <Text className="font-bold">{displayTotalWeight} kg</Text>
+                                <Text className="font-bold text-blue-600 dark:text-blue-400">{displayTotalWeight} kg</Text>
                             </View>
                             <View>
                                 <Text className="text-[10px] text-muted-foreground font-bold uppercase mb-0.5">Price/kg</Text>
-                                <Text className="font-bold">৳{displayPricePerKg}</Text>
+                                <Text className="font-bold text-amber-600 dark:text-amber-400">৳{displayPricePerKg}</Text>
                             </View>
                             <View>
-                                <Text className="text-[10px] text-muted-foreground font-bold uppercase mb-0.5">Total</Text>
-                                <Text className="font-bold text-primary">৳{parseFloat(displayTotalAmount).toLocaleString()}</Text>
+                                <Text className="text-[10px] text-muted-foreground font-bold uppercase mb-0.5">Total Amount</Text>
+                                <Text className="font-black text-emerald-600 dark:text-emerald-400">৳{parseFloat(displayTotalAmount).toLocaleString()}</Text>
                             </View>
                         </View>
 
@@ -304,24 +320,24 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                     )}
                 </View>
 
-                <View className="flex-row items-center border-t border-border/50 bg-muted/10">
+                <View className="flex-row items-center border-t border-border/50 bg-muted/5">
                     {/* Expandable Sale Details */}
                     <Pressable
                         onPress={() => setShowDetails(!showDetails)}
-                        className="flex-1 flex-row items-center justify-center gap-2 py-3 border-r border-border/50"
+                        className="flex-1 flex-row items-center justify-center gap-2 py-3.5 border-r border-border/50 active:bg-muted/10"
                     >
                         <Icon as={showDetails ? EyeOff : Eye} size={14} className="text-primary" />
-                        <Text className="text-xs text-primary font-bold">
-                            {showDetails ? "Hide Details" : "View Full Details"}
+                        <Text className="text-xs text-primary font-bold uppercase tracking-tight">
+                            {showDetails ? "Hide Details" : "View Details"}
                         </Text>
-                        <Icon as={showDetails ? ChevronUp : ChevronDown} size={12} className="text-primary" />
+                        <Icon as={showDetails ? ChevronUp : ChevronDown} size={12} className="text-muted-foreground" />
                     </Pressable>
                     <Pressable
                         onPress={handleCopy}
-                        className="flex-1 flex-row items-center justify-center gap-2 py-3"
+                        className="flex-1 flex-row items-center justify-center gap-2 py-3.5 active:bg-muted/10"
                     >
-                        <Icon as={copied ? Check : ClipboardCopy} size={14} className={copied ? "text-emerald-500" : "text-primary"} />
-                        <Text className={`text-xs font-bold ${copied ? "text-emerald-500" : "text-primary"}`}>
+                        <Icon as={copied ? Check : ClipboardCopy} size={14} className={copied ? "text-emerald-500" : "text-amber-500"} />
+                        <Text className={`text-xs font-bold uppercase tracking-tight ${copied ? "text-emerald-500" : "text-amber-600"}`}>
                             {copied ? "Copied" : "Copy Report"}
                         </Text>
                     </Pressable>
@@ -338,6 +354,9 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                             displayPricePerKg={displayPricePerKg}
                             displayTotalAmount={displayTotalAmount}
                             displayMortality={displayMortality}
+                            displayCash={displayCash}
+                            displayDeposit={displayDeposit}
+                            displayMedicine={displayMedicine}
                             selectedReport={selectedReport}
                         />
                     </View>

@@ -3,6 +3,7 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
+import { useRouter } from "expo-router";
 import { Calendar, ChevronDown, ChevronUp, Copy, Factory, Truck } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
@@ -21,6 +22,7 @@ export function FeedOrderCard({
     onDelete?: () => void,
     onConfirm?: () => void
 }) {
+    const router = useRouter();
     const isConfirmed = order.status === "CONFIRMED";
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -152,7 +154,22 @@ export function FeedOrderCard({
                     </View>
 
                     {isExpanded && (
-                        <View className="mt-3 p-3 bg-muted/40 rounded-xl border border-dashed border-border">
+                        <View className="mt-3 p-3 bg-muted/40 rounded-xl border border-dashed border-border gap-y-3">
+                            <View className="flex-row flex-wrap gap-2">
+                                {Array.from(new Set(order.items?.map((i: any) => i.farmerId))).map((fId: any) => {
+                                    const farmer = order.items.find((i: any) => i.farmerId === fId)?.farmer;
+                                    if (!farmer) return null;
+                                    return (
+                                        <Pressable
+                                            key={fId}
+                                            onPress={() => router.push({ pathname: "/farmer/[id]", params: { id: fId } } as any)}
+                                            className="bg-primary/5 px-2 py-1 rounded border border-primary/10 active:opacity-70 active:bg-primary/10"
+                                        >
+                                            <Text className="text-[10px] font-bold text-primary uppercase">{farmer.name}</Text>
+                                        </Pressable>
+                                    );
+                                })}
+                            </View>
                             <Text className="text-[10px] font-mono text-muted-foreground leading-relaxed">
                                 {generateCopyText()}
                             </Text>

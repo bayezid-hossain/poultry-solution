@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon, X } from "lucide-react-native";
 import { useRef, useState } from "react";
 import { Modal, Platform, Pressable, TextInput, View } from "react-native";
+import { toast, Toaster } from "sonner-native";
 
 interface AddMortalityModalProps {
     cycleId: string;
@@ -27,7 +28,6 @@ export function AddMortalityModal({
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     const amountRef = useRef<TextInput>(null);
 
@@ -39,17 +39,16 @@ export function AddMortalityModal({
             onSuccess?.();
         },
         onError: (err) => {
-            setError(err.message);
+            toast.error(err.message);
         },
     });
 
     const handleSubmit = () => {
         const numAmount = parseInt(amount, 10);
         if (isNaN(numAmount) || numAmount <= 0) {
-            setError("Please enter a valid amount");
+            toast.error("Please enter a valid amount");
             return;
         }
-        setError(null);
         mutation.mutate({
             id: cycleId,
             amount: numAmount,
@@ -70,6 +69,7 @@ export function AddMortalityModal({
             visible={open}
             onRequestClose={() => onOpenChange(false)}
         >
+
             <View className="flex-1">
                 <Pressable
                     className="flex-1 bg-black/60 items-center justify-center p-4"
@@ -134,11 +134,7 @@ export function AddMortalityModal({
                                 />
                             )}
 
-                            {error && (
-                                <View className="bg-destructive/10 p-3 rounded-lg border border-destructive/20">
-                                    <Text className="text-destructive text-xs text-center font-medium">{error}</Text>
-                                </View>
-                            )}
+
 
                             <View className="flex-row gap-3 pt-2">
                                 <Button
@@ -162,6 +158,7 @@ export function AddMortalityModal({
                     </Pressable>
                 </Pressable>
             </View>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

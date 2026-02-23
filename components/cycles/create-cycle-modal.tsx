@@ -162,7 +162,7 @@ export function CreateCycleModal({
 
                         {/* Form */}
                         <ScrollView className="p-8 pt-2" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
-                            <View className="space-y-6">
+                            <View className="space-y-6 gap-y-2">
                                 {/* Farmer Selection */}
                                 <View className="gap-2 z-[60]">
                                     <Text className="text-sm font-bold text-foreground ml-1">Farmer</Text>

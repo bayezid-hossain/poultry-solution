@@ -4,7 +4,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Trash2 } from "lucide-react-native";
 import { Modal, View } from "react-native";
-import { toast } from "sonner-native";
+import { toast, Toaster } from "sonner-native";
 
 interface DeleteDocOrderModalProps {
     open: boolean;
@@ -30,6 +30,7 @@ export function DeleteDocOrderModal({ open, onOpenChange, docOrderId, onSuccess 
 
     return (
         <Modal visible={open} animationType="fade" transparent onRequestClose={() => !deleteMutation.isPending && onOpenChange(false)}>
+
             <View className="flex-1 justify-center items-center bg-black/50 px-4">
                 <View className="bg-card w-full max-w-sm rounded-3xl p-6 border border-border/50">
                     <View className="w-12 h-12 rounded-full bg-destructive/10 items-center justify-center mb-4">
@@ -61,6 +62,7 @@ export function DeleteDocOrderModal({ open, onOpenChange, docOrderId, onSuccess 
                     </View>
                 </View>
             </View>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

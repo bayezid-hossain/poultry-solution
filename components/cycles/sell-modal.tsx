@@ -6,6 +6,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
+import { useRouter } from "expo-router";
 import {
     AlertTriangle,
     ArrowLeft,
@@ -18,8 +19,8 @@ import {
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
-import { toast } from "sonner-native";
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { toast, Toaster } from "sonner-native";
 import { z } from "zod";
 import { CorrectAgeModal } from "./correct-age-modal";
 import { SaleDetailsContent } from "./sale-details-content";
@@ -63,6 +64,7 @@ interface SellModalProps {
     intake: number;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onSuccess?: () => void;
     startDate?: Date; // Optional for now
 }
 
@@ -84,8 +86,6 @@ export const SellModal = ({
 }: SellModalProps) => {
     // Initial remaining birds for default value calculation
     const initialRemainingBirds = doc - mortality - birdsSold;
-
-    const [generalError, setGeneralError] = useState<string | null>(null);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -133,6 +133,7 @@ export const SellModal = ({
     const [previewData, setPreviewData] = useState<any>(null);
     const [isAgeModalOpen, setIsAgeModalOpen] = useState(false);
 
+    const router = useRouter();
     const utils = trpc.useUtils();
 
     // Reset form with new defaults when modal opens or key props change
@@ -140,7 +141,6 @@ export const SellModal = ({
         if (open) {
             setStep("form");
             setPreviewData(null);
-            setGeneralError(null);
             const currentRemainingBirds = doc - mortality - birdsSold;
 
             // Auto-fill feed from previous sale if available, otherwise use default
@@ -197,7 +197,6 @@ export const SellModal = ({
             form.reset();
         },
         onError: (error) => {
-            setGeneralError(error.message);
             toast.error(error.message);
         },
     });
@@ -208,13 +207,11 @@ export const SellModal = ({
             setStep("preview");
         },
         onError: (error) => {
-            setGeneralError(`Preview failed: ${error.message}`);
             toast.error(`Preview failed: ${error.message}`);
         },
     });
 
     const handlePreview = async () => {
-        setGeneralError(null);
         const isValid = await form.trigger();
         if (isValid) {
             const values = form.getValues();
@@ -241,13 +238,11 @@ export const SellModal = ({
                 farmerMobile: values.farmerMobile ?? "",
             });
         } else {
-            setGeneralError("Please fix form errors before continuing");
             toast.error("Please fix form errors before continuing");
         }
     };
 
     const onSubmit = form.handleSubmit((values: FormValues) => {
-        setGeneralError(null);
         const now = new Date();
         const saleDateWithTime = new Date(values.saleDate);
         saleDateWithTime.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
@@ -357,6 +352,7 @@ export const SellModal = ({
             visible={open}
             onRequestClose={() => onOpenChange(false)}
         >
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
                 className="flex-1 bg-background"
@@ -369,7 +365,15 @@ export const SellModal = ({
                         </Button>
                         <View>
                             <Text className="text-lg font-bold">Record Sale</Text>
-                            <Text className="text-xs text-muted-foreground">Selling from {farmerName}</Text>
+                            <Pressable
+                                onPress={() => {
+                                    onOpenChange(false);
+                                    router.push({ pathname: "/farmer/[id]", params: { id: farmerId } } as any);
+                                }}
+                                className="active:opacity-60"
+                            >
+                                <Text className="text-xs text-muted-foreground active:text-primary">Selling from {farmerName}</Text>
+                            </Pressable>
                         </View>
                     </View>
                 </View>
@@ -425,14 +429,8 @@ export const SellModal = ({
                 ) : (
                     <View className="flex-1">
                         <ScrollView className="flex-1" contentContainerClassName="p-4 gap-6 pb-20">
-                            {generalError && (
-                                <View className="bg-destructive/10 p-3 rounded-xl border border-destructive/20 mb-2">
-                                    <Text className="text-destructive font-bold text-sm text-center">{generalError}</Text>
-                                </View>
-                            )}
-
                             {/* SECTION 1: FARMER INFO */}
-                            <View className="space-y-4">
+                            <View className="space-y-4 gap-y-2">
                                 <FarmerInfoHeader
                                     farmerName={farmerName}
                                     farmerLocation={farmerLocation}
@@ -704,7 +702,7 @@ export const SellModal = ({
                             <View className="h-[1px] bg-border/50" />
 
                             {/* SECTION 3: INVENTORY */}
-                            <View className="space-y-4">
+                            <View className="space-y-4 gap-y-2">
                                 <View className="flex-row items-center gap-2 ml-1">
                                     <Icon as={Box} size={16} className="text-muted-foreground" />
                                     <Text className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Feed Inventory</Text>
@@ -814,6 +812,7 @@ export const SellModal = ({
 
                 }}
             />
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 };
