@@ -1,19 +1,22 @@
+import { ManagementMembersList } from '@/components/dashboard/management-members-list';
+import { ManagementProductionTree } from '@/components/dashboard/management-production-tree';
+import { ManagementStatsCards } from '@/components/dashboard/management-stats-cards';
 import { OfficerKpiCards } from '@/components/dashboard/officer-kpi-cards';
 import { PerformanceInsights } from '@/components/dashboard/performance-insights';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { SmartWatchdog } from '@/components/dashboard/smart-watchdog';
 import { ScreenHeader } from '@/components/screen-header';
 import { Icon } from '@/components/ui/icon';
-import { Separator } from '@/components/ui/separator';
 import { Text } from '@/components/ui/text';
 import { trpc } from '@/lib/trpc';
 import { useFocusEffect } from 'expo-router';
 import { Activity } from 'lucide-react-native';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, RefreshControl, ScrollView, ToastAndroid, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Pressable, RefreshControl, ScrollView, ToastAndroid, View } from 'react-native';
 
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "operations">("overview");
   const { data: session } = trpc.auth.getSession.useQuery();
   const { data: membership } = trpc.auth.getMyMembership.useQuery();
   const orgId = membership?.orgId || "";
@@ -184,31 +187,62 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* KPI Cards */}
-        {stats && (
-          <View className="mb-8">
-            <OfficerKpiCards
-              totalBirds={stats.totalBirds}
-              totalBirdsSold={stats.totalBirdsSold}
-              totalFeedStock={stats.totalFeedStock}
-              activeConsumption={stats.activeConsumption}
-              availableStock={stats.availableStock}
-              lowStockCount={stats.lowStockCount}
-              avgMortality={stats.avgMortality}
-              activeCyclesCount={stats.activeCyclesCount}
-              totalFarmers={stats.totalFarmers}
-            />
+        {isManagement && (
+          <View className="flex-row bg-muted/50 p-1 rounded-xl mb-6 border border-border/50">
+            <Pressable
+              onPress={() => setActiveTab('overview')}
+              className={`flex-1 py-2.5 rounded-lg items-center ${activeTab === 'overview' ? 'bg-background shadow-sm' : ''}`}
+            >
+              <Text className={`text-xs font-bold uppercase tracking-widest ${activeTab === 'overview' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                Overview
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setActiveTab('operations')}
+              className={`flex-1 py-2.5 rounded-lg items-center ${activeTab === 'operations' ? 'bg-background shadow-sm' : ''}`}
+            >
+              <Text className={`text-xs font-bold uppercase tracking-widest ${activeTab === 'operations' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                Active
+              </Text>
+            </Pressable>
           </View>
         )}
 
-        <Separator className="mb-8 opacity-50" />
+        {/* Management Overview Tab Content */}
+        {isManagement && activeTab === 'overview' && (
+          <View className="gap-6">
+            <ManagementStatsCards orgId={orgId} />
+            <SmartWatchdog data={watchdogData?.predictions || []} isLoading={watchdogPending} />
+            <ManagementMembersList orgId={orgId} />
+            <ManagementProductionTree orgId={orgId} />
+          </View>
+        )}
 
-        {/* Smart Watchdog, Activity & Top Performers */}
-        <View className="gap-6">
-          <SmartWatchdog data={watchdogData?.predictions || []} isLoading={watchdogPending} />
-          <RecentActivity cycles={cycles as any} />
-          <PerformanceInsights topPerformers={topPerformers} />
-        </View>
+        {/* Operations Tab Content (or Default Officer View) */}
+        {(!isManagement || activeTab === 'operations') && (
+          <View className="gap-6">
+            {stats && (
+              <OfficerKpiCards
+                totalBirds={stats.totalBirds}
+                totalBirdsSold={stats.totalBirdsSold}
+                totalFeedStock={stats.totalFeedStock}
+                activeConsumption={stats.activeConsumption}
+                availableStock={stats.availableStock}
+                lowStockCount={stats.lowStockCount}
+                avgMortality={stats.avgMortality}
+                activeCyclesCount={stats.activeCyclesCount}
+                totalFarmers={stats.totalFarmers}
+              />
+            )}
+
+            {!isManagement && (
+              <SmartWatchdog data={watchdogData?.predictions || []} isLoading={watchdogPending} />
+            )}
+
+            <RecentActivity cycles={cycles as any} />
+            <PerformanceInsights topPerformers={topPerformers} />
+          </View>
+        )}
       </ScrollView>
     </View>
   );

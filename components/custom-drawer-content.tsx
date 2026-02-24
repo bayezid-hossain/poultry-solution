@@ -58,7 +58,7 @@ const managementOrderItems: NavItem[] = [
 const managementReportItems: NavItem[] = [
     { label: "Monthly DOC Placements", icon: ClipboardList, route: "/(drawer)/doc-placements", isPro: true },
     { label: "Yearly Performance", icon: TrendingUp, route: "/(drawer)/performance", isPro: true },
-    { label: "Monthly Performance", icon: BarChart3, route: "/(drawer)/production", isPro: true },
+    { label: "Monthly Production", icon: BarChart3, route: "/(drawer)/production", isPro: true },
 ];
 
 export function CustomDrawerContent(props: any) {
