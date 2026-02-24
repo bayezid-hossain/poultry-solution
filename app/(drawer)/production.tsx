@@ -7,7 +7,7 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { ChevronDown } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, View } from "react-native";
@@ -139,8 +139,16 @@ export default function ProductionScreen() {
                                     {/* Farmer Rows */}
                                     {farmers.map((f: any) => (
                                         <View key={f.farmerId} className="flex-row items-center py-3 border-b border-border/20">
-                                            <View className="w-28 px-2">
-                                                <Text className="text-xs font-black text-foreground uppercase" numberOfLines={2}>{f.farmerName}</Text>
+                                            <View className="w-28 px-2" >
+
+
+                                                <Text className="text-xs font-black text-foreground uppercase active:text-primary leading-tight" numberOfLines={3} onPress={() => {
+                                                    console.log("touched");
+                                                    router.push({
+                                                        pathname: `/farmer/${f.farmerId}` as any,
+                                                    })
+                                                }}>{f.farmerName}</Text>
+
                                             </View>
                                             <View className="w-16 px-2 items-end">
                                                 <Text className="text-xs font-bold text-foreground">{f.doc.toLocaleString()}</Text>

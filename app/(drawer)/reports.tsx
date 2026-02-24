@@ -5,13 +5,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { BarChart3, Bird, DollarSign, Scale, Wheat } from "lucide-react-native";
 import { useCallback } from "react";
-import { ActivityIndicator, ScrollView, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
 export default function ReportsScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const router = useRouter();
     const orgId = membership?.orgId ?? "";
 
     const { data: salesSummary, isLoading: salesLoading, refetch: refetchSales } = trpc.management.reports.getSalesSummary.useQuery(
@@ -131,7 +132,12 @@ export default function ReportsScreen() {
                                 <Card key={f.farmerId} className="mb-2 border-border/50">
                                     <CardContent className="p-3 flex-row items-center justify-between">
                                         <View className="flex-1">
-                                            <Text className="font-bold text-sm text-foreground">{f.name}</Text>
+                                            <Pressable
+                                                className="active:opacity-70"
+                                                onPress={() => router.push(`/farmer/${f.farmerId}`)}
+                                            >
+                                                <Text className="font-bold text-sm text-foreground active:text-primary">{f.name}</Text>
+                                            </Pressable>
                                             <Text className="text-[10px] text-muted-foreground">{f.birdsSold} birds sold</Text>
                                         </View>
                                         <Text className="font-bold text-primary">৳{f.totalRevenue.toLocaleString()}</Text>
@@ -164,7 +170,12 @@ export default function ReportsScreen() {
                         <Card key={f.id} className="mb-2 border-border/50">
                             <CardContent className="p-3 flex-row items-center justify-between">
                                 <View className="flex-1">
-                                    <Text className="font-bold text-sm text-foreground">{f.name}</Text>
+                                    <Pressable
+                                        className="active:opacity-70"
+                                        onPress={() => router.push(`/farmer/${f.id}`)}
+                                    >
+                                        <Text className="font-bold text-sm text-foreground active:text-primary">{f.name}</Text>
+                                    </Pressable>
                                 </View>
                                 <View className="flex-row items-baseline gap-1">
                                     <Text className="font-bold text-amber-600">{Number(f.mainStock).toFixed(1)}</Text>

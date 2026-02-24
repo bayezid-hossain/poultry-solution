@@ -17,6 +17,7 @@ import { ActivityIndicator, BackHandler, Pressable, RefreshControl, ScrollView, 
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "operations">("overview");
+  const [managementSubTab, setManagementSubTab] = useState<"members" | "production">("members");
   const { data: session } = trpc.auth.getSession.useQuery();
   const { data: membership } = trpc.auth.getMyMembership.useQuery();
   const orgId = membership?.orgId || "";
@@ -191,7 +192,7 @@ export default function HomeScreen() {
           <View className="flex-row bg-muted/50 p-1 rounded-xl mb-6 border border-border/50">
             <Pressable
               onPress={() => setActiveTab('overview')}
-              className={`flex-1 py-2.5 rounded-lg items-center ${activeTab === 'overview' ? 'bg-background shadow-sm' : ''}`}
+              className={`flex-1 py-2.5 rounded-lg items-center ${activeTab === 'overview' ? 'bg-background ' : ''}`}
             >
               <Text className={`text-xs font-bold uppercase tracking-widest ${activeTab === 'overview' ? 'text-foreground' : 'text-muted-foreground'}`}>
                 Overview
@@ -199,7 +200,7 @@ export default function HomeScreen() {
             </Pressable>
             <Pressable
               onPress={() => setActiveTab('operations')}
-              className={`flex-1 py-2.5 rounded-lg items-center ${activeTab === 'operations' ? 'bg-background shadow-sm' : ''}`}
+              className={`flex-1 py-2.5 rounded-lg items-center ${activeTab === 'operations' ? 'bg-background ' : ''}`}
             >
               <Text className={`text-xs font-bold uppercase tracking-widest ${activeTab === 'operations' ? 'text-foreground' : 'text-muted-foreground'}`}>
                 Active
@@ -213,8 +214,28 @@ export default function HomeScreen() {
           <View className="gap-6">
             <ManagementStatsCards orgId={orgId} />
             <SmartWatchdog data={watchdogData?.predictions || []} isLoading={watchdogPending} />
-            <ManagementMembersList orgId={orgId} />
-            <ManagementProductionTree orgId={orgId} />
+
+            <View className="flex-row bg-muted/50 p-1 rounded-xl border border-border/50">
+              <Pressable
+                onPress={() => setManagementSubTab('members')}
+                className={`flex-1 py-2 rounded-lg items-center ${managementSubTab === 'members' ? 'bg-background ' : ''}`}
+              >
+                <Text className={`text-[10px] font-black uppercase tracking-widest ${managementSubTab === 'members' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  Members
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setManagementSubTab('production')}
+                className={`flex-1 py-2 rounded-lg items-center ${managementSubTab === 'production' ? 'bg-background ' : ''}`}
+              >
+                <Text className={`text-[10px] font-black uppercase tracking-widest ${managementSubTab === 'production' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  Production Tree
+                </Text>
+              </Pressable>
+            </View>
+
+            {managementSubTab === 'members' && <ManagementMembersList orgId={orgId} />}
+            {managementSubTab === 'production' && <ManagementProductionTree orgId={orgId} />}
           </View>
         )}
 
@@ -228,7 +249,6 @@ export default function HomeScreen() {
                 totalFeedStock={stats.totalFeedStock}
                 activeConsumption={stats.activeConsumption}
                 availableStock={stats.availableStock}
-                lowStockCount={stats.lowStockCount}
                 avgMortality={stats.avgMortality}
                 activeCyclesCount={stats.activeCyclesCount}
                 totalFarmers={stats.totalFarmers}

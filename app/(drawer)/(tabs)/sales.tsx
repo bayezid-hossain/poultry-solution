@@ -10,7 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
 import { CheckCircle2, ChevronDown, ChevronUp, FileText, RefreshCw, Search, Trash2, User } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, TouchableOpacity, View } from "react-native";
 
 export default function SalesScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -141,7 +141,8 @@ function FarmerSalesAccordion({ farmer, onRefresh }: { farmer: any, onRefresh: (
 
     return (
         <Card className="bg-card border-border/40 rounded-lg overflow-hidden">
-            <Pressable
+            <TouchableOpacity
+                activeOpacity={0.7}
                 className="p-3 flex-row items-center justify-between active:bg-muted/30 border-b border-border/10"
                 onPress={() => setIsOpen(!isOpen)}
             >
@@ -150,17 +151,16 @@ function FarmerSalesAccordion({ farmer, onRefresh }: { farmer: any, onRefresh: (
                         <Icon as={User} size={20} className="text-foreground/70" />
                     </View>
                     <View>
-                        <Pressable
-                            className="active:opacity-70"
-                            onPress={() => router.push({ pathname: "/farmer/[id]", params: { id: farmer.id } } as any)}
-                        >
-                            <Text className="text-sm font-bold text-foreground uppercase tracking-tight active:text-primary">{farmer.name}</Text>
-                        </Pressable>
+
+                        <Text className="text-sm font-bold text-foreground uppercase tracking-tight active:text-primary" onPress={(e) => {
+                            e.stopPropagation();
+                            router.push(`/farmer/${farmer.id}` as any);
+                        }}>{farmer.name}</Text>
                         <Text className="text-xs text-muted-foreground font-medium">{cycleList.length} Cycles</Text>
                     </View>
                 </View>
                 <Icon as={isOpen ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
-            </Pressable>
+            </TouchableOpacity>
 
             {isOpen && (
                 <View className="pb-1">
@@ -215,7 +215,8 @@ function CycleRowAccordion({ cycle, isLast, onRefresh }: { cycle: any, isLast: b
 
     return (
         <View className={`${!isLast ? 'border-b border-border/10' : ''}`}>
-            <Pressable
+            <TouchableOpacity
+                activeOpacity={0.7}
                 className="py-3 px-3 flex-row items-center justify-between active:bg-muted/10 transition-colors"
                 onPress={() => setIsOpen(!isOpen)}
             >
@@ -255,7 +256,7 @@ function CycleRowAccordion({ cycle, isLast, onRefresh }: { cycle: any, isLast: b
                     </Pressable>
                     <Icon as={isOpen ? ChevronUp : ChevronDown} size={16} className="text-muted-foreground/70" />
                 </View>
-            </Pressable>
+            </TouchableOpacity>
 
             {isOpen && (
                 <View className="bg-muted/10 px-2 pt-3 pb-1 border-t border-border/10">

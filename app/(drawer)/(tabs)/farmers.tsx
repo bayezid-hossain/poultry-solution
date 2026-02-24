@@ -16,7 +16,7 @@ import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { router, useFocusEffect } from "expo-router";
-import { Archive, ChevronDown, ChevronUp, List, Plus, Search, ShoppingCart, Sparkles, X } from "lucide-react-native";
+import { ChevronDown, ChevronUp, List, Plus, Search, ShoppingCart, Sparkles, X } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
 
@@ -160,90 +160,90 @@ export default function FarmersScreen() {
                                 Active ({data?.total || 0})
                             </Text>
                         </Button>
-                        <Button
-                            variant={activeTab === 'archived' ? 'default' : 'outline'}
-                            className='flex-1 flex-row gap-2 h-11'
-                            onPress={() => setActiveTab('archived')}
-                        >
-                            <Icon as={Archive} className={activeTab === 'archived' ? "text-primary-foreground" : "text-muted-foreground"} size={14} />
-                            <Text className={`font-bold ${activeTab === 'archived' ? "text-primary-foreground" : "text-muted-foreground"}`}>
-                                Archived
-                            </Text>
-                        </Button>
                     </View>
                 )}
             </View>
 
-            {isLoading ? (
-                <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="hsl(var(--primary))" />
-                    <Text className="mt-4 text-muted-foreground font-medium uppercase tracking-widest text-[10px] animate-pulse">Synchronizing Data...</Text>
-                </View>
-            ) : (
-                <FlatList
-                    data={farmers}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <FarmerCard
-                            farmer={item}
-                            activeConsumption={item.cycles?.filter((c: any) => c.status === 'active').reduce((acc: number, c: any) => acc + (parseFloat(c.intake) || 0), 0) || 0}
-                            onPress={() => router.push(`/farmer/${item.id}` as any)}
-                            onRestock={activeTab === 'archived' ? undefined : () => setRestockingFarmer({ id: item.id, name: item.name })}
-                            onTransfer={activeTab === 'archived' ? undefined : () => setTransferringFarmer({ id: item.id, name: item.name })}
-                            onDelete={activeTab === 'archived' ? undefined : () => setDeleteFarmer({ id: item.id, name: item.name, organizationId: item.organizationId })}
-                            onEdit={activeTab === 'archived' ? undefined : () => setEditingFarmer(item)}
-                            onRestore={activeTab === 'archived' ? () => setRestoringFarmer({ id: item.id, name: item.name }) : undefined}
-                        />
-                    )}
-                    contentContainerClassName="p-4 pt-4 pb-20" // Extra padding for tab bar
-                    onRefresh={refetch}
-                    refreshing={isLoading}
-                    ListEmptyComponent={
-                        <View className="items-center justify-center p-20 opacity-30 mt-10">
-                            <Icon as={Search} size={64} className="text-muted-foreground mb-6" />
-                            <Text className="text-center text-xl font-black uppercase tracking-widest">Empty State</Text>
-                            <Text className="text-center text-xs text-muted-foreground mt-2 font-medium">No inventory records found</Text>
-                        </View>
-                    }
-                />
-            )}
+            {
+                isLoading ? (
+                    <View className="flex-1 items-center justify-center">
+                        <ActivityIndicator size="large" color="hsl(var(--primary))" />
+                        <Text className="mt-4 text-muted-foreground font-medium uppercase tracking-widest text-[10px] animate-pulse">Synchronizing Data...</Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        data={farmers}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => (
+                            <FarmerCard
+                                farmer={item}
+                                activeConsumption={item.cycles?.filter((c: any) => c.status === 'active').reduce((acc: number, c: any) => acc + (parseFloat(c.intake) || 0), 0) || 0}
+                                onPress={() => router.push(`/farmer/${item.id}` as any)}
+                                onRestock={activeTab === 'archived' ? undefined : () => setRestockingFarmer({ id: item.id, name: item.name })}
+                                onTransfer={activeTab === 'archived' ? undefined : () => setTransferringFarmer({ id: item.id, name: item.name })}
+                                onDelete={activeTab === 'archived' ? undefined : () => setDeleteFarmer({ id: item.id, name: item.name, organizationId: item.organizationId })}
+                                onEdit={activeTab === 'archived' ? undefined : () => setEditingFarmer(item)}
+                                onRestore={activeTab === 'archived' ? () => setRestoringFarmer({ id: item.id, name: item.name }) : undefined}
+                            />
+                        )}
+                        contentContainerClassName="p-4 pt-4 pb-20" // Extra padding for tab bar
+                        onRefresh={refetch}
+                        refreshing={isLoading}
+                        ListEmptyComponent={
+                            <View className="items-center justify-center p-20 opacity-30 mt-10">
+                                <Icon as={Search} size={64} className="text-muted-foreground mb-6" />
+                                <Text className="text-center text-xl font-black uppercase tracking-widest">Empty State</Text>
+                                <Text className="text-center text-xs text-muted-foreground mt-2 font-medium">No inventory records found</Text>
+                            </View>
+                        }
+                    />
+                )
+            }
 
             {/* Modals */}
-            {restockingFarmer && (
-                <RestockModal
-                    open={!!restockingFarmer}
-                    onOpenChange={(open) => !open && setRestockingFarmer(null)}
-                    farmerId={restockingFarmer.id}
-                    farmerName={restockingFarmer.name}
-                    onSuccess={() => refetch()}
-                />
-            )}
-            {deleteFarmer && (
-                <DeleteFarmerModal
-                    open={!!deleteFarmer}
-                    onOpenChange={(open) => !open && setDeleteFarmer(null)}
-                    farmerId={deleteFarmer.id}
-                    organizationId={deleteFarmer.organizationId}
-                    farmerName={deleteFarmer.name}
-                />)}
-            {transferringFarmer && (
-                <TransferStockModal
-                    open={!!transferringFarmer}
-                    onOpenChange={(open) => !open && setTransferringFarmer(null)}
-                    sourceFarmerId={transferringFarmer.id}
-                    sourceFarmerName={transferringFarmer.name}
-                    onSuccess={() => refetch()}
-                />
-            )}
+            {
+                restockingFarmer && (
+                    <RestockModal
+                        open={!!restockingFarmer}
+                        onOpenChange={(open) => !open && setRestockingFarmer(null)}
+                        farmerId={restockingFarmer.id}
+                        farmerName={restockingFarmer.name}
+                        onSuccess={() => refetch()}
+                    />
+                )
+            }
+            {
+                deleteFarmer && (
+                    <DeleteFarmerModal
+                        open={!!deleteFarmer}
+                        onOpenChange={(open) => !open && setDeleteFarmer(null)}
+                        farmerId={deleteFarmer.id}
+                        organizationId={deleteFarmer.organizationId}
+                        farmerName={deleteFarmer.name}
+                    />)
+            }
+            {
+                transferringFarmer && (
+                    <TransferStockModal
+                        open={!!transferringFarmer}
+                        onOpenChange={(open) => !open && setTransferringFarmer(null)}
+                        sourceFarmerId={transferringFarmer.id}
+                        sourceFarmerName={transferringFarmer.name}
+                        onSuccess={() => refetch()}
+                    />
+                )
+            }
 
-            {editingFarmer && (
-                <EditFarmerModal
-                    open={!!editingFarmer}
-                    onOpenChange={(open) => !open && setEditingFarmer(null)}
-                    farmer={editingFarmer}
-                    onSuccess={() => refetch()}
-                />
-            )}
+            {
+                editingFarmer && (
+                    <EditFarmerModal
+                        open={!!editingFarmer}
+                        onOpenChange={(open) => !open && setEditingFarmer(null)}
+                        farmer={editingFarmer}
+                        onSuccess={() => refetch()}
+                    />
+                )
+            }
 
             <RegisterFarmerModal
                 open={isRegisterModalOpen}
@@ -251,35 +251,41 @@ export default function FarmersScreen() {
                 onSuccess={() => refetch()}
             />
 
-            {membership?.orgId && (
-                <BulkImportModal
-                    open={isBulkImportOpen}
-                    onOpenChange={setIsBulkImportOpen}
-                    orgId={membership.orgId}
-                    onSuccess={() => refetch()}
-                />
-            )}
+            {
+                membership?.orgId && (
+                    <BulkImportModal
+                        open={isBulkImportOpen}
+                        onOpenChange={setIsBulkImportOpen}
+                        orgId={membership.orgId}
+                        onSuccess={() => refetch()}
+                    />
+                )
+            }
 
-            {membership?.orgId && (
-                <CreateFeedOrderModal
-                    open={isFeedOrderOpen}
-                    onOpenChange={setIsFeedOrderOpen}
-                    orgId={membership.orgId}
-                    onSuccess={() => refetch()}
-                />
-            )}
+            {
+                membership?.orgId && (
+                    <CreateFeedOrderModal
+                        open={isFeedOrderOpen}
+                        onOpenChange={setIsFeedOrderOpen}
+                        orgId={membership.orgId}
+                        onSuccess={() => refetch()}
+                    />
+                )
+            }
 
-            {restoringFarmer && membership?.orgId && (
-                <RestoreFarmerModal
-                    open={!!restoringFarmer}
-                    onOpenChange={(open) => !open && setRestoringFarmer(null)}
-                    farmerId={restoringFarmer.id}
-                    farmerName={restoringFarmer.name}
-                    orgId={membership.orgId}
-                    onSuccess={() => refetch()}
-                />
-            )}
+            {
+                restoringFarmer && membership?.orgId && (
+                    <RestoreFarmerModal
+                        open={!!restoringFarmer}
+                        onOpenChange={(open) => !open && setRestoringFarmer(null)}
+                        farmerId={restoringFarmer.id}
+                        farmerName={restoringFarmer.name}
+                        orgId={membership.orgId}
+                        onSuccess={() => refetch()}
+                    />
+                )
+            }
 
-        </View>
+        </View >
     );
 }

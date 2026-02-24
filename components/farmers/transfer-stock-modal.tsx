@@ -249,7 +249,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                                             value={value}
                                             onChangeText={onChange}
                                             numberOfLines={2}
-                                            className="bg-muted/30 border-border/50 text-sm h-20"
+                                            className="bg-muted/30 border-border/50 text-sm h-20 text-foreground"
                                             onSubmitEditing={handleSubmit(onSubmit)}
                                         />
                                     )}

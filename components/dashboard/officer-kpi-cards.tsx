@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
-import { Activity, AlertTriangle, Bird, Layers, Wheat } from "lucide-react-native";
+import { Activity, Bird, Layers, Wheat } from "lucide-react-native";
 import { View } from "react-native";
 
 interface KpiCardsProps {
@@ -13,7 +13,6 @@ interface KpiCardsProps {
     totalFeedStock: number;
     activeConsumption: number;
     availableStock: number;
-    lowStockCount: number;
     avgMortality: string;
     activeCyclesCount: number;
     totalFarmers?: number;
@@ -25,7 +24,6 @@ export const OfficerKpiCards = ({
     totalFeedStock,
     activeConsumption,
     availableStock,
-    lowStockCount,
     avgMortality,
     activeCyclesCount,
     totalFarmers
@@ -57,15 +55,7 @@ export const OfficerKpiCards = ({
             bg: "bg-violet-500/10",
             description: "Active average"
         },
-        {
-            label: "Low Stock",
-            value: lowStockCount.toString(),
-            icon: AlertTriangle,
-            color: lowStockCount > 0 ? "text-destructive" : "text-muted-foreground",
-            bg: lowStockCount > 0 ? "bg-destructive/10" : "bg-muted/50",
-            description: "Immediate alerts",
-            isAlert: lowStockCount > 0
-        },
+
         ...(totalFarmers !== undefined ? [{
             label: "Total Farmers",
             value: totalFarmers.toLocaleString(),

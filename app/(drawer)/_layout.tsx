@@ -33,13 +33,7 @@ export default function TabsDrawerLayout() {
           name="reports"
           options={{ title: "Reports", headerShown: false }}
         />
-        <Drawer.Screen
-          name="sales"
-          options={{
-            drawerItemStyle: { display: "none" },
-            headerShown: false
-          }}
-        />
+
         <Drawer.Screen
           name="stock-ledger"
           options={{

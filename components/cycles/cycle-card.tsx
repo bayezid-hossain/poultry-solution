@@ -4,7 +4,7 @@ import { Text } from "@/components/ui/text";
 import { useRouter } from "expo-router";
 import { Bird, CalendarDays, MoreHorizontal, Pencil, Power, RefreshCw, RotateCcw, ShoppingCart, Skull, Trash2, Wheat, Wrench } from "lucide-react-native";
 import { useState } from "react";
-import { Modal, Pressable, View } from "react-native";
+import { Modal, Pressable, TouchableOpacity, View } from "react-native";
 
 export type CycleAction = 'sell' | 'add_mortality' | 'edit_doc' | 'edit_age' | 'correct_mortality' | 'end_cycle' | 'reopen' | 'delete';
 
@@ -71,19 +71,19 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                     <View className="flex-1 space-y-1">
                         <View className="flex-row items-center flex-wrap gap-1">
                             {!isGrouped && (
-                                <Pressable
-                                    className="active:opacity-70"
+                                <TouchableOpacity
+                                    activeOpacity={0.7}
                                     onPress={(e) => {
+                                        e.stopPropagation();
                                         if (cycle.farmerId) {
-                                            e.stopPropagation();
-                                            router.push({ pathname: "/farmer/[id]", params: { id: cycle.farmerId } } as any);
+                                            router.push(`/farmer/${cycle.farmerId}` as any);
                                         }
                                     }}
                                 >
-                                    <Text className="font-bold text-foreground text-sm uppercase mr-1 active:text-primary" numberOfLines={1}>
+                                    <Text className="font-bold text-foreground text-sm uppercase mr-1" numberOfLines={1}>
                                         {cycleName}
                                     </Text>
-                                </Pressable>
+                                </TouchableOpacity>
                             )}
 
                             {soldValue > 0 && (
@@ -118,12 +118,16 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                     </View>
 
                     {/* Actions Menu Trigger */}
-                    <Pressable
-                        className="p-1 -mr-1 rounded-full active:bg-muted"
-                        onPress={() => setIsMenuOpen(true)}
+                    <TouchableOpacity
+                        className="p-1 -mr-1 rounded-full"
+                        activeOpacity={0.5}
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            setIsMenuOpen(true);
+                        }}
                     >
                         <Icon as={MoreHorizontal} size={18} className="text-muted-foreground" />
-                    </Pressable>
+                    </TouchableOpacity>
                 </View>
 
                 {/* 4-Column Grid Layout matching mobile-cycle-card */}

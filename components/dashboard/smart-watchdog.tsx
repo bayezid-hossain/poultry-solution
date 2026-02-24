@@ -38,7 +38,6 @@ export const SmartWatchdog = ({ data, isLoading }: SmartWatchdogProps) => {
                             </Text>
                         </View>
                     </View>
-                    {isLoading && <ActivityIndicator size="small" color="hsl(var(--primary))" />}
                 </View>
             </CardHeader>
             <CardContent className="pt-4">
