@@ -51,32 +51,38 @@ export default function OrdersScreen() {
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
 
-    const feedOrdersQuery = trpc.officer.feedOrders.list.useQuery(
-        {
-            orgId: membership?.orgId ?? "",
-            limit: 50,
-            officerId: isManagement ? (selectedOfficerId || undefined) : undefined,
-        },
-        { enabled: !!membership?.orgId && activeTab === 'feed' }
+    // Feed Orders
+    const officerFeedQuery = trpc.officer.feedOrders.list.useQuery(
+        { orgId: membership?.orgId ?? "", limit: 50 },
+        { enabled: !!membership?.orgId && activeTab === 'feed' && !isManagement }
     );
+    const mgmtFeedQuery = trpc.management.feedOrders.list.useQuery(
+        { orgId: membership?.orgId ?? "", limit: 50, officerId: selectedOfficerId || undefined },
+        { enabled: !!membership?.orgId && activeTab === 'feed' && isManagement }
+    );
+    const feedOrdersQuery = isManagement ? mgmtFeedQuery : officerFeedQuery;
 
-    const docOrdersQuery = trpc.officer.docOrders.list.useQuery(
-        {
-            orgId: membership?.orgId ?? "",
-            limit: 50,
-            officerId: isManagement ? (selectedOfficerId || undefined) : undefined,
-        },
-        { enabled: !!membership?.orgId && activeTab === 'doc' }
+    // DOC Orders
+    const officerDocQuery = trpc.officer.docOrders.list.useQuery(
+        { orgId: membership?.orgId ?? "", limit: 50 },
+        { enabled: !!membership?.orgId && activeTab === 'doc' && !isManagement }
     );
+    const mgmtDocQuery = trpc.management.docOrders.list.useQuery(
+        { orgId: membership?.orgId ?? "", limit: 50, officerId: selectedOfficerId || undefined },
+        { enabled: !!membership?.orgId && activeTab === 'doc' && isManagement }
+    );
+    const docOrdersQuery = isManagement ? mgmtDocQuery : officerDocQuery;
 
-    const saleOrdersQuery = trpc.officer.saleOrders.list.useQuery(
-        {
-            orgId: membership?.orgId ?? "",
-            limit: 50,
-            officerId: isManagement ? (selectedOfficerId || undefined) : undefined,
-        },
-        { enabled: !!membership?.orgId && activeTab === 'sale' }
+    // Sale Orders
+    const officerSaleQuery = trpc.officer.saleOrders.list.useQuery(
+        { orgId: membership?.orgId ?? "", limit: 50 },
+        { enabled: !!membership?.orgId && activeTab === 'sale' && !isManagement }
     );
+    const mgmtSaleQuery = trpc.management.saleOrders.list.useQuery(
+        { orgId: membership?.orgId ?? "", limit: 50, officerId: selectedOfficerId || undefined },
+        { enabled: !!membership?.orgId && activeTab === 'sale' && isManagement }
+    );
+    const saleOrdersQuery = isManagement ? mgmtSaleQuery : officerSaleQuery;
 
     useFocusEffect(
         useCallback(() => {

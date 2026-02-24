@@ -49,17 +49,23 @@ export default function StockLedgerScreen() {
                 </View>
             </View>
 
-            {tab === "stock" ? <StockTab officerId={isManagement ? (selectedOfficerId || undefined) : undefined} /> : <ImportHistoryTab officerId={isManagement ? (selectedOfficerId || undefined) : undefined} />}
+            {tab === "stock" ? <StockTab isManagement={isManagement} officerId={isManagement ? (selectedOfficerId || undefined) : undefined} orgId={membership?.orgId ?? ""} /> : <ImportHistoryTab isManagement={isManagement} officerId={isManagement ? (selectedOfficerId || undefined) : undefined} orgId={membership?.orgId ?? ""} />}
         </View>
     );
 }
 
-function StockTab({ officerId }: { officerId?: string }) {
-    const { data, isLoading, refetch } = trpc.officer.stock.getAllFarmersStock.useQuery({
-        limit: 100,
-        cursor: 0,
-        officerId,
-    });
+function StockTab({ isManagement, officerId, orgId }: { isManagement: boolean; officerId?: string; orgId: string }) {
+    const officerQuery = trpc.officer.stock.getAllFarmersStock.useQuery(
+        { limit: 100, cursor: 0 },
+        { enabled: !isManagement }
+    );
+    const mgmtQuery = trpc.management.stock.getAllFarmersStock.useQuery(
+        { orgId, limit: 100, cursor: 0, officerId },
+        { enabled: isManagement }
+    );
+    const data = isManagement ? mgmtQuery.data : officerQuery.data;
+    const isLoading = isManagement ? mgmtQuery.isLoading : officerQuery.isLoading;
+    const refetch = isManagement ? mgmtQuery.refetch : officerQuery.refetch;
 
     if (isLoading) {
         return (
@@ -252,12 +258,18 @@ function FarmerStockRow({ farmer }: { farmer: { id: string; name: string; mainSt
     );
 }
 
-function ImportHistoryTab({ officerId }: { officerId?: string }) {
-    const { data, isLoading, refetch } = trpc.officer.stock.getImportHistory.useQuery({
-        limit: 50,
-        cursor: 0,
-        officerId,
-    });
+function ImportHistoryTab({ isManagement, officerId, orgId }: { isManagement: boolean; officerId?: string; orgId: string }) {
+    const officerQuery = trpc.officer.stock.getImportHistory.useQuery(
+        { limit: 50, cursor: 0 },
+        { enabled: !isManagement }
+    );
+    const mgmtQuery = trpc.management.stock.getImportHistory.useQuery(
+        { orgId, limit: 50, cursor: 0, officerId },
+        { enabled: isManagement }
+    );
+    const data = isManagement ? mgmtQuery.data : officerQuery.data;
+    const isLoading = isManagement ? mgmtQuery.isLoading : officerQuery.isLoading;
+    const refetch = isManagement ? mgmtQuery.refetch : officerQuery.refetch;
 
     if (isLoading) {
         return (

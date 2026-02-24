@@ -17,10 +17,18 @@ export default function SalesScreen() {
     const { selectedOfficerId } = useGlobalFilter();
     const [searchQuery, setSearchQuery] = useState("");
 
-    const { data: recentSales, isLoading: salesLoading, error: salesError, refetch } = trpc.officer.sales.getRecentSales.useQuery(
-        { limit: 100, search: searchQuery, officerId: isManagement ? (selectedOfficerId || undefined) : undefined },
-        { enabled: !!membership?.orgId }
+    const officerSalesQuery = trpc.officer.sales.getRecentSales.useQuery(
+        { limit: 100, search: searchQuery },
+        { enabled: !!membership?.orgId && !isManagement }
     );
+    const mgmtSalesQuery = trpc.management.sales.getRecentSales.useQuery(
+        { orgId: membership?.orgId ?? "", limit: 100, search: searchQuery, officerId: selectedOfficerId || undefined },
+        { enabled: !!membership?.orgId && isManagement }
+    );
+    const recentSales = isManagement ? mgmtSalesQuery.data : officerSalesQuery.data;
+    const salesLoading = isManagement ? mgmtSalesQuery.isLoading : officerSalesQuery.isLoading;
+    const salesError = isManagement ? mgmtSalesQuery.error : officerSalesQuery.error;
+    const refetch = isManagement ? mgmtSalesQuery.refetch : officerSalesQuery.refetch;
 
     const groupedData = useMemo(() => {
         if (!recentSales) return [];

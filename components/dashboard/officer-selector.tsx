@@ -80,9 +80,9 @@ export const OfficerSelector = ({ orgId }: { orgId: string }) => {
                                 {/* Individual Officers */}
                                 {officers?.map((officer: any) => (
                                     <Pressable
-                                        key={officer.userId}
-                                        className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${selectedOfficerId === officer.userId ? 'bg-primary/5' : ''}`}
-                                        onPress={() => handleSelect(officer.userId, officer.name)}
+                                        key={officer.id}
+                                        className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${selectedOfficerId === officer.id ? 'bg-primary/5' : ''}`}
+                                        onPress={() => handleSelect(officer.id, officer.name)}
                                     >
                                         <View className="w-10 h-10 rounded-full bg-muted/50 items-center justify-center mr-3">
                                             <Icon as={User} size={20} color="#9ca3af" />
@@ -91,7 +91,7 @@ export const OfficerSelector = ({ orgId }: { orgId: string }) => {
                                             <Text className="text-base font-bold text-foreground">{officer.name}</Text>
                                             <Text className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">{officer.role}</Text>
                                         </View>
-                                        {selectedOfficerId === officer.userId && (
+                                        {selectedOfficerId === officer.id && (
                                             <Icon as={Check} size={20} color="#16a34a" />
                                         )}
                                     </Pressable>

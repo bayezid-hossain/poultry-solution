@@ -34,9 +34,17 @@ export default function DocPlacementsScreen() {
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
 
-    const { data, isLoading, refetch } = trpc.officer.reports.getMonthlyDocPlacements.useQuery(
-        { month, year, officerId: isManagement ? (selectedOfficerId || undefined) : undefined },
+    const officerDocQuery = trpc.officer.reports.getMonthlyDocPlacements.useQuery(
+        { month, year },
+        { enabled: !isManagement }
     );
+    const mgmtDocQuery = trpc.management.reports.getMonthlyDocPlacements.useQuery(
+        { orgId: membership?.orgId ?? "", officerId: selectedOfficerId ?? "", month, year },
+        { enabled: isManagement && !!selectedOfficerId }
+    );
+    const data = isManagement ? mgmtDocQuery.data : officerDocQuery.data;
+    const isLoading = isManagement ? mgmtDocQuery.isLoading : officerDocQuery.isLoading;
+    const refetch = isManagement ? mgmtDocQuery.refetch : officerDocQuery.refetch;
 
     useFocusEffect(
         useCallback(() => {

@@ -25,9 +25,17 @@ export default function ProductionScreen() {
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
 
-    const { data, isLoading, refetch } = trpc.officer.performanceReports.getMonthlyProductionRecord.useQuery(
-        { year, month, officerId: isManagement ? (selectedOfficerId || undefined) : undefined },
+    const officerProdQuery = trpc.officer.performanceReports.getMonthlyProductionRecord.useQuery(
+        { year, month },
+        { enabled: !isManagement }
     );
+    const mgmtProdQuery = trpc.managementPerformance.getMonthlyProductionRecord.useQuery(
+        { orgId: membership?.orgId ?? "", officerId: selectedOfficerId ?? "", year, month },
+        { enabled: isManagement && !!selectedOfficerId }
+    );
+    const data = isManagement ? mgmtProdQuery.data : officerProdQuery.data;
+    const isLoading = isManagement ? mgmtProdQuery.isLoading : officerProdQuery.isLoading;
+    const refetch = isManagement ? mgmtProdQuery.refetch : officerProdQuery.refetch;
 
     useFocusEffect(
         useCallback(() => {

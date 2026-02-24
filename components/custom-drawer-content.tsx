@@ -48,7 +48,8 @@ const managementCoreItems: NavItem[] = [
 ];
 
 const managementActivityItems: NavItem[] = [
-    { label: "Sales & Stock", icon: ShoppingBag, route: "/(drawer)/reports", isPro: true },
+    { label: "Sales", icon: ShoppingBag, route: "/(drawer)/sales", isPro: true },
+    { label: "Stock & Import", icon: ClipboardList, route: "/(drawer)/stock-ledger", isPro: true },
 ];
 
 const managementOrderItems: NavItem[] = [

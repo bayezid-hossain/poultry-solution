@@ -42,18 +42,32 @@ export default function FarmersScreen() {
     const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
     const [isFeedOrderOpen, setIsFeedOrderOpen] = useState(false);
     const [restoringFarmer, setRestoringFarmer] = useState<{ id: string; name: string } | null>(null);
-    const { data, isLoading, refetch } = trpc.officer.farmers.listWithStock.useQuery(
+
+    // Officer mode → officer route (always scoped to current user)
+    const officerQuery = trpc.officer.farmers.listWithStock.useQuery(
         {
             orgId: membership?.orgId ?? "",
             search: search,
             pageSize: 50,
-            status: isManagement ? (activeTab === 'archived' ? 'deleted' : 'active') : 'active',
-            officerId: isManagement ? (selectedOfficerId || undefined) : undefined,
         },
-        {
-            enabled: !!membership?.orgId,
-        }
+        { enabled: !!membership?.orgId && !isManagement }
     );
+
+    // Management mode → management route (supports officerId filter + shows all)
+    const mgmtQuery = trpc.management.farmers.getMany.useQuery(
+        {
+            orgId: membership?.orgId ?? "",
+            search: search,
+            pageSize: 50,
+            status: activeTab === 'archived' ? 'deleted' : 'active',
+            officerId: selectedOfficerId || undefined,
+        },
+        { enabled: !!membership?.orgId && isManagement }
+    );
+
+    const data = isManagement ? mgmtQuery.data : officerQuery.data;
+    const isLoading = isManagement ? mgmtQuery.isLoading : officerQuery.isLoading;
+    const refetch = isManagement ? mgmtQuery.refetch : officerQuery.refetch;
 
     useFocusEffect(
         useCallback(() => {
