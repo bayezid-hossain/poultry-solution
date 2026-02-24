@@ -150,10 +150,7 @@ function RootLayoutInner() {
           <Stack.Screen name="(drawer)" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(org)" />
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
-          />
+
         </Stack>
       </AuthGuard>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />

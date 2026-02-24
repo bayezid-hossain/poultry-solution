@@ -4,7 +4,7 @@ import { createTRPCReact } from "@trpc/react-query";
 import superjson from "superjson";
 import type { AppRouter } from "../../feed-reminder-up/trpc/routers/_app";
 import { authClient } from "./auth-client";
-import { API_URL } from "./constants";
+import { TRPC_API_URL } from "./constants";
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -13,7 +13,7 @@ export const queryClient = new QueryClient();
 export const trpcClient = trpc.createClient({
     links: [
         httpBatchLink({
-            url: `${API_URL}/api/trpc`,
+            url: `${TRPC_API_URL}/api/trpc`,
             transformer: superjson,
             async headers() {
                 // Retrieve session directly from authClient to avoid manual key construction issues
