@@ -129,6 +129,7 @@ export const unstable_settings = {
   initialRouteName: "(drawer)",
 };
 
+import { GlobalFilterProvider } from "@/context/global-filter-context";
 import { queryClient, trpc, trpcClient } from "@/lib/trpc";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -171,7 +172,9 @@ export default function RootLayout() {
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
-            <RootLayoutInner />
+            <GlobalFilterProvider>
+              <RootLayoutInner />
+            </GlobalFilterProvider>
           </ThemeProvider>
         </QueryClientProvider>
       </trpc.Provider>

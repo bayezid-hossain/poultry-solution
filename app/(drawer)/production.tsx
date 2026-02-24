@@ -1,9 +1,11 @@
 /// <reference types="nativewind/types" />
+import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
+import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect } from "expo-router";
 import { ChevronDown } from "lucide-react-native";
@@ -19,9 +21,12 @@ export default function ProductionScreen() {
     const [year, setYear] = useState(now.getFullYear());
     const [monthPickerOpen, setMonthPickerOpen] = useState(false);
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
+    const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
+    const { selectedOfficerId } = useGlobalFilter();
 
     const { data, isLoading, refetch } = trpc.officer.performanceReports.getMonthlyProductionRecord.useQuery(
-        { year, month },
+        { year, month, officerId: isManagement ? (selectedOfficerId || undefined) : undefined },
     );
 
     useFocusEffect(
@@ -67,7 +72,7 @@ export default function ProductionScreen() {
                 </View>
 
                 {/* Filters */}
-                <View className="flex-row gap-3 mb-6">
+                <View className="flex-row items-center gap-3 mb-6 flex-wrap">
                     <Pressable onPress={() => setMonthPickerOpen(true)}>
                         <View className="flex-row items-center gap-2 bg-muted/50 border border-border/50 rounded-xl px-4 h-10">
                             <Text className="text-sm font-bold text-foreground">{MONTHS[month]}</Text>
@@ -81,6 +86,10 @@ export default function ProductionScreen() {
                             <Icon as={ChevronDown} size={14} className="text-muted-foreground" />
                         </View>
                     </Pressable>
+
+                    {isManagement && (
+                        <OfficerSelector orgId={membership?.orgId ?? ""} />
+                    )}
                 </View>
 
                 {isLoading ? (

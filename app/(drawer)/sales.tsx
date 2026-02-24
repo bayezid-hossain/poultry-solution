@@ -1,9 +1,11 @@
 import { SaleEventCard } from "@/components/cycles/sale-event-card";
+import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ScreenHeader } from "@/components/screen-header";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
+import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { CheckCircle2, ChevronDown, ChevronUp, FileText, Search, Trash2, User } from "lucide-react-native";
 import { useMemo, useState } from "react";
@@ -11,10 +13,12 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, View } from "react-nat
 
 export default function SalesScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
+    const { selectedOfficerId } = useGlobalFilter();
     const [searchQuery, setSearchQuery] = useState("");
 
     const { data: recentSales, isLoading: salesLoading, error: salesError, refetch } = trpc.officer.sales.getRecentSales.useQuery(
-        { limit: 100, search: searchQuery },
+        { limit: 100, search: searchQuery, officerId: isManagement ? (selectedOfficerId || undefined) : undefined },
         { enabled: !!membership?.orgId }
     );
 
@@ -61,6 +65,11 @@ export default function SalesScreen() {
             <ScreenHeader title="Sales" />
 
             <View className="p-4 pb-2">
+                {isManagement && (
+                    <View className="mb-3">
+                        <OfficerSelector orgId={membership?.orgId ?? ""} />
+                    </View>
+                )}
                 <View className="relative">
                     <View className="absolute z-10 left-3 top-1/2 -translate-y-1/2 bottom-0 justify-center">
                         <Icon as={Search} size={18} className="text-muted-foreground" />

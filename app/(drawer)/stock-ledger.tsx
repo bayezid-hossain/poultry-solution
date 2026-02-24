@@ -1,9 +1,11 @@
 /// <reference types="nativewind/types" />
+import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
+import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { Link, router } from "expo-router";
@@ -13,12 +15,20 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from "
 
 export default function StockLedgerScreen() {
     const [tab, setTab] = useState<"stock" | "imports">("stock");
+    const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
+    const { selectedOfficerId } = useGlobalFilter();
 
     return (
         <View className="flex-1 bg-background">
             <ScreenHeader title="Stock Ledger and Import History" />
 
             <View className="bg-card border-b border-border/50 px-4 pb-3 pt-2">
+                {isManagement && (
+                    <View className="mb-3">
+                        <OfficerSelector orgId={membership?.orgId ?? ""} />
+                    </View>
+                )}
                 <View className="flex-row gap-2">
                     <Pressable
                         onPress={() => setTab("stock")}
@@ -39,15 +49,16 @@ export default function StockLedgerScreen() {
                 </View>
             </View>
 
-            {tab === "stock" ? <StockTab /> : <ImportHistoryTab />}
+            {tab === "stock" ? <StockTab officerId={isManagement ? (selectedOfficerId || undefined) : undefined} /> : <ImportHistoryTab officerId={isManagement ? (selectedOfficerId || undefined) : undefined} />}
         </View>
     );
 }
 
-function StockTab() {
+function StockTab({ officerId }: { officerId?: string }) {
     const { data, isLoading, refetch } = trpc.officer.stock.getAllFarmersStock.useQuery({
         limit: 100,
         cursor: 0,
+        officerId,
     });
 
     if (isLoading) {
@@ -241,10 +252,11 @@ function FarmerStockRow({ farmer }: { farmer: { id: string; name: string; mainSt
     );
 }
 
-function ImportHistoryTab() {
+function ImportHistoryTab({ officerId }: { officerId?: string }) {
     const { data, isLoading, refetch } = trpc.officer.stock.getImportHistory.useQuery({
         limit: 50,
         cursor: 0,
+        officerId,
     });
 
     if (isLoading) {

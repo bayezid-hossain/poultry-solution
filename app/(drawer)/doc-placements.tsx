@@ -1,9 +1,11 @@
+import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
+import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
 import { ChevronDown, ChevronRight, FileText, Filter } from "lucide-react-native";
@@ -28,9 +30,12 @@ export default function DocPlacementsScreen() {
     const [monthPickerOpen, setMonthPickerOpen] = useState(false);
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
     const [expandedFarmers, setExpandedFarmers] = useState<Record<string, boolean>>({});
+    const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
+    const { selectedOfficerId } = useGlobalFilter();
 
     const { data, isLoading, refetch } = trpc.officer.reports.getMonthlyDocPlacements.useQuery(
-        { month, year },
+        { month, year, officerId: isManagement ? (selectedOfficerId || undefined) : undefined },
     );
 
     useFocusEffect(
@@ -60,10 +65,16 @@ export default function DocPlacementsScreen() {
                 {/* Report Filters */}
                 <Card className="mb-6 border-border/50 bg-card/50">
                     <CardContent className="p-4">
-                        <View className="flex-row items-center gap-2 mb-6">
+                        <View className="flex-row items-center gap-2 mb-4">
                             <Icon as={Filter} size={18} className="text-foreground" />
                             <Text className="text-lg font-black uppercase tracking-tight">Report Filters</Text>
                         </View>
+
+                        {isManagement && (
+                            <View className="mb-4">
+                                <OfficerSelector orgId={membership?.orgId ?? ""} />
+                            </View>
+                        )}
 
                         <View className="flex-row gap-4">
                             <Pressable

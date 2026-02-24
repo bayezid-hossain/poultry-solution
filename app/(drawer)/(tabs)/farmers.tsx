@@ -1,3 +1,4 @@
+import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { BulkImportModal } from "@/components/farmers/bulk-import-modal";
 import { DeleteFarmerModal } from "@/components/farmers/delete-farmer-modal";
 import { EditFarmerModal } from "@/components/farmers/edit-farmer-modal";
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
+import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { router, useFocusEffect } from "expo-router";
 import { Archive, ChevronDown, ChevronUp, List, Plus, Search, ShoppingCart, Sparkles, X } from "lucide-react-native";
@@ -24,6 +26,7 @@ export default function FarmersScreen() {
     const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
+    const { selectedOfficerId } = useGlobalFilter();
 
     // Force active tab if not management
     if (!isManagement && activeTab === 'archived') {
@@ -45,6 +48,7 @@ export default function FarmersScreen() {
             search: search,
             pageSize: 50,
             status: isManagement ? (activeTab === 'archived' ? 'deleted' : 'active') : 'active',
+            officerId: isManagement ? (selectedOfficerId || undefined) : undefined,
         },
         {
             enabled: !!membership?.orgId,
@@ -67,6 +71,11 @@ export default function FarmersScreen() {
 
             {/* Controls Section */}
             <View className="bg-card border-b border-border/50 px-3 pb-3 pt-2">
+                {isManagement && (
+                    <View className="mb-3">
+                        <OfficerSelector orgId={membership?.orgId ?? ""} />
+                    </View>
+                )}
                 {/* Search Bar */}
                 <View className="relative flex-row items-center gap-2">
                     <View className="flex-1 relative">

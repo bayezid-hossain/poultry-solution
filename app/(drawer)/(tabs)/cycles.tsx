@@ -8,12 +8,14 @@ import { DeleteCycleModal } from "@/components/cycles/delete-cycle-modal";
 import { EndCycleModal } from "@/components/cycles/end-cycle-modal";
 import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
 import { SellModal } from "@/components/cycles/sell-modal";
+import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { CreateDocOrderModal } from "@/components/orders/create-doc-order-modal";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
+import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { router, useFocusEffect } from "expo-router";
 import { Activity, Archive, Bird, ChevronDown, ChevronUp, History, LayoutGrid, List, Pencil, Plus, Search, ShoppingCart, Skull, Sparkles, Table2 } from "lucide-react-native";
@@ -64,6 +66,8 @@ export default function CyclesScreen() {
     }, []);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
+    const { selectedOfficerId } = useGlobalFilter();
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -72,22 +76,28 @@ export default function CyclesScreen() {
         return () => clearTimeout(handler);
     }, [searchQuery]);
 
-    const activeQuery = trpc.officer.cycles.listActive.useQuery(
-        {
-            orgId: membership?.orgId ?? "",
-            pageSize: 100,
-        },
-        { enabled: !!membership?.orgId }
+    // Officer queries
+    const officerActiveQuery = trpc.officer.cycles.listActive.useQuery(
+        { orgId: membership?.orgId ?? "", pageSize: 100 },
+        { enabled: !!membership?.orgId && !isManagement }
+    );
+    const officerHistoryQuery = trpc.officer.cycles.listPast.useQuery(
+        { orgId: membership?.orgId ?? "", search: debouncedSearch, pageSize: 50 },
+        { enabled: !!membership?.orgId && !isManagement && activeTab === 'history' }
     );
 
-    const historyQuery = trpc.officer.cycles.listPast.useQuery(
-        {
-            orgId: membership?.orgId ?? "",
-            search: debouncedSearch,
-            pageSize: 50,
-        },
-        { enabled: !!membership?.orgId && activeTab === 'history' }
+    // Management queries (with officerId filter)
+    const mgmtActiveQuery = trpc.management.cycles.listActive.useQuery(
+        { orgId: membership?.orgId ?? "", pageSize: 100, officerId: selectedOfficerId || undefined },
+        { enabled: !!membership?.orgId && isManagement }
     );
+    const mgmtHistoryQuery = trpc.management.cycles.listPast.useQuery(
+        { orgId: membership?.orgId ?? "", search: debouncedSearch, pageSize: 50, officerId: selectedOfficerId || undefined },
+        { enabled: !!membership?.orgId && isManagement && activeTab === 'history' }
+    );
+
+    const activeQuery = isManagement ? mgmtActiveQuery : officerActiveQuery;
+    const historyQuery = isManagement ? mgmtHistoryQuery : officerHistoryQuery;
 
     useFocusEffect(
         useCallback(() => {
@@ -190,6 +200,11 @@ export default function CyclesScreen() {
             <ScreenHeader title='Cycles' />
 
             <View className="px-4 pt-2 pb-1">
+                {isManagement && (
+                    <View className="mb-3">
+                        <OfficerSelector orgId={membership?.orgId ?? ""} />
+                    </View>
+                )}
                 {/* Search + Toggle */}
                 <View className="relative flex-row items-center gap-2 mb-3">
                     <View className="flex-1 relative">

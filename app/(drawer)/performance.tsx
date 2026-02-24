@@ -1,9 +1,11 @@
 /// <reference types="nativewind/types" />
+import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
+import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect } from "expo-router";
 import { ChevronDown } from "lucide-react-native";
@@ -17,9 +19,12 @@ export default function PerformanceScreen() {
     const now = new Date();
     const [year, setYear] = useState(now.getFullYear());
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
+    const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
+    const { selectedOfficerId } = useGlobalFilter();
 
     const { data, isLoading, refetch } = trpc.officer.performanceReports.getAnnualPerformance.useQuery(
-        { year },
+        { year, officerId: isManagement ? (selectedOfficerId || undefined) : undefined },
     );
 
     useFocusEffect(
@@ -73,16 +78,20 @@ export default function PerformanceScreen() {
                     </Text>
                 </View>
 
-                {/* Year Dropdown */}
-                <Pressable
-                    onPress={() => setYearPickerOpen(true)}
-                    className="mb-6 self-start"
-                >
-                    <View className="flex-row items-center gap-2 bg-muted/50 border border-border/50 rounded-xl px-4 h-10">
-                        <Text className="text-sm font-bold text-foreground">{year}</Text>
-                        <Icon as={ChevronDown} size={14} className="text-muted-foreground" />
-                    </View>
-                </Pressable>
+                {/* Year Dropdown + Officer Selector */}
+                <View className="flex-row items-center gap-3 mb-6">
+                    <Pressable
+                        onPress={() => setYearPickerOpen(true)}
+                    >
+                        <View className="flex-row items-center gap-2 bg-muted/50 border border-border/50 rounded-xl px-4 h-10">
+                            <Text className="text-sm font-bold text-foreground">{year}</Text>
+                            <Icon as={ChevronDown} size={14} className="text-muted-foreground" />
+                        </View>
+                    </Pressable>
+                    {isManagement && (
+                        <OfficerSelector orgId={membership?.orgId ?? ""} />
+                    )}
+                </View>
 
                 {isLoading ? (
                     <View className="items-center justify-center py-10">

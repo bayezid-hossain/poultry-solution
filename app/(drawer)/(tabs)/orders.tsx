@@ -1,3 +1,4 @@
+import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ConfirmDocOrderModal } from "@/components/orders/confirm-doc-order-modal";
 import { ConfirmFeedOrderModal } from "@/components/orders/confirm-feed-order-modal";
 import { CreateDocOrderModal } from "@/components/orders/create-doc-order-modal";
@@ -12,6 +13,7 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
+import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Bird, Factory, Plus, ShoppingBag } from "lucide-react-native";
@@ -46,11 +48,14 @@ export default function OrdersScreen() {
     const [isCreateSaleOpen, setIsCreateSaleOpen] = useState(false);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
+    const { selectedOfficerId } = useGlobalFilter();
 
     const feedOrdersQuery = trpc.officer.feedOrders.list.useQuery(
         {
             orgId: membership?.orgId ?? "",
             limit: 50,
+            officerId: isManagement ? (selectedOfficerId || undefined) : undefined,
         },
         { enabled: !!membership?.orgId && activeTab === 'feed' }
     );
@@ -59,6 +64,7 @@ export default function OrdersScreen() {
         {
             orgId: membership?.orgId ?? "",
             limit: 50,
+            officerId: isManagement ? (selectedOfficerId || undefined) : undefined,
         },
         { enabled: !!membership?.orgId && activeTab === 'doc' }
     );
@@ -67,6 +73,7 @@ export default function OrdersScreen() {
         {
             orgId: membership?.orgId ?? "",
             limit: 50,
+            officerId: isManagement ? (selectedOfficerId || undefined) : undefined,
         },
         { enabled: !!membership?.orgId && activeTab === 'sale' }
     );
@@ -124,6 +131,11 @@ export default function OrdersScreen() {
             <ScreenHeader title="Order Center" />
 
             <View className="bg-card border-b border-border/50 px-6 pb-4 pt-4">
+                {isManagement && (
+                    <View className="mb-4">
+                        <OfficerSelector orgId={membership?.orgId ?? ""} />
+                    </View>
+                )}
                 <View className="flex-row justify-between items-center mb-4">
                     <View>
                         <Text className="text-xs text-muted-foreground font-bold uppercase tracking-widest mb-1">Logistics</Text>
