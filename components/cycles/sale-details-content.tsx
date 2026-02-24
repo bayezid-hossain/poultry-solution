@@ -28,7 +28,7 @@ const formatFeedBreakdown = (feedData: string | any[] | undefined | null) => {
     try {
         const parsed = typeof feedData === 'string' ? JSON.parse(feedData) : feedData;
         if (!Array.isArray(parsed) || parsed.length === 0) return "None";
-        return parsed.map((f: any) => `${f.bags}x ${f.type || 'Feed'}`).join('\n');
+        return parsed.map((f: any) => `${f.type || 'Feed'}- ${f.bags}`).join('\n');
     } catch {
         return "Invalid Data";
     }

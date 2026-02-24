@@ -49,12 +49,12 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
     const noteRef = useRef<TextInput>(null);
 
     const targetFarmerId = watch("targetFarmerId");
-
-    // Fetch membership to get orgId
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
 
     // Fetch farmers for selection
-    const { data: farmersData } = trpc.officer.farmers.getMany.useQuery({
+    const farmersProcedure = isManagement ? trpc.management.farmers.getMany : trpc.officer.farmers.getMany;
+    const { data: farmersData } = (farmersProcedure as any).useQuery({
         orgId: (membership?.orgId ?? "") as string,
         pageSize: 100, // Fetch more for searchable list
         sortBy: "name",
@@ -76,11 +76,14 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
         return farmersData?.items?.find((f: any) => f.id === targetFarmerId);
     }, [farmersData?.items, targetFarmerId]);
 
-    const mutation = trpc.officer.stock.transferStock.useMutation({
+    const transferMutation = isManagement ? trpc.management.stock.transferStock : trpc.officer.stock.transferStock;
+    const mutation = (transferMutation as any).useMutation({
         onSuccess: async () => {
             toast.success("Stock transferred successfully");
             utils.officer.farmers.getDetails.invalidate({ farmerId: sourceFarmerId });
             utils.officer.stock.getHistory.invalidate({ farmerId: sourceFarmerId });
+            utils.management.farmers.getDetails.invalidate({ farmerId: sourceFarmerId });
+            utils.management.stock.getHistory.invalidate({ farmerId: sourceFarmerId });
             reset();
             setSearchTerm("");
             setIsDropdownOpen(false);
@@ -98,6 +101,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
             targetFarmerId: data.targetFarmerId,
             amount: parseFloat(data.amount),
             note: data.note,
+            orgId: isManagement ? membership?.orgId : undefined
         });
     };
 

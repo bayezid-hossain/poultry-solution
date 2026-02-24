@@ -59,13 +59,16 @@ export default function FarmerDetailScreen() {
     const [isDeleteCycleOpen, setIsDeleteCycleOpen] = useState(false);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
 
-    const { data: farmer, isLoading, refetch } = trpc.officer.farmers.getDetails.useQuery(
-        { farmerId: id ?? "" },
-        { enabled: !!id }
+    const detailProcedure = isManagement ? trpc.management.farmers.getDetails : trpc.officer.farmers.getDetails;
+    const { data: farmer, isLoading, refetch } = (detailProcedure as any).useQuery(
+        { farmerId: id ?? "", orgId: membership?.orgId ?? "" },
+        { enabled: !!id && (isManagement ? !!membership?.orgId : true) }
     );
 
-    const { data: historyData, isLoading: historyLoading } = trpc.officer.cycles.listPast.useQuery(
+    const listPastProcedure = isManagement ? trpc.management.cycles.listPast : trpc.officer.cycles.listPast;
+    const { data: historyData, isLoading: historyLoading } = (listPastProcedure as any).useQuery(
         {
             orgId: membership?.orgId ?? "",
             farmerId: id,
@@ -74,14 +77,16 @@ export default function FarmerDetailScreen() {
         { enabled: !!id && !!membership?.orgId && historyExpanded }
     );
 
-    const { data: salesData, isLoading: salesLoading } = trpc.officer.sales.getRecentSales.useQuery(
-        { limit: 50 },
+    const recentSalesProcedure = isManagement ? trpc.management.sales.getRecentSales : trpc.officer.sales.getRecentSales;
+    const { data: salesData, isLoading: salesLoading } = (recentSalesProcedure as any).useQuery(
+        { limit: 50, orgId: membership?.orgId ?? "" },
         { enabled: !!id && !!membership?.orgId && salesExpanded }
     );
 
-    const { data: ledgerData, isLoading: ledgerLoading } = trpc.officer.stock.getHistory.useQuery(
-        { farmerId: id ?? "" },
-        { enabled: !!id && ledgerExpanded }
+    const stockHistoryProcedure = isManagement ? trpc.management.stock.getHistory : trpc.officer.stock.getHistory;
+    const { data: ledgerData, isLoading: ledgerLoading } = (stockHistoryProcedure as any).useQuery(
+        { farmerId: id ?? "", orgId: membership?.orgId ?? "" },
+        { enabled: !!id && (isManagement ? !!membership?.orgId : true) && ledgerExpanded }
     );
 
     const handleCycleAction = useCallback((action: CycleAction, cycle: any) => {
@@ -423,6 +428,8 @@ export default function FarmerDetailScreen() {
                     refetch();
                     utils.officer.stock.getHistory.invalidate({ farmerId: farmer.id });
                     utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
+                    utils.management.stock.getHistory.invalidate({ farmerId: farmer.id });
+                    utils.management.farmers.getDetails.invalidate({ farmerId: farmer.id });
                 }}
             />
             <StockCorrectionModal
@@ -471,6 +478,9 @@ export default function FarmerDetailScreen() {
                     utils.officer.stock.getHistory.invalidate({ farmerId: farmer.id });
                     utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
                     utils.officer.stock.getAllFarmersStock.invalidate();
+                    utils.management.stock.getHistory.invalidate({ farmerId: farmer.id });
+                    utils.management.farmers.getDetails.invalidate({ farmerId: farmer.id });
+                    utils.management.stock.getAllFarmersStock.invalidate();
                 }}
             />
 

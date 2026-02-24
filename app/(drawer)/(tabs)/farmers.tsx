@@ -68,7 +68,7 @@ export default function FarmersScreen() {
     const data = isManagement ? mgmtQuery.data : officerQuery.data;
     const isLoading = isManagement ? mgmtQuery.isLoading : officerQuery.isLoading;
     const refetch = isManagement ? mgmtQuery.refetch : officerQuery.refetch;
-    console.log(isManagement, selectedOfficerId)
+    // console.log(isManagement, selectedOfficerId)
     useFocusEffect(
         useCallback(() => {
             if (membership?.orgId) {

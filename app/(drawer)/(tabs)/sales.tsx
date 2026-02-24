@@ -1,9 +1,11 @@
 import { SaleEventCard } from "@/components/cycles/sale-event-card";
+import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ScreenHeader } from "@/components/screen-header";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
+import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
 import { CheckCircle2, ChevronDown, ChevronUp, FileText, RefreshCw, Search, Trash2, User } from "lucide-react-native";
@@ -12,12 +14,23 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, View } from "react-nat
 
 export default function SalesScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
+    const { selectedOfficerId } = useGlobalFilter();
     const [searchQuery, setSearchQuery] = useState("");
+    // console.log('[Tabs-SalesScreen] isManagement:', isManagement, 'orgId:', membership?.orgId, 'selectedOfficerId:', selectedOfficerId);
 
-    const { data: recentSales, isLoading: salesLoading, error: salesError, refetch } = trpc.officer.sales.getRecentSales.useQuery(
+    const officerSalesQuery = trpc.officer.sales.getRecentSales.useQuery(
         { limit: 100, search: searchQuery },
-        { enabled: !!membership?.orgId }
+        { enabled: !!membership?.orgId && !isManagement }
     );
+    const mgmtSalesQuery = trpc.management.sales.getRecentSales.useQuery(
+        { orgId: membership?.orgId ?? "", limit: 100, search: searchQuery, officerId: selectedOfficerId || undefined },
+        { enabled: !!membership?.orgId && isManagement }
+    );
+    const recentSales = isManagement ? mgmtSalesQuery.data : officerSalesQuery.data;
+    const salesLoading = isManagement ? mgmtSalesQuery.isLoading : officerSalesQuery.isLoading;
+    const salesError = isManagement ? mgmtSalesQuery.error : officerSalesQuery.error;
+    const refetch = isManagement ? mgmtSalesQuery.refetch : officerSalesQuery.refetch;
 
     useFocusEffect(
         useCallback(() => {
@@ -70,6 +83,11 @@ export default function SalesScreen() {
             <ScreenHeader title="Sales" />
 
             <View className="p-4 pb-2">
+                {isManagement && (
+                    <View className="mb-3">
+                        <OfficerSelector orgId={membership?.orgId ?? ""} />
+                    </View>
+                )}
                 <View className="relative">
                     <View className="absolute z-10 left-3 top-1/2 -translate-y-1/2 bottom-0 justify-center">
                         <Icon as={Search} size={18} className="text-muted-foreground" />

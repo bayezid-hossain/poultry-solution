@@ -37,19 +37,25 @@ export default function FarmerLedgerScreen() {
         }
     };
 
-    const { data: farmer } = trpc.officer.farmers.getDetails.useQuery(
-        { farmerId: id ?? "" },
-        { enabled: !!id }
+    const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
+
+    const detailProcedure = isManagement ? trpc.management.farmers.getDetails : trpc.officer.farmers.getDetails;
+    const { data: farmer } = (detailProcedure as any).useQuery(
+        { farmerId: id ?? "", orgId: membership?.orgId ?? "" },
+        { enabled: !!id && (isManagement ? !!membership?.orgId : true) }
     );
 
-    const stockQuery = trpc.officer.stock.getHistory.useQuery(
-        { farmerId: id ?? "" },
-        { enabled: !!id && tab === "stock" }
+    const stockHistoryProcedure = isManagement ? trpc.management.stock.getHistory : trpc.officer.stock.getHistory;
+    const stockQuery = (stockHistoryProcedure as any).useQuery(
+        { farmerId: id ?? "", orgId: membership?.orgId ?? "" },
+        { enabled: !!id && tab === "stock" && (isManagement ? !!membership?.orgId : true) }
     );
 
-    const securityQuery = trpc.officer.farmers.getSecurityMoneyHistory.useQuery(
-        { farmerId: id ?? "" },
-        { enabled: !!id && tab === "security" }
+    const securityHistoryProcedure = isManagement ? trpc.management.farmers.getSecurityMoneyHistory : trpc.officer.farmers.getSecurityMoneyHistory;
+    const securityQuery = (securityHistoryProcedure as any).useQuery(
+        { farmerId: id ?? "", orgId: membership?.orgId ?? "" },
+        { enabled: !!id && tab === "security" && (isManagement ? !!membership?.orgId : true) }
     );
 
     const historyData = tab === "stock" ? stockQuery.data || [] : securityQuery.data || [];
@@ -338,7 +344,10 @@ export default function FarmerLedgerScreen() {
                         stockQuery.refetch();
                         utils.officer.stock.getAllFarmersStock.invalidate();
                         utils.officer.stock.getImportHistory.invalidate();
+                        utils.management.stock.getAllFarmersStock.invalidate();
+                        utils.management.stock.getImportHistory.invalidate();
                         farmer?.id && utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
+                        farmer?.id && utils.management.farmers.getDetails.invalidate({ farmerId: farmer.id });
                     }}
                 />
             )}
@@ -351,7 +360,10 @@ export default function FarmerLedgerScreen() {
                     stockQuery.refetch();
                     utils.officer.stock.getAllFarmersStock.invalidate();
                     utils.officer.stock.getImportHistory.invalidate();
+                    utils.management.stock.getAllFarmersStock.invalidate();
+                    utils.management.stock.getImportHistory.invalidate();
                     farmer?.id && utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
+                    farmer?.id && utils.management.farmers.getDetails.invalidate({ farmerId: farmer.id });
                 }}
             />
 

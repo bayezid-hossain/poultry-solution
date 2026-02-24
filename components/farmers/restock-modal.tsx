@@ -29,7 +29,11 @@ export function RestockModal({
     const amountRef = useRef<TextInput>(null);
     const noteRef = useRef<TextInput>(null);
 
-    const mutation = trpc.officer.stock.addStock.useMutation({
+    const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
+
+    const addStockProcedure = isManagement ? trpc.management.stock.addStock : trpc.officer.stock.addStock;
+    const mutation = (addStockProcedure as any).useMutation({
         onSuccess: () => {
             onOpenChange(false);
             setAmount("");
@@ -52,6 +56,7 @@ export function RestockModal({
             farmerId,
             amount: numAmount,
             note: note || "Manual Restock",
+            orgId: isManagement ? membership?.orgId : undefined
         });
     };
 

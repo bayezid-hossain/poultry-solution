@@ -16,6 +16,7 @@ export default function SalesScreen() {
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
     const [searchQuery, setSearchQuery] = useState("");
+    // console.log('[SalesScreen] isManagement:', isManagement, 'orgId:', membership?.orgId, 'selectedOfficerId:', selectedOfficerId);
 
     const officerSalesQuery = trpc.officer.sales.getRecentSales.useQuery(
         { limit: 100, search: searchQuery },

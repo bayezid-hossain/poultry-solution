@@ -29,7 +29,11 @@ export function StockCorrectionModal({
     const amountRef = useRef<TextInput>(null);
     const noteRef = useRef<TextInput>(null);
 
-    const mutation = trpc.officer.stock.deductStock.useMutation({
+    const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
+
+    const deductStockProcedure = isManagement ? trpc.management.stock.deductStock : trpc.officer.stock.deductStock;
+    const mutation = (deductStockProcedure as any).useMutation({
         onSuccess: () => {
             onOpenChange(false);
             setAmount("");
@@ -52,6 +56,7 @@ export function StockCorrectionModal({
             farmerId,
             amount: numAmount,
             note: note || "Manual Correction",
+            orgId: isManagement ? membership?.orgId : undefined
         });
     };
 

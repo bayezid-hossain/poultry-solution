@@ -109,7 +109,7 @@ function StockTab({ isManagement, officerId, orgId }: { isManagement: boolean; o
             </View>
 
             {items.map((item: any) => (
-                <FarmerStockRow key={item.id} farmer={item} />
+                <FarmerStockRow key={item.id} farmer={item} isManagement={isManagement} orgId={orgId} />
             ))}
 
             {items.length === 0 && (
@@ -123,12 +123,13 @@ function StockTab({ isManagement, officerId, orgId }: { isManagement: boolean; o
     );
 }
 
-function FarmerStockRow({ farmer }: { farmer: { id: string; name: string; mainStock: number; updatedAt: Date | null } }) {
+function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string; name: string; mainStock: number; updatedAt: Date | null }; isManagement: boolean; orgId: string }) {
     const [expanded, setExpanded] = useState(false);
 
-    const { data: history, isLoading } = trpc.officer.stock.getHistory.useQuery(
-        { farmerId: farmer.id },
-        { enabled: expanded }
+    const stockHistoryProcedure = isManagement ? trpc.management.stock.getHistory : trpc.officer.stock.getHistory;
+    const { data: history, isLoading } = (stockHistoryProcedure as any).useQuery(
+        { farmerId: farmer.id, orgId: isManagement ? orgId : undefined },
+        { enabled: expanded && (isManagement ? !!orgId : true) }
     );
 
     const typeIcon = (type: string) => {
@@ -298,7 +299,7 @@ function ImportHistoryTab({ isManagement, officerId, orgId }: { isManagement: bo
             </View>
 
             {batches.map((batch: any) => (
-                <BatchHistoryRow key={batch.batchId} batch={batch} />
+                <BatchHistoryRow key={batch.batchId} batch={batch} isManagement={isManagement} orgId={orgId} />
             ))}
 
             {batches.length === 0 && (
@@ -312,12 +313,13 @@ function ImportHistoryTab({ isManagement, officerId, orgId }: { isManagement: bo
     );
 }
 
-function BatchHistoryRow({ batch }: { batch: any }) {
+function BatchHistoryRow({ batch, isManagement, orgId }: { batch: any; isManagement: boolean; orgId: string }) {
     const [expanded, setExpanded] = useState(false);
 
-    const { data: details, isLoading } = trpc.officer.stock.getBatchDetails.useQuery(
-        { batchId: batch.batchId },
-        { enabled: expanded }
+    const batchDetailsProcedure = isManagement ? trpc.management.stock.getBatchDetails : trpc.officer.stock.getBatchDetails;
+    const { data: details, isLoading } = (batchDetailsProcedure as any).useQuery(
+        { batchId: batch.batchId, orgId: isManagement ? orgId : undefined },
+        { enabled: expanded && (isManagement ? !!orgId : true) }
     );
 
     return (
