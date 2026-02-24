@@ -28,7 +28,7 @@ export function ScreenHeader({ title, leftElement }: ScreenHeaderProps) {
                     <Text className="text-xl text-foreground">☰</Text>
                 </Pressable>
             )}
-            <Text className="text-xl font-bold text-primary flex-1" numberOfLines={1}>{title}</Text>
+            <Text className="text-xl font-bold text-[#16a34a] flex-1" numberOfLines={1}>{title}</Text>
         </View>
     );
 }

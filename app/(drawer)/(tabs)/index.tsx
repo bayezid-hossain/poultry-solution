@@ -1,7 +1,7 @@
 import { OfficerKpiCards } from '@/components/dashboard/officer-kpi-cards';
 import { PerformanceInsights } from '@/components/dashboard/performance-insights';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
-import { UrgentActions } from '@/components/dashboard/urgent-actions';
+import { SmartWatchdog } from '@/components/dashboard/smart-watchdog';
 import { ScreenHeader } from '@/components/screen-header';
 import { Icon } from '@/components/ui/icon';
 import { Separator } from '@/components/ui/separator';
@@ -9,10 +9,11 @@ import { Text } from '@/components/ui/text';
 import { trpc } from '@/lib/trpc';
 import { useFocusEffect } from 'expo-router';
 import { Activity } from 'lucide-react-native';
-import { useCallback, useRef } from 'react';
-import { ActivityIndicator, BackHandler, ScrollView, ToastAndroid, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { ActivityIndicator, BackHandler, RefreshControl, ScrollView, ToastAndroid, View } from 'react-native';
 
 export default function HomeScreen() {
+  const [refreshing, setRefreshing] = useState(false);
   const { data: session } = trpc.auth.getSession.useQuery();
   const { data: membership } = trpc.auth.getMyMembership.useQuery();
   const orgId = membership?.orgId || "";
@@ -41,26 +42,72 @@ export default function HomeScreen() {
     }, [])
   );
 
-  const { data: stats, isLoading: statsLoading } = trpc.officer.getDashboardStats.useQuery(
+  const activeMode = membership?.activeMode || "OFFICER";
+  const isManagement = activeMode === "MANAGEMENT";
+
+  // --- STATS FETCHING ---
+  const { data: officerStats, isLoading: officerStatsLoading, refetch: refetchOfficerStats } = trpc.officer.getDashboardStats.useQuery(
     { orgId },
-    { enabled: !!orgId }
+    { enabled: !!orgId && !isManagement }
   );
 
-  const { data: cyclesData, isLoading: cyclesLoading } = trpc.officer.cycles.listActive.useQuery(
-    {
-      orgId,
-      page: 1,
-      pageSize: 100
-    },
-    { enabled: !!orgId }
+  const { data: managementStats, isLoading: managementStatsLoading, refetch: refetchManagementStats } = trpc.management.analytics.getGlobalDashboardStats.useQuery(
+    { orgId },
+    { enabled: !!orgId && isManagement }
   );
+
+  const stats = isManagement ? managementStats : officerStats;
+  const statsLoading = isManagement ? managementStatsLoading : officerStatsLoading;
+
+  // --- CYCLES FETCHING ---
+  const { data: officerCyclesData, isLoading: officerCyclesLoading, refetch: refetchOfficerCycles } = trpc.officer.cycles.listActive.useQuery(
+    { orgId, page: 1, pageSize: 100 },
+    { enabled: !!orgId && !isManagement }
+  );
+
+  const { data: managementCyclesData, isLoading: managementCyclesLoading, refetch: refetchManagementCycles } = trpc.management.cycles.listActive.useQuery(
+    { orgId, page: 1, pageSize: 100 },
+    { enabled: !!orgId && isManagement }
+  );
+
+  const cyclesData = isManagement ? managementCyclesData : officerCyclesData;
+  const cyclesLoading = isManagement ? managementCyclesLoading : officerCyclesLoading;
+
+  const { data: watchdogData, isPending: watchdogPending, mutate: fetchWatchdog, mutateAsync: fetchWatchdogAsync } = trpc.ai.generateSupplyChainPrediction.useMutation();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (orgId) {
+        fetchWatchdog({
+          orgId,
+          officerId: !isManagement ? session?.user?.id : undefined
+        });
+      }
+    }, [orgId, fetchWatchdog, isManagement, session?.user?.id])
+  );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    const refetchStats = isManagement ? refetchManagementStats : refetchOfficerStats;
+    const refetchCycles = isManagement ? refetchManagementCycles : refetchOfficerCycles;
+
+    const promises: Promise<any>[] = [refetchStats(), refetchCycles()];
+    if (orgId) {
+      promises.push(fetchWatchdogAsync({
+        orgId,
+        officerId: !isManagement ? session?.user?.id : undefined
+      }));
+    }
+    await Promise.all(promises);
+    setRefreshing(false);
+  }, [refetchOfficerStats, refetchManagementStats, refetchOfficerCycles, refetchManagementCycles, orgId, fetchWatchdogAsync, isManagement, session?.user?.id]);
 
   if (statsLoading || cyclesLoading) {
     return (
       <View className="flex-1 bg-background">
         <ScreenHeader title="Dashboard" />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="hsl(var(--primary))" />
+          <ActivityIndicator size="large" color="#16a34a" />
         </View>
       </View>
     );
@@ -68,27 +115,7 @@ export default function HomeScreen() {
 
   const cycles = cyclesData?.items || [];
 
-  // --- DERIVED LOGIC ---
-
-  // 1. Urgent Needs: Low feed stock (< 3 bags)
-  const farmerConsumptionMap = new Map<string, number>();
-  cycles.forEach((c: any) => {
-    const current = farmerConsumptionMap.get(c.farmerId) || 0;
-    farmerConsumptionMap.set(c.farmerId, current + (c.intake || 0));
-  });
-
-  const lowStockCycles = cycles
-    .map((c: any) => {
-      const totalConsumption = farmerConsumptionMap.get(c.farmerId) || 0;
-      const initialStock = (c as any).farmerMainStock || 0;
-      const availableStock = initialStock - totalConsumption;
-      return { ...c, availableStock };
-    })
-    .filter((c: any, index: number, self: any[]) =>
-      index === self.findIndex((t: any) => t.farmerId === c.farmerId)
-    )
-    .filter((c: any) => c.availableStock < 3)
-    .sort((a: any, b: any) => a.availableStock - b.availableStock);
+  // --- DERIVED LOGIC REMOVED (Handled by Backend Watchdog) ---
 
   // 2. Performance Aggregation
   const farmerStatsMap = new Map<string, {
@@ -135,17 +162,23 @@ export default function HomeScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader title="Dashboard" />
-      <ScrollView contentContainerClassName="p-4 pb-20" className="flex-1">
+      <ScrollView
+        contentContainerClassName="p-4 pb-20"
+        className="flex-1"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#16a34a" colors={["#16a34a"]} />
+        }
+      >
         {/* Premium Welcome Header */}
         <View className="flex-row items-center gap-3 mb-6">
           <View className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
-            <Icon as={Activity} size={24} color="text-foreground" />
+            <Icon as={Activity} size={24} color="#16a34a" />
           </View>
           <View>
-            <Text className="text-2xl font-black text-foreground tracking-tighter uppercase">
-              Home
+            <Text className="text-2xl font-black text-foreground tracking-tighter uppercase leading-none">
+              {isManagement ? "MANAGEMENT" : "OFFICER"}
             </Text>
-            <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] opacity-60">
+            <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] opacity-60 mt-1">
               {membership?.orgName || "Operations Intelligence"}
             </Text>
           </View>
@@ -170,9 +203,9 @@ export default function HomeScreen() {
 
         <Separator className="mb-8 opacity-50" />
 
-        {/* Urgent Needs, Activity & Top Performers */}
+        {/* Smart Watchdog, Activity & Top Performers */}
         <View className="gap-6">
-          <UrgentActions lowStockCycles={lowStockCycles} canEdit={true} />
+          <SmartWatchdog data={watchdogData?.predictions || []} isLoading={watchdogPending} />
           <RecentActivity cycles={cycles as any} />
           <PerformanceInsights topPerformers={topPerformers} />
         </View>

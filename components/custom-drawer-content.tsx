@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
 import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
 import { BarChart3, Bird, ClipboardList, Crown, LayoutDashboard, Package, Settings, ShoppingBag, TrendingUp, Users, Wheat } from "lucide-react-native";
-import { Pressable, View } from "react-native";
+import { Image, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SubscriptionStatus } from "./subscription-status";
 
@@ -36,7 +36,7 @@ const officerOrderItems: NavItem[] = [
 const officerReportItems: NavItem[] = [
     { label: "Monthly DOC Placements", icon: ClipboardList, route: "/(drawer)/doc-placements", isPro: true },
     { label: "Yearly Performance", icon: TrendingUp, route: "/(drawer)/performance", isPro: true },
-    { label: "Monthly Performance", icon: BarChart3, route: "/(drawer)/production", isPro: true },
+    { label: "Monthly Production", icon: BarChart3, route: "/(drawer)/production", isPro: true },
 ];
 
 const managementCoreItems: NavItem[] = [
@@ -142,19 +142,27 @@ export function CustomDrawerContent(props: any) {
     return (
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             {/* Header */}
-            <View className="px-5 py-6">
-                <Text className="text-2xl font-black text-primary tracking-tighter">Poultry Solution</Text>
-                {sessionData?.user && (
-                    <View className="mt-4 flex-row items-center gap-3">
-                        <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
-                            <Text className="font-bold text-primary">{sessionData.user.name?.[0] || "?"}</Text>
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-sm font-bold text-foreground" numberOfLines={1}>{sessionData.user.name}</Text>
-                            <Text variant="muted" className="text-xs" numberOfLines={1}>{sessionData.user.email}</Text>
-                        </View>
+            <View className="px-5 py-8">
+                <View className="flex-row items-center gap-3">
+                    <View className="relative">
+                        <View className="absolute -inset-2 bg-primary/10 rounded-2xl blur-md" />
+                        <Image
+                            source={require("@/assets/images/logo.png")}
+                            style={{ width: 44, height: 44, borderRadius: 12 }}
+                            className="bg-background p-1 border border-border/50"
+                        />
                     </View>
-                )}
+                    <View>
+                        <Text className="text-xl font-black text-foreground tracking-tighter uppercase leading-none">
+                            Poultry
+                        </Text>
+                        <Text className="text-[10px] font-black text-primary tracking-[0.2em] uppercase leading-none mt-1">
+                            Solution
+                        </Text>
+                    </View>
+                </View>
+
+
             </View>
 
             <View className="px-4 mb-4">
@@ -188,9 +196,21 @@ export function CustomDrawerContent(props: any) {
             </DrawerContentScrollView>
 
             {/* Footer / Subscription Status */}
-            <View className="p-4 border-t border-border/10 bg-card/30">
+            <View className="p-2 -gap-y-2 border-t border-border/10 bg-card/30">
                 <SubscriptionStatus isPro={isPro} proExpiresAt={proExpiresAt} />
+                {sessionData?.user && (
+                    <View className="mt-2 flex-row items-center gap-3 bg-muted/30 p-3 rounded-2xl border border-border/50">
+                        <View className="w-10 h-10 rounded-2xl bg-primary/10 items-center justify-center border border-primary/20">
+                            <Text className="font-bold text-primary">{sessionData.user.name?.[0] || "?"}</Text>
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-sm font-black text-foreground uppercase tracking-tight" numberOfLines={1}>{sessionData.user.name}</Text>
+                            <Text variant="muted" className="text-[10px] font-bold uppercase opacity-50 tracking-wider" numberOfLines={1}>{sessionData.user.email}</Text>
+                        </View>
+                    </View>
+                )}
             </View>
+
         </View>
     );
 }
