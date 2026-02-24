@@ -4,6 +4,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { RotateCcw, X } from "lucide-react-native";
 import { Modal, Pressable, View } from "react-native";
+import { toast, Toaster } from "sonner-native";
 
 interface RevertTransferModalProps {
     referenceId: string | null;
@@ -24,6 +25,10 @@ export function RevertTransferModal({
         onSuccess: () => {
             onOpenChange(false);
             onSuccess?.();
+            toast.success("Successfully reverted transfer");
+        },
+        onError: (err: any) => {
+            toast.error(err.message || "Failed to revert transfer");
         },
     });
 
@@ -101,6 +106,7 @@ export function RevertTransferModal({
                     </View>
                 </Pressable>
             </Pressable>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

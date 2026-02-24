@@ -4,6 +4,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { RotateCcw, X } from "lucide-react-native";
 import { Modal, Pressable, View } from "react-native";
+import { toast, Toaster } from "sonner-native";
 
 interface RevertStockLogModalProps {
     log: {
@@ -26,6 +27,10 @@ export function RevertStockLogModal({
         onSuccess: () => {
             onOpenChange(false);
             onSuccess?.();
+            toast.success("Successfully reverted entry");
+        },
+        onError: (err: any) => {
+            toast.error(err.message || "Failed to revert entry");
         },
     });
 
@@ -106,6 +111,7 @@ export function RevertStockLogModal({
                     </View>
                 </Pressable>
             </Pressable>
+            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

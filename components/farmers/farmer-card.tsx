@@ -2,7 +2,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
-import { format } from "date-fns";
 import { useRouter } from "expo-router";
 import { AlertCircle, ArrowRightLeft, Bird, RotateCcw, Trash2, Wheat, Wrench } from "lucide-react-native";
 import { Alert, Pressable, View } from "react-native";
@@ -20,6 +19,7 @@ interface FarmerCardProps {
         activeBirdsCount: number;
         createdAt?: string | Date;
     };
+    activeConsumption?: number;
     onPress?: () => void;
     onRestock?: () => void;
     onTransfer?: () => void;
@@ -35,11 +35,15 @@ export function FarmerCard({
     onTransfer,
     onDelete,
     onEdit,
-    onRestore
+    onRestore,
+    activeConsumption
 }: FarmerCardProps) {
     const router = useRouter();
-    const totalSupplied = (Number(farmer.mainStock ?? 0) + Number(farmer.totalConsumed ?? 0));
-    const joinedDate = farmer.createdAt ? format(new Date(farmer.createdAt), "dd/MM/yyyy") : "N/A";
+    const mainStock = Number(farmer.mainStock ?? 0);
+    const totalConsumed = activeConsumption ?? Number(farmer.totalConsumed ?? 0);
+    const availableStock = mainStock - totalConsumed;
+    const remaining = availableStock; // 'remaining' now refers to availableStock
+    const isLow = remaining < 3;
 
     return (
         <Pressable onPress={onPress}>
@@ -104,7 +108,7 @@ export function FarmerCard({
                             <View className="flex-row items-center gap-1.5">
                                 <Icon as={Wheat} size={16} className="text-red-400" />
                                 <View className="flex-row items-baseline gap-1">
-                                    <Text className="text-xl font-black text-red-500">{Number(farmer.mainStock ?? 0).toFixed(1)}</Text>
+                                    <Text className="text-xl font-black text-red-500">{availableStock.toFixed(1)}</Text>
                                     <Text className="text-[10px] text-muted-foreground/60 font-bold lowercase">b</Text>
                                 </View>
                             </View>
@@ -115,7 +119,7 @@ export function FarmerCard({
                             <Text className="text-orange-500/60 text-[9px] font-black uppercase tracking-widest">Used</Text>
                             <View className="flex-row items-center">
                                 <View className="flex-row items-baseline gap-1">
-                                    <Text className="text-xl font-black text-orange-500">{Number(farmer.totalConsumed ?? 0).toFixed(1)}</Text>
+                                    <Text className="text-xl font-black text-orange-500">{totalConsumed.toFixed(1)}</Text>
                                     <Text className="text-[10px] text-orange-500/40 font-bold lowercase">b</Text>
                                 </View>
                             </View>
@@ -125,7 +129,7 @@ export function FarmerCard({
                         <View className="flex-1 bg-primary p-2.5 rounded-xl h-20 justify-between shadow-sm shadow-primary/20">
                             <Text className="text-primary-foreground/60 text-[9px] font-black uppercase tracking-widest text-right">Total</Text>
                             <View className="flex-row items-baseline justify-end gap-1">
-                                <Text className="text-xl font-black text-primary-foreground">{totalSupplied.toFixed(1)}</Text>
+                                <Text className="text-xl font-black text-primary-foreground">{mainStock.toFixed(1)}</Text>
                                 <Text className="text-[10px] text-primary-foreground/40 font-bold lowercase">b</Text>
                             </View>
                         </View>
@@ -160,6 +164,6 @@ export function FarmerCard({
                     )}
                 </CardContent>
             </Card>
-        </Pressable>
+        </Pressable >
     );
 }

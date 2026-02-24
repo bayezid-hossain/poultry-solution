@@ -6,9 +6,10 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
-import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronUp, ClipboardList, Package, RotateCcw, User, Wheat } from "lucide-react-native";
+import { Link, router } from "expo-router";
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, ChevronDown, ChevronUp, ClipboardList, Package, RotateCcw, User, Wheat } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from "react-native";
 
 export default function StockLedgerScreen() {
     const [tab, setTab] = useState<"stock" | "imports">("stock");
@@ -44,7 +45,7 @@ export default function StockLedgerScreen() {
 }
 
 function StockTab() {
-    const { data, isLoading } = trpc.officer.stock.getAllFarmersStock.useQuery({
+    const { data, isLoading, refetch } = trpc.officer.stock.getAllFarmersStock.useQuery({
         limit: 100,
         cursor: 0,
     });
@@ -61,7 +62,13 @@ function StockTab() {
     const totalStock = items.reduce((acc: number, f: { mainStock: number | null; }) => acc + Number(f.mainStock ?? 0), 0);
 
     return (
-        <ScrollView contentContainerClassName="p-4 pb-20" className="flex-1">
+        <ScrollView
+            contentContainerClassName="p-4 pb-20"
+            className="flex-1"
+            refreshControl={
+                <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+            }
+        >
             {/* Total Summary */}
             <Card className="mb-6 border-border/50 bg-primary/5">
                 <CardContent className="p-4 items-center">
@@ -119,18 +126,45 @@ function FarmerStockRow({ farmer }: { farmer: { id: string; name: string; mainSt
 
     return (
         <Card className="mb-2 border-border/50 overflow-hidden">
-            <Pressable onPress={() => setExpanded(!expanded)} className="active:bg-muted/30">
-                <CardContent className="p-3 flex-row items-center justify-between">
-                    <Text className="font-bold text-foreground flex-1">{farmer.name}</Text>
-                    <View className="flex-row items-center gap-2">
-                        <Text className="font-bold text-primary">{Number(farmer.mainStock).toFixed(1)} bags</Text>
-                        <Icon as={expanded ? ChevronUp : ChevronDown} size={16} className="text-muted-foreground" />
+            <CardContent className="p-0 flex-row items-center justify-between">
+                <Pressable
+                    className="flex-1 p-3 active:bg-muted/30"
+                    onPress={() => router.push(`/farmer/${farmer.id}` as any)}
+                    hitSlop={{ top: 25, bottom: 25, left: 20, right: 20 }}
+                    style={{ backgroundColor: 'transparent' }}
+                >
+                    <View pointerEvents="none">
+                        <Text className="font-bold text-foreground active:opacity-70">
+                            {farmer.name}
+                        </Text>
                     </View>
-                </CardContent>
-            </Pressable>
+                </Pressable>
+                <Pressable
+                    className="flex-row items-center gap-2 p-3 active:bg-muted/30 border-l border-border/10"
+                    onPress={() => setExpanded(!expanded)}
+                >
+                    <Text className="font-bold text-primary" pointerEvents="none">{Number(farmer.mainStock).toFixed(1)} bags</Text>
+                    <Icon as={expanded ? ChevronUp : ChevronDown} size={16} className="text-muted-foreground" />
+                </Pressable>
+            </CardContent>
 
             {expanded && (
-                <View className="border-t border-border/50 bg-muted/5">
+                <View className="border-t border-border/50 bg-muted/5 pb-2">
+                    <View className="mb-2 bg-muted/10 p-3 rounded-xl border border-border/30 mx-3 mt-3 flex-row items-center justify-between">
+                        <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Main Stock</Text>
+                        <View className="flex-row items-baseline gap-1">
+                            <Text className="text-xl font-black text-foreground">{farmer.mainStock || 0}</Text>
+                            <Text className="text-[10px] font-medium text-muted-foreground">b</Text>
+                        </View>
+                    </View>
+
+                    <View className="flex-row items-center bg-muted/20 px-4 py-2 mb-1 border-y border-border/10">
+                        <Text className="w-12 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Date</Text>
+                        <Text className="flex-1 text-[9px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Type</Text>
+                        <Text className="flex-[1.2] text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Note</Text>
+                        <Text className="w-14 text-right text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Change</Text>
+                    </View>
+
                     {isLoading ? (
                         <View className="py-6 items-center">
                             <ActivityIndicator size="small" color="hsl(var(--primary))" />
@@ -139,28 +173,68 @@ function FarmerStockRow({ farmer }: { farmer: { id: string; name: string; mainSt
                         history.slice(0, 10).map((log: any) => {
                             const ti = typeIcon(log.type);
                             const amount = Number(log.amount);
+                            const isReverted = false; // Simplified for this view
+
                             return (
-                                <View key={log.id} className="px-3 py-2.5 border-b border-border/20 flex-row items-center gap-3">
-                                    <View className={`w-7 h-7 rounded-lg items-center justify-center ${ti.bg}`}>
-                                        <Icon as={ti.icon} size={14} className={ti.color} />
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className="text-xs font-medium text-foreground">{log.note || log.type}</Text>
-                                        <Text className="text-[9px] text-muted-foreground">
-                                            {format(new Date(log.createdAt), "dd MMM, h:mm a")}
+                                <View key={log.id} className="flex-row items-center py-3 border-b border-border/5 px-4">
+                                    <Text className="w-12 text-[10px] text-muted-foreground font-medium">
+                                        {format(new Date(log.createdAt), "dd MMM")}
+                                    </Text>
+
+                                    <View className="flex-1 flex-row items-center gap-1.5 pl-1">
+                                        <View className={`w-4 h-4 rounded items-center justify-center ${ti.bg}`}>
+                                            <Icon as={ti.icon} size={10} className={ti.color} />
+                                        </View>
+                                        <Text className="text-xs font-bold text-foreground" numberOfLines={1}>
+                                            {log.type.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase())}
                                         </Text>
                                     </View>
-                                    <Text className={`text-sm font-bold ${amount >= 0 ? "text-emerald-500" : "text-destructive"}`}>
-                                        {amount >= 0 ? "+" : ""}{amount.toFixed(1)}
-                                    </Text>
+
+                                    <View className="flex-[1.2] pr-2 justify-center">
+                                        {log.type === "CORRECTION" && log.referenceId ? (() => {
+                                            const originalLog = history.find((l: any) => l.id === log.referenceId);
+                                            if (originalLog) {
+                                                const origAmt = parseFloat(originalLog.amount);
+                                                const deltaAmt = parseFloat(log.amount);
+                                                const newAmt = origAmt + deltaAmt;
+                                                return (
+                                                    <View className="flex-row items-center gap-1 opacity-80">
+                                                        <Text className="text-[9px] text-muted-foreground line-through">{origAmt > 0 ? "+" : ""}{origAmt}</Text>
+                                                        <Text className="text-[9px] text-muted-foreground">→</Text>
+                                                        <Text className={`text-[9px] font-bold ${newAmt > 0 ? 'text-emerald-500' : 'text-orange-500'}`}>{newAmt > 0 ? "+" : ""}{newAmt}</Text>
+                                                    </View>
+                                                );
+                                            }
+                                            return <Text className="text-[10px] text-muted-foreground" numberOfLines={2}>{log.note || "-"}</Text>;
+                                        })() : (
+                                            <Text className="text-[10px] text-muted-foreground" numberOfLines={2}>
+                                                {log.note || "-"}
+                                            </Text>
+                                        )}
+                                    </View>
+
+                                    <View className="items-end w-14">
+                                        <Text className={`text-xs font-bold ${amount >= 0 ? "text-emerald-500" : "text-destructive"}`}>
+                                            {amount >= 0 ? "+" : ""}{amount.toFixed(1)}
+                                        </Text>
+                                    </View>
                                 </View>
                             );
                         })
                     ) : (
-                        <View className="px-3 py-4 items-center">
-                            <Text className="text-xs text-muted-foreground">No logs</Text>
+                        <View className="px-3 py-6 items-center">
+                            <Text className="text-xs text-muted-foreground">No logs found</Text>
                         </View>
                     )}
+
+                    <View className="px-4 py-3 bg-muted/10 border-t border-border/10">
+                        <Link href={`/farmer/${farmer.id}/ledger` as any} asChild>
+                            <Pressable className="h-10 rounded-xl bg-background border border-border/50 items-center justify-center flex-row gap-2">
+                                <Text className="text-sm font-bold text-foreground">View Full Ledger</Text>
+                                <Icon as={ArrowRight} size={14} className="text-muted-foreground" />
+                            </Pressable>
+                        </Link>
+                    </View>
                 </View>
             )}
         </Card>
@@ -168,7 +242,7 @@ function FarmerStockRow({ farmer }: { farmer: { id: string; name: string; mainSt
 }
 
 function ImportHistoryTab() {
-    const { data, isLoading } = trpc.officer.stock.getImportHistory.useQuery({
+    const { data, isLoading, refetch } = trpc.officer.stock.getImportHistory.useQuery({
         limit: 50,
         cursor: 0,
     });
@@ -184,7 +258,13 @@ function ImportHistoryTab() {
     const batches = data?.items ?? [];
 
     return (
-        <ScrollView contentContainerClassName="p-4 pb-20" className="flex-1">
+        <ScrollView
+            contentContainerClassName="p-4 pb-20"
+            className="flex-1"
+            refreshControl={
+                <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+            }
+        >
             <View className="flex-row items-center gap-2 mb-4 px-1">
                 <Icon as={Package} size={16} className="text-primary" />
                 <Text className="text-base font-bold text-foreground">Bulk Imports</Text>
@@ -282,12 +362,23 @@ function BatchHistoryRow({ batch }: { batch: any }) {
                                         className={`flex-row items-center px-4 py-4 ${index !== details.length - 1 ? "border-b border-border/5" : ""}`}
                                     >
                                         <View className="flex-[2]">
-                                            <Text className="text-[15px] font-bold text-foreground tracking-tight" numberOfLines={2}>
-                                                {item.farmerName}
-                                            </Text>
+                                            <Pressable
+                                                onPress={() => router.push(`/farmer/${item.farmerId}` as any)}
+                                                hitSlop={{ top: 25, bottom: 25, left: 20, right: 20 }}
+                                                style={{ backgroundColor: 'transparent' }}
+                                            >
+                                                <View pointerEvents="none">
+                                                    <Text
+                                                        className="text-[15px] font-bold text-foreground active:opacity-70 tracking-tight"
+                                                        numberOfLines={2}
+                                                    >
+                                                        {item.farmerName}
+                                                    </Text>
+                                                </View>
+                                            </Pressable>
                                             <View className="flex-row items-center gap-1.5 mt-1">
                                                 <View className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-                                                <Text className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Confirmed Receipt</Text>
+                                                <Text className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider text-wrap flex-1" pointerEvents="none">Confirmed Receipt</Text>
                                             </View>
                                         </View>
 
@@ -297,6 +388,12 @@ function BatchHistoryRow({ batch }: { batch: any }) {
                                                     +{amount.toFixed(0)} <Text className="text-[10px] font-medium opacity-60">bags</Text>
                                                 </Text>
                                             </View>
+                                            <Link href={`/farmer/${item.farmerId}/ledger` as any} asChild>
+                                                <Pressable className="mt-2.5 flex-row items-center gap-1.5 opacity-80 active:opacity-100">
+                                                    <Text className="text-[10px] text-primary font-bold tracking-widest uppercase">Details</Text>
+                                                    <Icon as={ArrowRight} size={10} className="text-primary" />
+                                                </Pressable>
+                                            </Link>
                                         </View>
                                     </View>
                                 );

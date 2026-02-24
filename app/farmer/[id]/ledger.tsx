@@ -10,8 +10,8 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowLeft, History, Landmark, Pencil, RotateCcw, Wheat } from "lucide-react-native";
-import { useState } from "react";
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight, History, Landmark, Pencil, RotateCcw, Wheat } from "lucide-react-native";
+import { useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
 
 export default function FarmerLedgerScreen() {
@@ -23,6 +23,19 @@ export default function FarmerLedgerScreen() {
     const [editingLog, setEditingLog] = useState<any | null>(null);
     const [revertingLog, setRevertingLog] = useState<any | null>(null);
     const [revertingTransfer, setRevertingTransfer] = useState<{ id: string; note: string | null } | null>(null);
+
+    // Highlighting State
+    const flatListRef = useRef<FlatList>(null);
+    const [highlightedLogId, setHighlightedLogId] = useState<string | null>(null);
+
+    const scrollToAndHighlight = (targetId: string) => {
+        const index = historyData.findIndex((log: any) => log.id === targetId);
+        if (index !== -1 && flatListRef.current) {
+            flatListRef.current.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
+            setHighlightedLogId(targetId);
+            setTimeout(() => setHighlightedLogId(null), 2000);
+        }
+    };
 
     const { data: farmer } = trpc.officer.farmers.getDetails.useQuery(
         { farmerId: id ?? "" },
@@ -42,6 +55,11 @@ export default function FarmerLedgerScreen() {
     const historyData = tab === "stock" ? stockQuery.data || [] : securityQuery.data || [];
     const isLoading = tab === "stock" ? stockQuery.isLoading : securityQuery.isLoading;
 
+    const activeCycles = farmer?.cycles?.filter((c: any) => c.status === 'active') || [];
+    const mainStock = Number(farmer?.mainStock ?? 0);
+    const activeConsumption = activeCycles.reduce((acc: number, c: any) => acc + (parseFloat(c.intake) || 0), 0);
+    const availableStock = mainStock - activeConsumption;
+
     // Derived state: Identify logs that have been reverted
     const revertedLogIds = new Set(
         historyData
@@ -54,87 +72,105 @@ export default function FarmerLedgerScreen() {
         const isTransfer = item.type === "TRANSFER_IN" || item.type === "TRANSFER_OUT";
         const isCycleClose = item.type === "CYCLE_CLOSE";
         const isReverted = revertedLogIds.has(item.id);
+        const isHighlighted = item.id === highlightedLogId;
 
         return (
-            <Card className={`mb-3 border-border/50 bg-card ${isReverted ? 'opacity-60' : ''}`}>
-                <CardContent className="p-4">
-                    <View className="flex-row justify-between items-start">
-                        <View className="flex-row gap-3 flex-1">
-                            <View className={`w-10 h-10 rounded-full items-center justify-center ${parseFloat(item.amount) > 0 ? "bg-emerald-500/10" : "bg-orange-500/10"
-                                }`}>
-                                <Icon
-                                    as={Wheat}
-                                    size={18}
-                                    className={parseFloat(item.amount) > 0 ? "text-emerald-500" : "text-orange-500"}
-                                />
-                            </View>
-                            <View className="flex-1">
-                                <View className="flex-row items-center gap-2">
-                                    <Text className={`font-bold text-foreground ${isReverted ? 'line-through decoration-muted-foreground' : ''}`}>
-                                        {item.type}
-                                    </Text>
-                                    <Badge variant="outline" className="h-5 px-2 border-border/50">
-                                        <Text className="text-[10px] text-muted-foreground uppercase font-bold">
-                                            {format(new Date(item.createdAt), "MMM d")}
-                                        </Text>
-                                    </Badge>
-                                    {isReverted && (
-                                        <Badge variant="destructive" className="h-5 px-1.5 bg-destructive/10 border-destructive/20">
-                                            <Text className="text-[8px] text-destructive uppercase font-bold">Reverted</Text>
-                                        </Badge>
-                                    )}
-                                </View>
-                                <Text className="text-sm text-muted-foreground mt-1" numberOfLines={2}>{item.note || "No notes provided"}</Text>
-                            </View>
-                        </View>
-                        <View className="items-end">
-                            <Text className={`text-lg font-bold ${parseFloat(item.amount) > 0 ? "text-emerald-500" : "text-orange-500"
-                                } ${isReverted ? 'line-through opacity-50' : ''}`}>
-                                {parseFloat(item.amount) > 0 ? "+" : ""}{item.amount}
-                            </Text>
-                            <Text className="text-[10px] text-muted-foreground uppercase font-bold">Bags</Text>
-                        </View>
-                    </View>
+            <View className={`flex-row items-center py-4 border-b border-border/10 px-1 ${isHighlighted ? 'bg-primary/20 rounded-xl' : ''}`}>
+                <Text className="w-14 text-[11px] text-muted-foreground font-medium">
+                    {format(new Date(item.createdAt), "dd MMM")}
+                </Text>
 
-                    {/* Actions Row */}
-                    {!isCorrection && !isCycleClose && !isReverted && (
-                        <View className="flex-row justify-end gap-2 mt-3 pt-3 border-t border-border/50">
-                            {isTransfer ? (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 px-3 flex-row gap-2 rounded-lg bg-destructive/5"
-                                    onPress={() => setRevertingTransfer({ id: item.referenceId, note: item.note })}
-                                >
-                                    <Icon as={RotateCcw} size={12} className="text-destructive" />
-                                    <Text className="text-[10px] font-bold text-destructive uppercase">Revert Transfer</Text>
-                                </Button>
-                            ) : (
-                                <>
+                <View className="flex-1 flex-row items-center gap-2">
+                    <View className={`w-5 h-5 rounded items-center justify-center ${parseFloat(item.amount) > 0 ? "bg-emerald-500/10" : "bg-orange-500/10"}`}>
+                        <Icon as={parseFloat(item.amount) > 0 ? ArrowUpRight : ArrowDownLeft} size={12} className={parseFloat(item.amount) > 0 ? "text-emerald-500" : "text-orange-500"} />
+                    </View>
+                    <Text className={`text-sm font-bold text-foreground`}>
+                        {item.type.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase())}
+                    </Text>
+                </View>
+
+                <View className="flex-1 pr-1 justify-center">
+                    {isCorrection && item.referenceId ? (() => {
+                        const originalLog = historyData.find((l: any) => l.id === item.referenceId);
+                        if (originalLog) {
+                            const origAmt = parseFloat(originalLog.amount);
+                            const deltaAmt = parseFloat(item.amount);
+                            const newAmt = origAmt + deltaAmt;
+                            return (
+                                <View>
+                                    <Text className="text-[11px] text-muted-foreground font-medium">
+                                        Corrected count
+                                    </Text>
+                                    <View className="flex-row items-center gap-1 mt-0.5 opacity-80">
+                                        <Text className="text-[10px] text-muted-foreground line-through">{origAmt > 0 ? "+" : ""}{origAmt}</Text>
+                                        <Text className="text-[10px] text-muted-foreground">→</Text>
+                                        <Text className={`text-[10px] font-bold ${newAmt > 0 ? 'text-emerald-500' : 'text-orange-500'}`}>{newAmt > 0 ? "+" : ""}{newAmt}</Text>
+                                    </View>
+                                    <Pressable onPress={() => scrollToAndHighlight(item.referenceId)} className="mt-1">
+                                        <Text className="text-[10px] text-primary font-bold">
+                                            View Original
+                                        </Text>
+                                    </Pressable>
+                                </View>
+                            );
+                        }
+                        return (
+                            <Text className="text-[11px] text-muted-foreground" numberOfLines={2}>
+                                {item.note || "-"}
+                            </Text>
+                        );
+                    })() : (
+                        <Text className="text-[11px] text-muted-foreground" numberOfLines={2}>
+                            {item.note || "-"}
+                        </Text>
+                    )}
+                </View>
+
+                <View className="items-end w-16 mr-1">
+                    <Text className={`text-sm font-bold ${parseFloat(item.amount) > 0 ? "text-emerald-500" : "text-orange-500"}`}>
+                        {parseFloat(item.amount) > 0 ? "+" : ""}{parseFloat(item.amount).toFixed(1)}
+                    </Text>
+                </View>
+
+                {/* Actions Row */}
+                <View className="w-10 items-end justify-center">
+                    {!isCorrection && !isCycleClose && !isReverted ? (
+                        <View className="gap-1">
+                            {!isTransfer ? (
+                                <View className="gap-0.5">
                                     <Button
                                         variant="ghost"
-                                        size="sm"
-                                        className="h-8 px-3 flex-row gap-2 rounded-lg bg-primary/5"
+                                        size="icon"
+                                        className="h-7 w-7 rounded-lg"
                                         onPress={() => setEditingLog(item)}
                                     >
-                                        <Icon as={Pencil} size={12} className="text-primary" />
-                                        <Text className="text-[10px] font-bold text-primary uppercase">Edit</Text>
+                                        <Icon as={Pencil} size={12} className="text-muted-foreground" />
                                     </Button>
                                     <Button
                                         variant="ghost"
-                                        size="sm"
-                                        className="h-8 px-3 flex-row gap-2 rounded-lg bg-destructive/5"
+                                        size="icon"
+                                        className="h-7 w-7 rounded-lg"
                                         onPress={() => setRevertingLog(item)}
                                     >
-                                        <Icon as={RotateCcw} size={12} className="text-destructive" />
-                                        <Text className="text-[10px] font-bold text-destructive uppercase">Revert</Text>
+                                        <Icon as={RotateCcw} size={12} className="text-orange-500" />
                                     </Button>
-                                </>
+                                </View>
+                            ) : (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-lg"
+                                    onPress={() => setRevertingTransfer({ id: item.referenceId, note: item.note })}
+                                >
+                                    <Icon as={RotateCcw} size={14} className="text-orange-500" />
+                                </Button>
                             )}
                         </View>
+                    ) : (
+                        <View className="w-10" /> // Placeholder
                     )}
-                </CardContent>
-            </Card>
+                </View>
+            </View>
         );
     };
 
@@ -184,29 +220,47 @@ export default function FarmerLedgerScreen() {
             />
 
             {/* Header Info */}
-            <View className="p-4 bg-muted/20 border-b border-border/50">
-                <Text className="text-xl font-bold text-foreground">{farmer?.name}</Text>
-                <Text className="text-sm text-muted-foreground">Historical transaction logs</Text>
+            <View className="px-4 py-3 bg-muted/20 border-b border-border/50">
+                <Pressable
+                    onPress={() => router.push(`/farmer/${id}` as any)}
+                    hitSlop={{ top: 25, bottom: 25, left: 20, right: 20 }}
+                    style={{ backgroundColor: 'transparent' }}
+                >
+                    <View pointerEvents="none">
+                        <Text
+                            className="text-xl font-black text-foreground active:opacity-70 uppercase tracking-tight"
+                        >
+                            {farmer?.name}
+                        </Text>
+                    </View>
+                </Pressable>
+                <Text className="text-xs text-muted-foreground font-medium mt-1">Stock Ledger • Historical Transaction Logs</Text>
             </View>
 
             {/* Summary Stats (Only for Stock tab) */}
             {tab === "stock" && (
-                <View className="px-4 pt-4 flex-row gap-3">
-                    <View className="flex-1 bg-card p-3 rounded-2xl border border-border/50 items-center justify-center">
-                        <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1">Stock</Text>
+                <View className="px-4 pt-4 flex-row gap-2">
+                    <View className="flex-[1.2] bg-card p-3 rounded-2xl border border-border/50 items-center justify-center">
+                        <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1 line-clamp-1 text-center">Provisioned</Text>
                         <View className="flex-row items-baseline gap-1">
-                            <Text className="text-base font-bold text-primary">{Number(farmer?.mainStock ?? 0).toFixed(1)}</Text>
+                            <Text className="text-base font-bold text-foreground">{mainStock.toFixed(1)}</Text>
                             <Text className="text-[10px] text-muted-foreground">bags</Text>
                         </View>
                     </View>
                     <View className="flex-1 bg-card p-3 rounded-2xl border border-border/50 items-center justify-center">
                         <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1">Consumed</Text>
                         <View className="flex-row items-baseline gap-1">
-                            <Text className="text-base font-bold text-red-500">{Number(farmer?.totalConsumed ?? 0).toFixed(1)}</Text>
+                            <Text className="text-base font-bold text-orange-500">{activeConsumption.toFixed(1)}</Text>
                             <Text className="text-[10px] text-muted-foreground">bags</Text>
                         </View>
                     </View>
-
+                    <View className="flex-1 bg-card p-3 rounded-2xl border border-border/50 items-center justify-center">
+                        <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1">Stock</Text>
+                        <View className="flex-row items-baseline gap-1">
+                            <Text className="text-base font-bold text-emerald-500">{availableStock.toFixed(1)}</Text>
+                            <Text className="text-[10px] text-muted-foreground">bags</Text>
+                        </View>
+                    </View>
                 </View>
             )}
 
@@ -236,10 +290,21 @@ export default function FarmerLedgerScreen() {
                 </View>
             ) : (
                 <FlatList
+                    ref={flatListRef}
                     data={historyData}
+                    extraData={highlightedLogId}
                     renderItem={tab === "stock" ? renderStockLog : renderSecurityLog}
                     keyExtractor={(item) => item.id}
-                    contentContainerClassName="p-4 pt-0 pb-10"
+                    contentContainerClassName="px-4 pb-[100px]"
+                    ListHeaderComponent={tab === "stock" && historyData.length > 0 ? (
+                        <View className="flex-row py-3 border-b border-border/20 items-center">
+                            <Text className="w-14 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Date</Text>
+                            <Text className="flex-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Type</Text>
+                            <Text className="flex-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Note</Text>
+                            <Text className="w-16 mr-1 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Change</Text>
+                            <View className="w-10" />
+                        </View>
+                    ) : null}
                     ListEmptyComponent={
                         <View className="items-center justify-center p-10 opacity-50">
                             <Icon as={History} size={48} className="text-muted-foreground mb-4" />
@@ -252,6 +317,17 @@ export default function FarmerLedgerScreen() {
                 />
             )}
 
+            {/* Bottom Sticky Summary (Stock only) */}
+            {tab === "stock" && !isLoading && historyData.length > 0 && (
+                <View className="absolute bottom-6 right-6 flex-row items-center gap-3">
+                    <Text className="text-[10px] font-black text-muted-foreground tracking-widest uppercase pb-1">Main Stock</Text>
+                    <View className="bg-card border border-border/50 rounded-2xl px-5 py-3 shadow-lg flex-row items-baseline gap-1">
+                        <Text className="text-2xl font-black text-foreground">{mainStock}</Text>
+                        <Text className="text-sm font-medium text-muted-foreground">b</Text>
+                    </View>
+                </View>
+            )}
+
             {/* Modals */}
             {editingLog && (
                 <EditStockLogModal
@@ -260,6 +336,8 @@ export default function FarmerLedgerScreen() {
                     log={editingLog}
                     onSuccess={() => {
                         stockQuery.refetch();
+                        utils.officer.stock.getAllFarmersStock.invalidate();
+                        utils.officer.stock.getImportHistory.invalidate();
                         farmer?.id && utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
                     }}
                 />
@@ -271,6 +349,8 @@ export default function FarmerLedgerScreen() {
                 log={revertingLog}
                 onSuccess={() => {
                     stockQuery.refetch();
+                    utils.officer.stock.getAllFarmersStock.invalidate();
+                    utils.officer.stock.getImportHistory.invalidate();
                     farmer?.id && utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
                 }}
             />
@@ -282,6 +362,8 @@ export default function FarmerLedgerScreen() {
                 note={revertingTransfer?.note}
                 onSuccess={() => {
                     stockQuery.refetch();
+                    utils.officer.stock.getAllFarmersStock.invalidate();
+                    utils.officer.stock.getImportHistory.invalidate();
                     farmer?.id && utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
                 }}
             />

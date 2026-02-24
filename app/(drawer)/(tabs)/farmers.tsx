@@ -163,6 +163,7 @@ export default function FarmersScreen() {
                     renderItem={({ item }) => (
                         <FarmerCard
                             farmer={item}
+                            activeConsumption={item.cycles?.filter((c: any) => c.status === 'active').reduce((acc: number, c: any) => acc + (parseFloat(c.intake) || 0), 0) || 0}
                             onPress={() => router.push(`/farmer/${item.id}` as any)}
                             onRestock={activeTab === 'archived' ? undefined : () => setRestockingFarmer({ id: item.id, name: item.name })}
                             onTransfer={activeTab === 'archived' ? undefined : () => setTransferringFarmer({ id: item.id, name: item.name })}

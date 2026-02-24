@@ -29,6 +29,7 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
 export default function FarmerDetailScreen() {
+    const utils = trpc.useUtils();
     const { id } = useLocalSearchParams<{ id: string }>();
 
     // Farmer-level modal states
@@ -120,8 +121,13 @@ export default function FarmerDetailScreen() {
         );
     }
 
-    const { cycles: activeCycles = [] } = farmer;
+    const { cycles: rawActiveCycles = [] } = farmer;
+    const activeCycles = rawActiveCycles.filter((c: any) => c.status === 'active');
     const archivedCycles = historyData?.items ?? [];
+
+    const mainStock = Number(farmer.mainStock ?? 0);
+    const activeConsumption = activeCycles.reduce((acc: number, c: any) => acc + (parseFloat(c.intake) || 0), 0);
+    const availableStock = mainStock - activeConsumption;
 
     const selectedCycle = (() => {
         if (!selectedCycleId) return null;
@@ -171,25 +177,25 @@ export default function FarmerDetailScreen() {
                     <CardContent className="p-5">
                         <Text className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Estimated Remaining</Text>
                         <View className="flex-row items-baseline gap-2 mb-6">
-                            <Text className="text-4xl font-black text-foreground">{Number(farmer.mainStock ?? 0).toFixed(2)}</Text>
+                            <Text className="text-4xl font-black text-foreground">{availableStock.toFixed(2)}</Text>
                             <Text className="text-sm text-muted-foreground">bags</Text>
                         </View>
 
                         <View className="flex-row justify-between mb-3">
                             <View>
                                 <Text className="text-xs text-muted-foreground mb-1">Active Cycle Use</Text>
-                                <Text className="text-sm font-bold text-orange-500">+{Number(farmer.totalConsumed ?? 0).toFixed(2)} bags</Text>
+                                <Text className="text-sm font-bold text-orange-500">+{activeConsumption.toFixed(2)} bags</Text>
                             </View>
                             <View className="items-start">
                                 <Text className="text-xs text-muted-foreground mb-1">Total Provisioned (Ledger)</Text>
-                                <Text className="text-sm font-bold text-foreground">{(Number(farmer.mainStock ?? 0) + Number(farmer.totalConsumed ?? 0)).toFixed(2)} bags</Text>
+                                <Text className="text-sm font-bold text-foreground">{mainStock.toFixed(2)} bags</Text>
                             </View>
                         </View>
 
                         {/* Progress bar */}
                         <View className="h-2 w-full bg-emerald-500/20 rounded-full mt-1 overflow-hidden flex-row">
-                            <View className="h-full bg-emerald-500" style={{ width: `${(Number(farmer.mainStock ?? 0) / (Number(farmer.mainStock ?? 0) + Number(farmer.totalConsumed ?? 0))) * 100}%` }} />
-                            <View className="h-full bg-orange-500" style={{ width: `${(Number(farmer.totalConsumed ?? 0) / (Number(farmer.mainStock ?? 0) + Number(farmer.totalConsumed ?? 0))) * 100}%` }} />
+                            <View className="h-full bg-emerald-500" style={{ width: `${mainStock > 0 ? (availableStock / mainStock) * 100 : 0}%` }} />
+                            <View className="h-full bg-orange-500" style={{ width: `${mainStock > 0 ? (activeConsumption / mainStock) * 100 : 0}%` }} />
                         </View>
                     </CardContent>
                 </Card>
@@ -356,6 +362,13 @@ export default function FarmerDetailScreen() {
                         </Pressable>
                         {ledgerExpanded && (
                             <View className="pb-5">
+                                <View className="flex-row items-center justify-between mb-4 bg-muted/10 p-3 rounded-xl border border-border/30">
+                                    <Text className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Main Stock</Text>
+                                    <View className="flex-row items-baseline gap-1">
+                                        <Text className="text-xl font-black text-foreground">{farmer.mainStock.toFixed(2) || 0}</Text>
+                                        <Text className="text-xs font-medium text-muted-foreground">b</Text>
+                                    </View>
+                                </View>
                                 {ledgerLoading ? (
                                     <ActivityIndicator size="small" className="my-4" />
                                 ) : ledgerData && ledgerData.length > 0 ? (
@@ -406,14 +419,22 @@ export default function FarmerDetailScreen() {
                 onOpenChange={setIsRestockOpen}
                 farmerId={farmer.id}
                 farmerName={farmer.name}
-                onSuccess={refetch}
+                onSuccess={() => {
+                    refetch();
+                    utils.officer.stock.getHistory.invalidate({ farmerId: farmer.id });
+                    utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
+                }}
             />
             <StockCorrectionModal
                 open={isCorrectionOpen}
                 onOpenChange={setIsCorrectionOpen}
                 farmerId={farmer.id}
                 farmerName={farmer.name}
-                onSuccess={refetch}
+                onSuccess={() => {
+                    refetch();
+                    utils.officer.stock.getHistory.invalidate({ farmerId: farmer.id });
+                    utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
+                }}
             />
             <SecurityMoneyModal
                 open={isSecurityOpen}
@@ -445,7 +466,12 @@ export default function FarmerDetailScreen() {
                 onOpenChange={setIsTransferOpen}
                 sourceFarmerId={farmer.id}
                 sourceFarmerName={farmer.name}
-                onSuccess={refetch}
+                onSuccess={() => {
+                    refetch();
+                    utils.officer.stock.getHistory.invalidate({ farmerId: farmer.id });
+                    utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
+                    utils.officer.stock.getAllFarmersStock.invalidate();
+                }}
             />
 
             {/* Cycle-level Modals */}

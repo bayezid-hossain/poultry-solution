@@ -57,8 +57,8 @@ export function AddMortalityModal({
             d.setHours(0, 0, 0, 0);
             const s = new Date(startDate);
             s.setHours(0, 0, 0, 0);
-            if (d < s) {
-                toast.error("Date cannot be before cycle start");
+            if (d.getTime() <= s.getTime()) {
+                toast.error("Date must be after cycle start date");
                 return;
             }
         }
