@@ -1,15 +1,18 @@
+import { Platform } from "react-native";
+
+// Use EXPO_PUBLIC_API_MODE to switch between backends. 
+// Production Android build -> production
+// Preview and Debug build -> demo
 const API_MODE = process.env.EXPO_PUBLIC_API_MODE;
 
 export const API_URL = API_MODE === "production"
     ? "https://feed-newhope.vercel.app"
     : "https://demo-newhope.vercel.app";
 
-// TRPC behavior per mode:
-// 1. production: Live Prod URL
-// 2. preview: Live Demo URL (for testing/sharing)
-// 3. (default): Local computer IP (for active development)
+// For TRPC, use localhost so local backend changes reflect immediately
+// Android emulator needs 10.0.2.2 to access host localhost
+
+
 export const TRPC_API_URL = API_MODE === "production"
     ? "https://feed-newhope.vercel.app"
-    : API_MODE === "preview"
-        ? "https://demo-newhope.vercel.app"
-        : "http://192.168.0.186:3000";
+    : Platform.OS === 'android' ? "http://192.168.0.186:3000" : "http://192.168.0.186:3000";
