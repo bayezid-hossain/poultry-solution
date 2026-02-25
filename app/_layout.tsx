@@ -4,7 +4,7 @@ import { PortalHost } from "@rn-primitives/portal";
 import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import "react-native-reanimated";
 import "../global.css";
@@ -18,6 +18,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const { data: session, isPending: isSessionPending } = authClient.useSession();
   const segments = useSegments();
   const router = useRouter();
+
+  // Timeout for deep link URL resolution — don't wait forever
+  const [urlReady, setUrlReady] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setUrlReady(true), 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Only query membership if we have a session
   const { data: membership, isLoading: isMembershipLoading, error: membershipError } =
@@ -34,7 +41,18 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   // Check if we are handling an auth callback (deep link)
   // This prevents the "Login Screen" flicker when returning from Google Auth
   const url = Linking.useLinkingURL();
-  const isAuthCallback = url?.includes("code=") || url?.includes("error=");
+
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
+  useEffect(() => {
+    if (url?.includes("code=") || url?.includes("error=")) {
+      setIsProcessingAuth(true);
+      // Timeout to release the loading state in case auth fails or hangs
+      const timer = setTimeout(() => setIsProcessingAuth(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [url]);
+
+  const isAuthCallback = isProcessingAuth || url?.includes("code=") || url?.includes("error=");
 
   if (isSessionPending) {
     action = "loading";
@@ -48,8 +66,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       action = "render";
     } else {
       // If we are not in the auth group and have no session, we need to redirect.
-      // We wait a moment for the URL to resolve to avoid flickering sign-in if a deep link is coming.
-      if (!url && Platform.OS !== 'web') {
+      // Wait briefly for the URL to resolve to avoid flickering sign-in if a deep link is coming.
+      if (!url && !urlReady && Platform.OS !== 'web') {
         action = "loading";
       } else {
         action = "redirect";

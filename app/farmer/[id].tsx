@@ -380,8 +380,8 @@ export default function FarmerDetailScreen() {
                                     </View>
                                 ) : salesData?.length ? (
                                     renderSalesCards ? (
-                                        salesData.map((sale: any) => (
-                                            <SaleEventCard key={sale.id} sale={sale} isLatest={false} />
+                                        salesData.map((sale: any, index: number) => (
+                                            <SaleEventCard key={sale.id} sale={sale} isLatest={index === 0} />
                                         ))
                                     ) : (
                                         <View className="py-20 items-center justify-center">
