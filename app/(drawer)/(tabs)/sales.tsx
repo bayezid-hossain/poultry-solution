@@ -10,13 +10,14 @@ import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
 import { CheckCircle2, ChevronDown, ChevronUp, FileText, RefreshCw, Search, Trash2, User } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
 
 export default function SalesScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
     const [searchQuery, setSearchQuery] = useState("");
+    const [refreshing, setRefreshing] = useState(false);
     // console.log('[Tabs-SalesScreen] isManagement:', isManagement, 'orgId:', membership?.orgId, 'selectedOfficerId:', selectedOfficerId);
 
     const officerSalesQuery = trpc.officer.sales.getRecentSales.useQuery(
@@ -31,6 +32,11 @@ export default function SalesScreen() {
     const salesLoading = isManagement ? mgmtSalesQuery.isLoading : officerSalesQuery.isLoading;
     const salesError = isManagement ? mgmtSalesQuery.error : officerSalesQuery.error;
     const refetch = isManagement ? mgmtSalesQuery.refetch : officerSalesQuery.refetch;
+
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        refetch().finally(() => setRefreshing(false));
+    }, [refetch]);
 
     useFocusEffect(
         useCallback(() => {
@@ -113,7 +119,13 @@ export default function SalesScreen() {
                     <Text className="text-muted-foreground text-center">{salesError.message}</Text>
                 </View>
             ) : (
-                <ScrollView contentContainerClassName="p-4 pb-20 gap-4" className="flex-1">
+                <ScrollView
+                    contentContainerClassName="p-4 pb-20 gap-4"
+                    className="flex-1"
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(var(--primary))" colors={["hsl(var(--primary))"]} />
+                    }
+                >
                     {groupedData.length > 0 ? (
                         groupedData.map((farmerGroup) => (
                             <FarmerSalesAccordion

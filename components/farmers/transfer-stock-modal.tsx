@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRightLeft, ChevronDown, Search, X } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import { useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, TouchableOpacity, View } from "react-native";
@@ -27,11 +28,13 @@ interface TransferStockModalProps {
     onOpenChange: (open: boolean) => void;
     sourceFarmerId: string;
     sourceFarmerName: string;
+    availableStock: number;
     onSuccess?: () => void;
 }
 
-export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceFarmerName, onSuccess }: TransferStockModalProps) => {
+export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceFarmerName, availableStock, onSuccess }: TransferStockModalProps) => {
     const utils = trpc.useUtils();
+    const { colorScheme } = useColorScheme();
     const [searchTerm, setSearchTerm] = useState("");
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -96,6 +99,12 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
     });
 
     const onSubmit = (data: TransferStockFormValues) => {
+        const amountNum = parseFloat(data.amount);
+        if (amountNum > availableStock) {
+            toast.error(`Cannot transfer more than available stock (${availableStock.toFixed(2)} bags)`);
+            return;
+        }
+
         mutation.mutate({
             sourceFarmerId,
             targetFarmerId: data.targetFarmerId,
@@ -246,6 +255,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                                         <Textarea
                                             ref={noteRef as any}
                                             placeholder="Reason for transfer..."
+                                            placeholderTextColor={colorScheme === "dark" ? "#FFFFFF" : "#000000"}
                                             value={value}
                                             onChangeText={onChange}
                                             numberOfLines={2}

@@ -473,6 +473,7 @@ export default function FarmerDetailScreen() {
                 onOpenChange={setIsTransferOpen}
                 sourceFarmerId={farmer.id}
                 sourceFarmerName={farmer.name}
+                availableStock={availableStock}
                 onSuccess={() => {
                     refetch();
                     utils.officer.stock.getHistory.invalidate({ farmerId: farmer.id });

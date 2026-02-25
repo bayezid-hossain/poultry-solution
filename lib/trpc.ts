@@ -4,7 +4,7 @@ import { createTRPCReact } from "@trpc/react-query";
 import superjson from "superjson";
 import type { AppRouter } from "../../feed-reminder-up/trpc/routers/_app";
 import { authClient } from "./auth-client";
-import { TRPC_API_URL } from "./constants";
+import { TRPC_API_URL } from "./config/api";
 
 export const trpc = createTRPCReact<AppRouter>();
 

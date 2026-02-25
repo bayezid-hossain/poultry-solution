@@ -86,6 +86,7 @@ export const SellModal = ({
     intake,
     open,
     onOpenChange,
+    onSuccess,
     startDate
 }: SellModalProps) => {
     // Initial remaining birds for default value calculation
@@ -202,10 +203,13 @@ export const SellModal = ({
             utils.officer.cycles.listActive.invalidate();
             utils.officer.cycles.listPast.invalidate();
             utils.officer.sales.getSaleEvents.invalidate();
+            utils.officer.sales.getRecentSales.invalidate();
+            utils.management.sales.getRecentSales.invalidate();
             utils.officer.farmers.getDetails.invalidate({ farmerId });
             utils.officer.cycles.getDetails.invalidate({ id: cycleId });
             // TODO: show toast/alert logic
 
+            onSuccess?.();
             onOpenChange(false);
             form.reset();
         },

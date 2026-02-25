@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
-import { router, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { ChevronDown, ChevronUp, List, Plus, Search, ShoppingCart, Sparkles, X } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
@@ -36,7 +36,7 @@ export default function FarmersScreen() {
     // Modal States
     const [restockingFarmer, setRestockingFarmer] = useState<{ id: string; name: string } | null>(null);
     const [deleteFarmer, setDeleteFarmer] = useState<{ id: string; name: string, organizationId: string } | null>(null);
-    const [transferringFarmer, setTransferringFarmer] = useState<{ id: string; name: string } | null>(null);
+    const [transferringFarmer, setTransferringFarmer] = useState<{ id: string; name: string, availableStock: number } | null>(null);
     const [editingFarmer, setEditingFarmer] = useState<any | null>(null);
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
     const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
@@ -178,9 +178,12 @@ export default function FarmersScreen() {
                             <FarmerCard
                                 farmer={item}
                                 activeConsumption={item.cycles?.filter((c: any) => c.status === 'active').reduce((acc: number, c: any) => acc + (parseFloat(c.intake) || 0), 0) || 0}
-                                onPress={() => router.push(`/farmer/${item.id}` as any)}
                                 onRestock={activeTab === 'archived' ? undefined : () => setRestockingFarmer({ id: item.id, name: item.name })}
-                                onTransfer={activeTab === 'archived' ? undefined : () => setTransferringFarmer({ id: item.id, name: item.name })}
+                                onTransfer={activeTab === 'archived' ? undefined : () => setTransferringFarmer({
+                                    id: item.id,
+                                    name: item.name,
+                                    availableStock: Number(item.mainStock || 0) - (item.cycles?.filter((c: any) => c.status === 'active').reduce((acc: number, c: any) => acc + (parseFloat(c.intake) || 0), 0) || 0)
+                                })}
                                 onDelete={activeTab === 'archived' ? undefined : () => setDeleteFarmer({ id: item.id, name: item.name, organizationId: item.organizationId })}
                                 onEdit={activeTab === 'archived' ? undefined : () => setEditingFarmer(item)}
                                 onRestore={activeTab === 'archived' ? () => setRestoringFarmer({ id: item.id, name: item.name }) : undefined}
@@ -229,6 +232,7 @@ export default function FarmersScreen() {
                         onOpenChange={(open) => !open && setTransferringFarmer(null)}
                         sourceFarmerId={transferringFarmer.id}
                         sourceFarmerName={transferringFarmer.name}
+                        availableStock={transferringFarmer.availableStock}
                         onSuccess={() => refetch()}
                     />
                 )

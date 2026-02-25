@@ -188,6 +188,8 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
             toast.success("Sale adjustment saved successfully!");
             onSuccess?.();
             utils.officer.sales.invalidate();
+            utils.officer.sales.getRecentSales.invalidate();
+            utils.management.sales.getRecentSales.invalidate();
             onOpenChange(false);
         },
         onError: (err) => {
