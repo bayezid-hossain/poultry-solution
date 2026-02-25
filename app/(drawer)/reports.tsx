@@ -3,12 +3,13 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
 import { BarChart3, Bird, DollarSign, Scale, Wheat } from "lucide-react-native";
 import { useCallback } from "react";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 
 export default function ReportsScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -41,7 +42,7 @@ export default function ReportsScreen() {
             <View className="flex-1 bg-background">
                 <ScreenHeader title="Reports" />
                 <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="hsl(var(--primary))" />
+                    <BirdyLoader size={48} color={"#10b981"} />
                     <Text className="mt-4 text-muted-foreground font-medium">Loading reports...</Text>
                 </View>
             </View>

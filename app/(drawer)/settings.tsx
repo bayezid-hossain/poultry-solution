@@ -1,6 +1,7 @@
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { useTheme } from "@/context/theme-context";
@@ -8,7 +9,7 @@ import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 
 type ColorScheme = "light" | "dark" | "system";
 
@@ -77,7 +78,7 @@ function ModeToggle() {
                 </Pressable>
             </View>
             {updateOrgMode.isPending && (
-                <ActivityIndicator size="small" className="text-primary mt-2" />
+                <BirdyLoader size={24} color={"#10b981"} />
             )}
         </Card>
     );

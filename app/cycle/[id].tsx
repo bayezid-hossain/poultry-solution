@@ -11,13 +11,14 @@ import { SellModal } from "@/components/cycles/sell-modal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
 import { Activity, Archive, ArrowLeft, Bird, ChevronDown, ChevronUp, LineChart, MoreHorizontal, Package, Pencil, Power, RotateCcw, ShoppingCart, Skull, Trash2, Wheat } from "lucide-react-native";
-import { useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Modal, Pressable, ScrollView, View } from "react-native";
 
 export default function CycleDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,6 +33,18 @@ export default function CycleDetailsScreen() {
 
     // Accordions
     const [openSection, setOpenSection] = useState<'activity' | 'sales' | 'other' | 'insights' | null>(null);
+    const [renderSection, setRenderSection] = useState<'activity' | 'sales' | 'other' | 'insights' | null>(null);
+
+    useEffect(() => {
+        if (openSection) {
+            const timer = setTimeout(() => {
+                setRenderSection(openSection);
+            }, 100);
+            return () => clearTimeout(timer);
+        } else {
+            setRenderSection(null);
+        }
+    }, [openSection]);
 
     // Action Menu
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -39,12 +52,7 @@ export default function CycleDetailsScreen() {
     const { data: response, isLoading, error, refetch } = trpc.officer.cycles.getDetails.useQuery({ id: id as string });
 
     if (isLoading) {
-        return (
-            <View className="flex-1 bg-background items-center justify-center">
-                <ActivityIndicator size="large" color="hsl(var(--primary))" />
-                <Text className="mt-4 text-muted-foreground">Loading cycle details...</Text>
-            </View>
-        );
+        return <LoadingState fullPage title="Synchronizing" description="Loading cycle details..." />;
     }
 
     if (error || !response) {
@@ -203,7 +211,14 @@ export default function CycleDetailsScreen() {
                         </Pressable>
                         {openSection === 'activity' && (
                             <View className="p-4 border-t border-border/20">
-                                <LogsTimeline logs={logs as any} onRefresh={refetch} />
+                                {renderSection === 'activity' ? (
+                                    <LogsTimeline logs={logs as any} onRefresh={refetch} />
+                                ) : (
+                                    <View className="py-20 items-center justify-center">
+                                        <BirdyLoader size={48} color="#10b981" />
+                                        <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Rendering Activity</Text>
+                                    </View>
+                                )}
                             </View>
                         )}
                     </View>
@@ -222,10 +237,17 @@ export default function CycleDetailsScreen() {
                         </Pressable>
                         {openSection === 'sales' && (
                             <View className="p-4 border-t border-border/20">
-                                <SalesHistoryList
-                                    cycleId={isArchived ? undefined : (id as string)}
-                                    historyId={isArchived ? (id as string) : undefined}
-                                />
+                                {renderSection === 'sales' ? (
+                                    <SalesHistoryList
+                                        cycleId={isArchived ? undefined : (id as string)}
+                                        historyId={isArchived ? (id as string) : undefined}
+                                    />
+                                ) : (
+                                    <View className="py-20 items-center justify-center">
+                                        <BirdyLoader size={48} color="#10b981" />
+                                        <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Rendering Sales</Text>
+                                    </View>
+                                )}
                             </View>
                         )}
                     </View>
@@ -244,7 +266,14 @@ export default function CycleDetailsScreen() {
                         </Pressable>
                         {openSection === 'other' && (
                             <View className="p-4 border-t border-border/20">
-                                <Text className="text-muted-foreground italic text-center text-sm py-4">No other cycles found to display.</Text>
+                                {renderSection === 'other' ? (
+                                    <Text className="text-muted-foreground italic text-center text-sm py-4">No other cycles found to display.</Text>
+                                ) : (
+                                    <View className="py-20 items-center justify-center">
+                                        <BirdyLoader size={48} color="#10b981" />
+                                        <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Rendering Cycles</Text>
+                                    </View>
+                                )}
                             </View>
                         )}
                     </View>
@@ -263,7 +292,14 @@ export default function CycleDetailsScreen() {
                         </Pressable>
                         {openSection === 'insights' && (
                             <View className="p-4 border-t border-border/20">
-                                <Text className="text-muted-foreground italic text-center text-sm py-4">Insights currently unavailable.</Text>
+                                {renderSection === 'insights' ? (
+                                    <Text className="text-muted-foreground italic text-center text-sm py-4">Insights currently unavailable.</Text>
+                                ) : (
+                                    <View className="py-20 items-center justify-center">
+                                        <BirdyLoader size={48} color="#10b981" />
+                                        <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Rendering Insights</Text>
+                                    </View>
+                                )}
                             </View>
                         )}
                     </View>

@@ -1,10 +1,11 @@
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Users } from "lucide-react-native";
 import React from "react";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
 
 export const ManagementMembersList = ({ orgId }: { orgId: string }) => {
     const { data: members, isLoading } = trpc.management.members.list.useQuery(
@@ -15,7 +16,7 @@ export const ManagementMembersList = ({ orgId }: { orgId: string }) => {
     if (isLoading) {
         return (
             <View className="py-8 items-center justify-center">
-                <ActivityIndicator size="small" color="#3b82f6" />
+                <BirdyLoader size={24} color={"#10b981"} />
                 <Text className="text-muted-foreground mt-2 text-xs">Loading members...</Text>
             </View>
         );

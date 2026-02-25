@@ -3,11 +3,12 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, Bird, ChevronRight, Repeat, Skull, Wheat } from "lucide-react-native";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 
 export default function OfficerDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -20,15 +21,7 @@ export default function OfficerDetailScreen() {
     );
 
     if (isLoading) {
-        return (
-            <View className="flex-1 bg-background">
-                <ScreenHeader title="Officer Details" />
-                <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="hsl(var(--primary))" />
-                    <Text className="mt-4 text-muted-foreground font-medium">Loading officer data...</Text>
-                </View>
-            </View>
-        );
+        return <LoadingState fullPage title="Officer Profile" description="Retrieving performance data..." />;
     }
 
     if (!data) {

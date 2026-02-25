@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Banknote, Bird, Box, FileText, Settings, ShoppingCart, Truck } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
 import { toast, Toaster } from "sonner-native";
 import { z } from "zod";
 import { SaleDetailsContent } from "./sale-details-content";
@@ -338,7 +339,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                 disabled={generateReport.isPending}
                             >
                                 {generateReport.isPending ? (
-                                    <ActivityIndicator size="small" color="white" />
+                                    <BirdyLoader size={24} color={"#ffffff"} />
                                 ) : (
                                     <>
                                         <Icon as={ShoppingCart} className="text-white" size={16} />

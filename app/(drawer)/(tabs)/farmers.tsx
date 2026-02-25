@@ -12,13 +12,14 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
+import { LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect } from "expo-router";
 import { ChevronDown, ChevronUp, List, Plus, Search, ShoppingCart, Sparkles, X } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
+import { FlatList, Pressable, View } from "react-native";
 
 export default function FarmersScreen() {
     const [search, setSearch] = useState("");
@@ -166,10 +167,7 @@ export default function FarmersScreen() {
 
             {
                 isLoading ? (
-                    <View className="flex-1 items-center justify-center">
-                        <ActivityIndicator size="large" color="hsl(var(--primary))" />
-                        <Text className="mt-4 text-muted-foreground font-medium uppercase tracking-widest text-[10px] animate-pulse">Synchronizing Data...</Text>
-                    </View>
+                    <LoadingState fullPage title="Synchronizing" description="Fetching Farmer Records..." />
                 ) : (
                     <FlatList
                         data={farmers}

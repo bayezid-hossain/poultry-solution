@@ -4,13 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
 import { ChevronDown, ChevronRight, FileText, Filter } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, View } from "react-native";
+import { Modal, Pressable, ScrollView, View } from "react-native";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
@@ -112,7 +113,7 @@ export default function DocPlacementsScreen() {
 
                 {isLoading ? (
                     <View className="items-center justify-center py-10">
-                        <ActivityIndicator size="large" color="hsl(var(--primary))" />
+                        <BirdyLoader size={48} />
                     </View>
                 ) : (
                     <>

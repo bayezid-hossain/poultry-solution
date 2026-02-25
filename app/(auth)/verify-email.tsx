@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { authClient } from "@/lib/auth-client";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
-    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -72,7 +72,7 @@ export default function VerifyEmailScreen() {
                     result.error.message ?? "Verification failed. Please try again."
                 );
             } else {
-                router.replace("/(tabs)");
+                router.replace("/");
             }
         } catch (e: any) {
             setError(e?.message ?? "An unexpected error occurred.");
@@ -154,7 +154,7 @@ export default function VerifyEmailScreen() {
                                 handleKeyPress(key, index)
                             }
                             keyboardType="number-pad"
-                            maxLength={OTP_LENGTH}
+                            maxLength={1}
                             selectTextOnFocus
                         />
                     ))}
@@ -168,7 +168,7 @@ export default function VerifyEmailScreen() {
                     size="lg"
                 >
                     {loading ? (
-                        <ActivityIndicator color="#fff" />
+                        <BirdyLoader size={48} color={"#ffffff"} />
                     ) : (
                         <Text className="text-primary-foreground text-base font-bold">
                             Verify Email
@@ -183,7 +183,7 @@ export default function VerifyEmailScreen() {
                     </Text>
                     <Pressable onPress={handleResend} disabled={resending}>
                         {resending ? (
-                            <ActivityIndicator size="small" className="text-primary" />
+                            <BirdyLoader size={24} color={"#10b981"} />
                         ) : (
                             <Text className="text-primary text-sm font-bold">
                                 Resend Code

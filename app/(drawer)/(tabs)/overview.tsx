@@ -4,12 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { router } from "expo-router";
 import { Activity, Bird, Building2, ChevronDown, ChevronRight, ChevronUp, Users, Wheat } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 
 export default function OverviewScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -41,8 +42,7 @@ export default function OverviewScreen() {
             <View className="flex-1 bg-background">
                 <ScreenHeader title="Management" />
                 <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="hsl(var(--primary))" />
-                    <Text className="mt-4 text-muted-foreground font-medium">Loading dashboard...</Text>
+                    <LoadingState title="Loading" description="Fetching dashboard..." />
                 </View>
             </View>
         );
@@ -123,7 +123,7 @@ export default function OverviewScreen() {
 
                 {treeLoading ? (
                     <View className="items-center justify-center py-10">
-                        <ActivityIndicator size="large" color="hsl(var(--primary))" />
+                        <BirdyLoader size={48} />
                     </View>
                 ) : productionTree && productionTree.length > 0 ? (
                     productionTree.map((officer: any) => {

@@ -4,6 +4,7 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
@@ -11,7 +12,7 @@ import { format } from "date-fns";
 import { Link, router } from "expo-router";
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, ChevronDown, ChevronUp, ClipboardList, Package, RotateCcw, User, Wheat } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
 export default function StockLedgerScreen() {
     const [tab, setTab] = useState<"stock" | "imports">("stock");
@@ -68,11 +69,7 @@ function StockTab({ isManagement, officerId, orgId }: { isManagement: boolean; o
     const refetch = isManagement ? mgmtQuery.refetch : officerQuery.refetch;
 
     if (isLoading) {
-        return (
-            <View className="flex-1 items-center justify-center">
-                <ActivityIndicator size="large" color="hsl(var(--primary))" />
-            </View>
-        );
+        return <LoadingState fullPage title="Synchronizing" description="Fetching Stock Ledger..." />;
     }
 
     const items = data?.items ?? [];
@@ -184,8 +181,9 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                     </View>
 
                     {isLoading ? (
-                        <View className="py-6 items-center">
-                            <ActivityIndicator size="small" color="hsl(var(--primary))" />
+                        <View className="py-20 items-center justify-center">
+                            <BirdyLoader size={48} />
+                            <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Fetching History</Text>
                         </View>
                     ) : history && history.length > 0 ? (
                         history.slice(0, 10).map((log: any) => {
@@ -274,9 +272,7 @@ function ImportHistoryTab({ isManagement, officerId, orgId }: { isManagement: bo
 
     if (isLoading) {
         return (
-            <View className="flex-1 items-center justify-center">
-                <ActivityIndicator size="large" color="hsl(var(--primary))" />
-            </View>
+            <LoadingState />
         );
     }
 
@@ -375,8 +371,9 @@ function BatchHistoryRow({ batch, isManagement, orgId }: { batch: any; isManagem
                     </View>
 
                     {isLoading ? (
-                        <View className="py-12 items-center justify-center">
-                            <ActivityIndicator size="small" color="hsl(var(--primary))" />
+                        <View className="py-20 items-center justify-center">
+                            <BirdyLoader size={48} />
+                            <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Fetching Details</Text>
                         </View>
                     ) : details && details.length > 0 ? (
                         <View className="bg-card/40 rounded-2xl border border-border/10 overflow-hidden">

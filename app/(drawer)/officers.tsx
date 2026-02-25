@@ -3,11 +3,12 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { router } from "expo-router";
 import { ChevronRight, Shield, User } from "lucide-react-native";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 
 export default function OfficersScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -30,7 +31,7 @@ export default function OfficersScreen() {
 
             {isLoading ? (
                 <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="hsl(var(--primary))" />
+                    <BirdyLoader size={48} color={"#10b981"} />
                     <Text className="mt-4 text-muted-foreground font-medium">Loading officers...</Text>
                 </View>
             ) : (

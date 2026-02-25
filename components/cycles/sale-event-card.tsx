@@ -6,10 +6,11 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
-import { Check, CheckCircle2, ChevronDown, ChevronUp, ClipboardCopy, Edit, Eye, EyeOff, History, Loader2 } from "lucide-react-native";
+import { Check, CheckCircle2, ChevronDown, ChevronUp, ClipboardCopy, Edit, Eye, EyeOff, History } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { toast } from "sonner-native";
+import { BirdyLoader } from "../ui/loading-state";
 import { AdjustSaleModal } from "./adjust-sale-modal";
 import { SaleDetailsContent } from "./sale-details-content";
 
@@ -270,7 +271,9 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                                 <Icon as={showVersionPicker ? ChevronUp : ChevronDown} size={14} className="text-muted-foreground opacity-50 ml-1" />
                             </Button>
                             {setActiveMutation.isPending && (
-                                <Icon as={Loader2} size={12} className="text-primary animate-spin ml-2" />
+                                <View className="ml-2 bg-emerald-500/10 p-1.5 rounded-full border border-emerald-500/20">
+                                    <BirdyLoader size={12} color="#10b981" />
+                                </View>
                             )}
                         </View>
                     )}
@@ -355,10 +358,12 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                             />
                         </View>
                         {setActiveMutation.isPending && (
-                            <View className="absolute inset-0 items-center justify-center z-10" pointerEvents="none">
-                                <View className="bg-background/90 px-4 py-2.5 rounded-full flex-row items-center justify-center gap-2 border border-border pb-3 shadow-sm">
-                                    <Icon as={Loader2} size={14} className="text-primary animate-spin" />
-                                    <Text className="text-xs font-bold text-foreground">Loading Version...</Text>
+                            <View className="absolute inset-0 items-center justify-center z-10 bg-background/40" pointerEvents="none">
+                                <View className="bg-card px-5 py-3 rounded-2xl flex-row items-center justify-center gap-3 border border-border/50 shadow-xl">
+                                    <View className="bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/20">
+                                        <BirdyLoader size={16} color="#10b981" />
+                                    </View>
+                                    <Text className="text-[11px] font-black uppercase tracking-widest text-foreground/80 mt-0.5">Switching Version</Text>
                                 </View>
                             </View>
                         )}

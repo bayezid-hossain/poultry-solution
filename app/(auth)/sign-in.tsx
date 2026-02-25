@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { authClient } from "@/lib/auth-client";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -136,7 +136,7 @@ export default function SignInScreen() {
                         size="lg"
                     >
                         {loading ? (
-                            <ActivityIndicator color="#fff" />
+                            <BirdyLoader size={48} color={"#ffffff"} />
                         ) : (
                             <Text className="text-primary-foreground text-base font-bold">Sign In</Text>
                         )}
@@ -158,7 +158,7 @@ export default function SignInScreen() {
                         size="lg"
                     >
                         {googleLoading ? (
-                            <ActivityIndicator color="#333" />
+                            <BirdyLoader size={48} color={"#10b981"} />
                         ) : (
                             <>
                                 <Text className="text-lg">G</Text>

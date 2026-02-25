@@ -1,8 +1,9 @@
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { FileText } from "lucide-react-native";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
 import { SaleEventCard } from "./sale-event-card";
 
 interface SalesHistoryListProps {
@@ -19,8 +20,8 @@ export function SalesHistoryList({ cycleId, historyId }: SalesHistoryListProps) 
     if (isLoading) {
         return (
             <View className="py-8 items-center justify-center">
-                <ActivityIndicator color="#10b981" />
-                <Text className="text-muted-foreground mt-4">Loading sales history...</Text>
+                <BirdyLoader size={48} />
+                <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Fetching Sales</Text>
             </View>
         );
     }

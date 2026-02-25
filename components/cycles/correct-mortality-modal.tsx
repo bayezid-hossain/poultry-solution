@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -8,7 +9,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
 import { Pencil, Trash2, X } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, View } from "react-native";
+import { Modal, Platform, Pressable, ScrollView, View } from "react-native";
 import { toast, Toaster } from "sonner-native";
 
 interface CorrectMortalityModalProps {
@@ -129,7 +130,7 @@ export function CorrectMortalityModal({
                     <View className="p-6 pt-2">
                         {isLoading ? (
                             <View className="py-10 items-center">
-                                <ActivityIndicator color="hsl(var(--primary))" />
+                                <BirdyLoader size={48} color={"#10b981"} />
                             </View>
                         ) : mortalityLogs.length === 0 ? (
                             <Text className="text-center text-muted-foreground py-10">No mortality logs found.</Text>

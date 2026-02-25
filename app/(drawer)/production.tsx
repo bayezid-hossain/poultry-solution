@@ -4,13 +4,14 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { router, useFocusEffect } from "expo-router";
 import { ChevronDown } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, View } from "react-native";
+import { Modal, Pressable, ScrollView, View } from "react-native";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
@@ -102,7 +103,7 @@ export default function ProductionScreen() {
 
                 {isLoading ? (
                     <View className="items-center justify-center py-10">
-                        <ActivityIndicator size="large" color="hsl(var(--primary))" />
+                        <BirdyLoader size={48} color={"#10b981"} />
                     </View>
                 ) : (
                     <>

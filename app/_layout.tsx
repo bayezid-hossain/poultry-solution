@@ -1,10 +1,11 @@
+import { LoadingState } from "@/components/ui/loading-state";
 import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from "@react-navigation/native";
 import { PortalHost } from "@rn-primitives/portal";
 import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import "react-native-reanimated";
 import "../global.css";
 
@@ -99,12 +100,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (action === "loading" || action === "redirect") {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" className="text-primary" />
-        {isAuthCallback && !session && (
-          <Text className="text-primary font-bold mt-4 text-lg">Completing Sign In...</Text>
-        )}
-      </View>
+      <LoadingState
+        fullPage
+        title={isAuthCallback && !session ? "Completing Sign In" : "Synchronizing"}
+        description={isAuthCallback && !session ? "Verifying your identity..." : "Preparing your session..."}
+      />
     );
   }
 

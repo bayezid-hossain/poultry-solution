@@ -12,13 +12,14 @@ import { SaleOrderCard } from "@/components/orders/sale-order-card";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Bird, Factory, Plus, ShoppingBag } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
+import { FlatList, Pressable, View } from "react-native";
 
 export default function OrdersScreen() {
     const router = useRouter();
@@ -212,7 +213,7 @@ export default function OrdersScreen() {
                 <>
                     {feedOrdersQuery.isLoading ? (
                         <View className="flex-1 items-center justify-center">
-                            <ActivityIndicator size="large" color="hsl(var(--primary))" />
+                            <BirdyLoader size={48} color={"#10b981"} />
                             <Text className='mt-4 text-muted-foreground font-medium uppercase tracking-widest text-xs'>Loading Orders...</Text>
                         </View>
                     ) : (
@@ -239,7 +240,7 @@ export default function OrdersScreen() {
                 <>
                     {docOrdersQuery.isLoading ? (
                         <View className="flex-1 items-center justify-center">
-                            <ActivityIndicator size="large" color="hsl(var(--primary))" />
+                            <BirdyLoader size={48} color={"#10b981"} />
                             <Text className='mt-4 text-muted-foreground font-medium uppercase tracking-widest text-xs'>Loading Orders...</Text>
                         </View>
                     ) : (
@@ -265,7 +266,7 @@ export default function OrdersScreen() {
                 <>
                     {saleOrdersQuery.isLoading ? (
                         <View className="flex-1 items-center justify-center">
-                            <ActivityIndicator size="large" color="hsl(var(--primary))" />
+                            <BirdyLoader size={48} color={"#10b981"} />
                             <Text className='mt-4 text-muted-foreground font-medium uppercase tracking-widest text-xs'>Loading Sale Orders...</Text>
                         </View>
                     ) : (

@@ -1,11 +1,12 @@
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { router } from "expo-router";
 import { Activity, Archive, Bird, ChevronRight, User, Wheat } from "lucide-react-native";
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 
 // --- Subcomponents for Accordion behavior ---
 
@@ -187,7 +188,7 @@ export const ManagementProductionTree = ({ orgId }: { orgId: string }) => {
     if (isLoading) {
         return (
             <View className="py-8 items-center justify-center">
-                <ActivityIndicator size="large" color="#16a34a" />
+                <BirdyLoader size={48} color={"#10b981"} />
                 <Text className="text-muted-foreground mt-4 text-sm font-bold uppercase tracking-widest">Loading production data...</Text>
             </View>
         );

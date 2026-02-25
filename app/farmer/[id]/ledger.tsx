@@ -6,13 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowDownLeft, ArrowLeft, ArrowUpRight, History, Landmark, Pencil, RotateCcw, Wheat } from "lucide-react-native";
 import { useRef, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
+import { FlatList, Pressable, View } from "react-native";
 
 export default function FarmerLedgerScreen() {
     const utils = trpc.useUtils();
@@ -292,7 +293,8 @@ export default function FarmerLedgerScreen() {
 
             {isLoading ? (
                 <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="hsl(var(--primary))" />
+                    <BirdyLoader size={48} />
+                    <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Syncing Ledger</Text>
                 </View>
             ) : (
                 <FlatList

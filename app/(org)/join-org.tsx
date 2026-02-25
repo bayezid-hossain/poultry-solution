@@ -1,11 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from '@/components/ui/text';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function JoinOrganizationScreen() {
@@ -52,7 +53,7 @@ export default function JoinOrganizationScreen() {
                 <Text className="text-lg font-semibold mt-4 mb-3">1. Choose Organization</Text>
 
                 {isLoadingOrgs ? (
-                    <ActivityIndicator size="large" className="text-primary" />
+                    <BirdyLoader size={48} color={"#10b981"} />
                 ) : (
                     <View className="z-10">
                         {/* Dropdown Trigger */}
@@ -129,7 +130,7 @@ export default function JoinOrganizationScreen() {
                     size="lg"
                 >
                     {joinMutation.isPending ? (
-                        <ActivityIndicator color="white" />
+                        <BirdyLoader size={48} color={"#ffffff"} />
                     ) : (
                         <Text className="text-primary-foreground font-bold text-base">Request to Join</Text>
                     )}

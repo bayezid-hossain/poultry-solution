@@ -20,13 +20,14 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
 import { Activity, Archive, ArrowLeft, ArrowRightLeft, Bird, ChevronDown, ChevronUp, History, Link, MoreVertical, Package, Pencil, Plus, Scale, ShoppingCart, Trash2, Wrench } from "lucide-react-native";
-import { useCallback, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
 export default function FarmerDetailScreen() {
     const utils = trpc.useUtils();
@@ -77,10 +78,9 @@ export default function FarmerDetailScreen() {
         { enabled: !!id && !!membership?.orgId && historyExpanded }
     );
 
-    const recentSalesProcedure = isManagement ? trpc.management.sales.getRecentSales : trpc.officer.sales.getRecentSales;
-    const { data: salesData, isLoading: salesLoading } = (recentSalesProcedure as any).useQuery(
-        { limit: 50, orgId: membership?.orgId ?? "" },
-        { enabled: !!id && !!membership?.orgId && salesExpanded }
+    const { data: salesData, isLoading: salesLoading } = trpc.officer.sales.getSaleEvents.useQuery(
+        { farmerId: id },
+        { enabled: !!id && salesExpanded }
     );
 
     const stockHistoryProcedure = isManagement ? trpc.management.stock.getHistory : trpc.officer.stock.getHistory;
@@ -88,6 +88,27 @@ export default function FarmerDetailScreen() {
         { farmerId: id ?? "", orgId: membership?.orgId ?? "" },
         { enabled: !!id && (isManagement ? !!membership?.orgId : true) && ledgerExpanded }
     );
+
+    const refetchAll = useCallback(async () => {
+        await Promise.all([
+            refetch(),
+            utils.officer.cycles.listPast.invalidate({ farmerId: id }),
+            utils.management.cycles.listPast.invalidate({ farmerId: id }),
+            utils.officer.sales.getSaleEvents.invalidate(),
+            utils.management.sales.getRecentSales.invalidate(),
+            utils.officer.stock.getHistory.invalidate({ farmerId: id }),
+            utils.management.stock.getHistory.invalidate({ farmerId: id }),
+            utils.officer.cycles.getDetails.invalidate(),
+            utils.management.cycles.getDetails.invalidate(),
+        ]);
+    }, [id, refetch, utils]);
+
+    const [refreshing, setRefreshing] = useState(false);
+    const handleRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await refetchAll();
+        setRefreshing(false);
+    }, [refetchAll]);
 
     const handleCycleAction = useCallback((action: CycleAction, cycle: any) => {
         setSelectedCycleId(cycle.id);
@@ -103,16 +124,45 @@ export default function FarmerDetailScreen() {
         }
     }, []);
 
+    const [renderSalesCards, setRenderSalesCards] = useState(false);
+    const [renderHistoryCards, setRenderHistoryCards] = useState(false);
+    const [renderLedgerCards, setRenderLedgerCards] = useState(false);
+
+    useEffect(() => {
+        if (salesExpanded && salesData?.length && !salesLoading) {
+            const timer = setTimeout(() => {
+                setRenderSalesCards(true);
+            }, 100);
+            return () => clearTimeout(timer);
+        } else {
+            setRenderSalesCards(false);
+        }
+    }, [salesExpanded, salesData, salesLoading]);
+
+    useEffect(() => {
+        if (historyExpanded && historyData?.items?.length && !historyLoading) {
+            const timer = setTimeout(() => {
+                setRenderHistoryCards(true);
+            }, 100);
+            return () => clearTimeout(timer);
+        } else {
+            setRenderHistoryCards(false);
+        }
+    }, [historyExpanded, historyData, historyLoading]);
+
+    useEffect(() => {
+        if (ledgerExpanded && ledgerData?.length && !ledgerLoading) {
+            const timer = setTimeout(() => {
+                setRenderLedgerCards(true);
+            }, 100);
+            return () => clearTimeout(timer);
+        } else {
+            setRenderLedgerCards(false);
+        }
+    }, [ledgerExpanded, ledgerData, ledgerLoading]);
+
     if (isLoading) {
-        return (
-            <View className="flex-1 bg-background">
-                <ScreenHeader title="Farmer Details" />
-                <View className="flex-1 items-center justify-center p-4">
-                    <ActivityIndicator size="large" color="hsl(var(--primary))" />
-                    <Text className="mt-4 text-muted-foreground font-medium">Crunching data...</Text>
-                </View>
-            </View>
-        );
+        return <LoadingState fullPage title="Synchronizing" description="Crunching data..." />;
     }
 
     if (!farmer) {
@@ -157,6 +207,14 @@ export default function FarmerDetailScreen() {
             <ScrollView
                 contentContainerClassName="p-4 pb-20"
                 className="flex-1"
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        colors={["#16a34a"]}
+                        tintColor={"#16a34a"}
+                    />
+                }
             >
                 {/* Farmer Title Section */}
                 <View className="mb-6">
@@ -311,11 +369,21 @@ export default function FarmerDetailScreen() {
                         {salesExpanded && (
                             <View className="pb-5">
                                 {salesLoading ? (
-                                    <ActivityIndicator size="small" className="my-4" />
-                                ) : salesData?.filter((s: any) => s.cycle?.farmer?.id === farmer.id).length ? (
-                                    salesData.filter((s: any) => s.cycle?.farmer?.id === farmer.id).map((sale: any) => (
-                                        <SaleEventCard key={sale.id} sale={sale} isLatest={false} />
-                                    ))
+                                    <View className="py-20 items-center justify-center">
+                                        <BirdyLoader size={48} />
+                                        <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Fetching Sales</Text>
+                                    </View>
+                                ) : salesData?.length ? (
+                                    renderSalesCards ? (
+                                        salesData.map((sale: any) => (
+                                            <SaleEventCard key={sale.id} sale={sale} isLatest={false} />
+                                        ))
+                                    ) : (
+                                        <View className="py-20 items-center justify-center">
+                                            <BirdyLoader size={48} color="#10b981" />
+                                            <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Rendering Cards</Text>
+                                        </View>
+                                    )
                                 ) : (
                                     <Card className="border-dashed border-border/50 bg-muted/10 p-6 items-center">
                                         <Text className="text-muted-foreground text-sm font-medium">No sales recorded</Text>
@@ -337,16 +405,26 @@ export default function FarmerDetailScreen() {
                         {historyExpanded && (
                             <View className="pb-5">
                                 {historyLoading ? (
-                                    <ActivityIndicator size="small" className="my-4" />
+                                    <View className="py-20 items-center justify-center">
+                                        <BirdyLoader size={48} />
+                                        <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Fetching History</Text>
+                                    </View>
                                 ) : archivedCycles.length > 0 ? (
-                                    archivedCycles.map((cycle: any) => (
-                                        <CycleCard
-                                            key={cycle.id}
-                                            cycle={cycle as any}
-                                            onPress={() => router.push(`/cycle/${cycle.id}` as any)}
-                                            onAction={handleCycleAction}
-                                        />
-                                    ))
+                                    renderHistoryCards ? (
+                                        archivedCycles.map((cycle: any) => (
+                                            <CycleCard
+                                                key={cycle.id}
+                                                cycle={cycle as any}
+                                                onPress={() => router.push(`/cycle/${cycle.id}` as any)}
+                                                onAction={handleCycleAction}
+                                            />
+                                        ))
+                                    ) : (
+                                        <View className="py-20 items-center justify-center">
+                                            <BirdyLoader size={48} color="#10b981" />
+                                            <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Rendering Cards</Text>
+                                        </View>
+                                    )
                                 ) : (
                                     <Card className="border-dashed border-border/50 bg-muted/10 p-6 items-center">
                                         <Text className="text-muted-foreground text-sm font-medium">No past cycles</Text>
@@ -375,26 +453,36 @@ export default function FarmerDetailScreen() {
                                     </View>
                                 </View>
                                 {ledgerLoading ? (
-                                    <ActivityIndicator size="small" className="my-4" />
+                                    <View className="py-20 items-center justify-center">
+                                        <BirdyLoader size={48} />
+                                        <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Fetching Ledger</Text>
+                                    </View>
                                 ) : ledgerData && ledgerData.length > 0 ? (
-                                    <>
-                                        {ledgerData.slice(0, 5).map((log: any) => (
-                                            <Card key={log.id} className="mb-2 border-border/50 bg-card p-3">
-                                                <View className="flex-row justify-between items-center">
-                                                    <View>
-                                                        <Text className="font-bold text-foreground text-sm">{log.type}</Text>
-                                                        <Text className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(log.createdAt), "MMM d, yyyy")}</Text>
+                                    renderLedgerCards ? (
+                                        <>
+                                            {ledgerData.slice(0, 5).map((log: any) => (
+                                                <Card key={log.id} className="mb-2 border-border/50 bg-card p-3">
+                                                    <View className="flex-row justify-between items-center">
+                                                        <View>
+                                                            <Text className="font-bold text-foreground text-sm">{log.type}</Text>
+                                                            <Text className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(log.createdAt), "MMM d, yyyy")}</Text>
+                                                        </View>
+                                                        <Text className={`font-black ${parseFloat(log.amount) > 0 ? 'text-emerald-500' : 'text-orange-500'}`}>
+                                                            {parseFloat(log.amount) > 0 ? '+' : ''}{log.amount} b
+                                                        </Text>
                                                     </View>
-                                                    <Text className={`font-black ${parseFloat(log.amount) > 0 ? 'text-emerald-500' : 'text-orange-500'}`}>
-                                                        {parseFloat(log.amount) > 0 ? '+' : ''}{log.amount} b
-                                                    </Text>
-                                                </View>
-                                            </Card>
-                                        ))}
-                                        <Button variant="outline" className="mt-2 h-10 border-border/50" onPress={() => router.push(`/farmer/${farmer.id}/ledger` as any)}>
-                                            <Text className="text-foreground font-bold">View Full Ledger</Text>
-                                        </Button>
-                                    </>
+                                                </Card>
+                                            ))}
+                                            <Button variant="outline" className="mt-2 h-10 border-border/50" onPress={() => router.push(`/farmer/${farmer.id}/ledger` as any)}>
+                                                <Text className="text-foreground font-bold">View Full Ledger</Text>
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <View className="py-20 items-center justify-center">
+                                            <BirdyLoader size={48} color="#10b981" />
+                                            <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Rendering Logs</Text>
+                                        </View>
+                                    )
                                 ) : (
                                     <Card className="border-dashed border-border/50 bg-muted/10 p-6 items-center">
                                         <Text className="text-muted-foreground text-sm font-medium">No stock transactions</Text>
@@ -425,11 +513,7 @@ export default function FarmerDetailScreen() {
                 farmerId={farmer.id}
                 farmerName={farmer.name}
                 onSuccess={() => {
-                    refetch();
-                    utils.officer.stock.getHistory.invalidate({ farmerId: farmer.id });
-                    utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
-                    utils.management.stock.getHistory.invalidate({ farmerId: farmer.id });
-                    utils.management.farmers.getDetails.invalidate({ farmerId: farmer.id });
+                    refetchAll();
                 }}
             />
             <StockCorrectionModal
@@ -438,28 +522,26 @@ export default function FarmerDetailScreen() {
                 farmerId={farmer.id}
                 farmerName={farmer.name}
                 onSuccess={() => {
-                    refetch();
-                    utils.officer.stock.getHistory.invalidate({ farmerId: farmer.id });
-                    utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
+                    refetchAll();
                 }}
             />
             <SecurityMoneyModal
                 open={isSecurityOpen}
                 onOpenChange={setIsSecurityOpen}
                 farmer={farmer}
-                onSuccess={refetch}
+                onSuccess={refetchAll}
             />
             <EditFarmerModal
                 open={isEditOpen}
                 onOpenChange={setIsEditOpen}
                 farmer={farmer}
-                onSuccess={refetch}
+                onSuccess={refetchAll}
             />
             <StartCycleModal
                 open={isStartCycleOpen}
                 onOpenChange={setIsStartCycleOpen}
                 farmer={farmer}
-                onSuccess={refetch}
+                onSuccess={refetchAll}
             />
             <DeleteFarmerModal
                 open={isDeleteOpen}
@@ -475,12 +557,8 @@ export default function FarmerDetailScreen() {
                 sourceFarmerName={farmer.name}
                 availableStock={availableStock}
                 onSuccess={() => {
-                    refetch();
-                    utils.officer.stock.getHistory.invalidate({ farmerId: farmer.id });
-                    utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
+                    refetchAll();
                     utils.officer.stock.getAllFarmersStock.invalidate();
-                    utils.management.stock.getHistory.invalidate({ farmerId: farmer.id });
-                    utils.management.farmers.getDetails.invalidate({ farmerId: farmer.id });
                     utils.management.stock.getAllFarmersStock.invalidate();
                 }}
             />
@@ -503,7 +581,7 @@ export default function FarmerDetailScreen() {
                         startDate={selectedCycle.createdAt ? new Date(selectedCycle.createdAt) : new Date()}
                         open={isSellOpen}
                         onOpenChange={setIsSellOpen}
-                        onSuccess={refetch}
+                        onSuccess={refetchAll}
                     />
 
                     <AddMortalityModal
@@ -512,7 +590,7 @@ export default function FarmerDetailScreen() {
                         farmerName={selectedCycle.farmerName || farmer.name}
                         open={isAddMortalityOpen}
                         onOpenChange={setIsAddMortalityOpen}
-                        onSuccess={refetch}
+                        onSuccess={refetchAll}
                     />
 
                     <CorrectDocModal
@@ -520,7 +598,7 @@ export default function FarmerDetailScreen() {
                         currentDoc={parseInt(String(selectedCycle.doc || 0))}
                         open={isEditDocOpen}
                         onOpenChange={setIsEditDocOpen}
-                        onSuccess={refetch}
+                        onSuccess={refetchAll}
                     />
 
                     <CorrectAgeModal
@@ -528,14 +606,14 @@ export default function FarmerDetailScreen() {
                         currentAge={selectedCycle.age}
                         open={isEditAgeOpen}
                         onOpenChange={setIsEditAgeOpen}
-                        onSuccess={refetch}
+                        onSuccess={refetchAll}
                     />
 
                     <CorrectMortalityModal
                         cycleId={selectedCycle.id}
                         open={isCorrectMortalityOpen}
                         onOpenChange={setIsCorrectMortalityOpen}
-                        onSuccess={refetch}
+                        onSuccess={refetchAll}
                     />
 
                     <EndCycleModal
@@ -544,7 +622,7 @@ export default function FarmerDetailScreen() {
                         open={isEndCycleOpen}
                         onOpenChange={setIsEndCycleOpen}
                         onRecordSale={() => setIsSellOpen(true)}
-                        onSuccess={refetch}
+                        onSuccess={refetchAll}
                     />
 
                     <ReopenCycleModal
@@ -552,7 +630,7 @@ export default function FarmerDetailScreen() {
                         onOpenChange={setIsReopenModalOpen}
                         historyId={selectedCycle.id}
                         cycleName={selectedCycle.cycle?.name || selectedCycle.name || "Unknown Cycle"}
-                        onSuccess={refetch}
+                        onSuccess={refetchAll}
                     />
 
                     <DeleteCycleModal
@@ -560,7 +638,7 @@ export default function FarmerDetailScreen() {
                         onOpenChange={setIsDeleteCycleOpen}
                         historyId={selectedCycle.id}
                         cycleName={selectedCycle.cycle?.name || selectedCycle.name || "Unknown Cycle"}
-                        onSuccess={refetch}
+                        onSuccess={refetchAll}
                     />
                 </>
             )}

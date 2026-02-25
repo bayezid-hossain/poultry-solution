@@ -2,6 +2,7 @@ import { RestockModal } from "@/components/farmers/restock-modal";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +21,7 @@ import {
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 import { toast, Toaster } from "sonner-native";
 import { z } from "zod";
 import { CorrectAgeModal } from "./correct-age-modal";
@@ -439,7 +440,7 @@ export const SellModal = ({
                                 disabled={mutation.isPending}
                             >
                                 {mutation.isPending ? (
-                                    <ActivityIndicator size="small" color="white" />
+                                    <BirdyLoader size={24} color={"#ffffff"} />
                                 ) : (
                                     <Icon as={Check} size={18} className="text-primary-foreground" />
                                 )}
@@ -863,7 +864,7 @@ export const SellModal = ({
                                 ) : (
                                     <>
                                         {mutation.isPending ? (
-                                            <ActivityIndicator size="small" color="white" />
+                                            <BirdyLoader size={24} color={"#ffffff"} />
                                         ) : (
                                             <Icon as={Check} size={18} className="text-primary-foreground" />
                                         )}

@@ -4,11 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Check, Clock, Shield, ShieldOff, User, UserCheck, UserMinus, X } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, View } from "react-native";
+import { Alert, Pressable, ScrollView, View } from "react-native";
 
 export default function MembersScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -85,7 +86,7 @@ export default function MembersScreen() {
 
             {isLoading ? (
                 <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="hsl(var(--primary))" />
+                    <BirdyLoader size={48} color={"#10b981"} />
                     <Text className="mt-4 text-muted-foreground font-medium">Loading members...</Text>
                 </View>
             ) : (

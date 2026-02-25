@@ -4,13 +4,14 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
+import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
 import { CheckCircle2, ChevronDown, ChevronUp, FileText, RefreshCw, Search, Trash2, User } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
+import { Alert, Pressable, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
 
 export default function SalesScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -108,10 +109,7 @@ export default function SalesScreen() {
             </View>
 
             {salesLoading ? (
-                <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="hsl(var(--primary))" />
-                    <Text className="mt-4 text-muted-foreground">Loading sales data...</Text>
-                </View>
+                <LoadingState fullPage title="Synchronizing" description="Fetching Sales Data..." />
             ) : salesError ? (
                 <View className="flex-1 items-center justify-center p-8">
                     <Icon as={FileText} size={48} className="text-destructive mb-4" />
@@ -123,7 +121,7 @@ export default function SalesScreen() {
                     contentContainerClassName="p-4 pb-20 gap-4"
                     className="flex-1"
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(var(--primary))" colors={["hsl(var(--primary))"]} />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#16a34a" colors={["#16a34a"]} />
                     }
                 >
                     {groupedData.length > 0 ? (
@@ -261,7 +259,7 @@ function CycleRowAccordion({ cycle, isLast, onRefresh }: { cycle: any, isLast: b
                         disabled={deleteMutation.isPending}
                     >
                         {deleteMutation.isPending ? (
-                            <ActivityIndicator size="small" color="hsl(var(--destructive))" />
+                            <BirdyLoader size={16} color="#ef4444" />
                         ) : (
                             <Icon as={Trash2} size={14} className="text-destructive/80" />
                         )}

@@ -7,12 +7,13 @@ import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { SmartWatchdog } from '@/components/dashboard/smart-watchdog';
 import { ScreenHeader } from '@/components/screen-header';
 import { Icon } from '@/components/ui/icon';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Text } from '@/components/ui/text';
 import { trpc } from '@/lib/trpc';
 import { useFocusEffect } from 'expo-router';
 import { Activity } from 'lucide-react-native';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, Pressable, RefreshControl, ScrollView, ToastAndroid, View } from 'react-native';
+import { BackHandler, Pressable, RefreshControl, ScrollView, ToastAndroid, View } from 'react-native';
 
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
@@ -107,14 +108,7 @@ export default function HomeScreen() {
   }, [refetchOfficerStats, refetchManagementStats, refetchOfficerCycles, refetchManagementCycles, orgId, fetchWatchdogAsync, isManagement, session?.user?.id]);
 
   if (statsLoading || cyclesLoading) {
-    return (
-      <View className="flex-1 bg-background">
-        <ScreenHeader title="Dashboard" />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#16a34a" />
-        </View>
-      </View>
-    );
+    return <LoadingState fullPage title="Synchronizing" description="Fetching Global Operations..." />;
   }
 
   const cycles = cyclesData?.items || [];

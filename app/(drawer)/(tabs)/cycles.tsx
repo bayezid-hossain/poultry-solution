@@ -14,13 +14,14 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
+import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { router, useFocusEffect } from "expo-router";
 import { Activity, Archive, Bird, ChevronDown, ChevronUp, History, LayoutGrid, List, Pencil, Plus, Search, ShoppingCart, Skull, Sparkles, Table2 } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Modal, Pressable, View } from "react-native";
+import { Alert, FlatList, Modal, Pressable, View } from "react-native";
 
 export default function CyclesScreen() {
     const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
@@ -161,7 +162,7 @@ export default function CyclesScreen() {
         if (!historyQuery.isFetching) return null;
         return (
             <View className="py-4 items-center">
-                <ActivityIndicator size="small" color="hsl(var(--primary))" />
+                <BirdyLoader size={24} />
             </View>
         );
     };
@@ -298,8 +299,7 @@ export default function CyclesScreen() {
             {
                 isLoading ? (
                     <View className='flex-1 items-center justify-center'>
-                        <ActivityIndicator size='large' color='hsl(var(--primary))' />
-                        <Text className='mt-4 text-muted-foreground font-medium'>Fetching cycles...</Text>
+                        <LoadingState title="Loading" description="Fetching records..." />
                     </View>
                 ) : viewMode === 'group' ? (
                     <FlatList

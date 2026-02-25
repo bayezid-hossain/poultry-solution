@@ -2,10 +2,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { router } from "expo-router";
 import { AlertCircle, Package, Sparkles } from "lucide-react-native";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 
 interface WatchdogPrediction {
     farmerId: string;
@@ -43,7 +44,7 @@ export const SmartWatchdog = ({ data, isLoading }: SmartWatchdogProps) => {
             <CardContent className="pt-4">
                 {isLoading && !data.length ? (
                     <View className="items-center justify-center py-10">
-                        <ActivityIndicator color="hsl(var(--primary))" />
+                        <BirdyLoader size={48} color={"#10b981"} />
                     </View>
                 ) : data.length === 0 ? (
                     <View className="flex-col items-center justify-center py-10 bg-muted/20 rounded-2xl border-2 border-dashed border-border/50">
