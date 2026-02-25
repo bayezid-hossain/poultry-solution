@@ -42,7 +42,7 @@ export default function OverviewScreen() {
             <View className="flex-1 bg-background">
                 <ScreenHeader title="Management" />
                 <View className="flex-1 items-center justify-center">
-                    <LoadingState title="Loading" description="Fetching dashboard..." />
+                    <LoadingState title="Synchronizing" description="Fetching management dashboard..." />
                 </View>
             </View>
         );
@@ -123,7 +123,10 @@ export default function OverviewScreen() {
 
                 {treeLoading ? (
                     <View className="items-center justify-center py-10">
-                        <BirdyLoader size={48} />
+                        <BirdyLoader size={48} color={"#10b981"} />
+                        <Text className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+                            Gathering Production Intel...
+                        </Text>
                     </View>
                 ) : productionTree && productionTree.length > 0 ? (
                     productionTree.map((officer: any) => {

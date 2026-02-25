@@ -1,12 +1,11 @@
 /// <reference types="nativewind/types" />
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
-import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { CheckCircle2, Search, Sparkles, Trash2, Truck, X } from "lucide-react-native";
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, TextInput, View } from "react-native";
 import { toast } from "sonner-native";
 
 interface ParsedItem {
@@ -193,7 +192,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                                     className="h-16 rounded-2xl bg-primary active:opacity-90 flex-row items-center justify-center gap-3"
                                 >
                                     {isExtracting ? (
-                                        <BirdyLoader size={48} color={"#ffffff"} />
+                                        <ActivityIndicator color={"#ffffff"} />
                                     ) : (
                                         <>
                                             <Icon as={Sparkles} size={20} className="text-white" />
@@ -279,7 +278,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                                             className="flex-[2] h-16 rounded-2xl bg-primary"
                                         >
                                             {bulkAddMutation.isPending ? (
-                                                <BirdyLoader size={48} color={"#ffffff"} />
+                                                <ActivityIndicator color={"#ffffff"} />
                                             ) : (
                                                 <Text className="text-white font-black text-base uppercase tracking-widest">
                                                     Import {parsedData.filter(p => p.matchedFarmerId).length} Items

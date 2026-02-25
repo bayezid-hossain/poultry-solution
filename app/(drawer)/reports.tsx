@@ -43,7 +43,9 @@ export default function ReportsScreen() {
                 <ScreenHeader title="Reports" />
                 <View className="flex-1 items-center justify-center">
                     <BirdyLoader size={48} color={"#10b981"} />
-                    <Text className="mt-4 text-muted-foreground font-medium">Loading reports...</Text>
+                    <Text className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+                        Synthesizing Reports...
+                    </Text>
                 </View>
             </View>
         );

@@ -109,7 +109,10 @@ export default function SalesScreen() {
             </View>
 
             {salesLoading ? (
-                <LoadingState fullPage title="Synchronizing" description="Fetching Sales Data..." />
+                <View className="flex-1 items-center justify-center">
+                    <BirdyLoader size={48} color={"#10b981"} />
+                    <Text className='mt-4 text-muted-foreground font-medium uppercase tracking-widest text-xs'>Loading Sales...</Text>
+                </View>
             ) : salesError ? (
                 <View className="flex-1 items-center justify-center p-8">
                     <Icon as={FileText} size={48} className="text-destructive mb-4" />
@@ -117,28 +120,33 @@ export default function SalesScreen() {
                     <Text className="text-muted-foreground text-center">{salesError.message}</Text>
                 </View>
             ) : (
-                <ScrollView
-                    contentContainerClassName="p-4 pb-20 gap-4"
-                    className="flex-1"
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#16a34a" colors={["#16a34a"]} />
-                    }
-                >
-                    {groupedData.length > 0 ? (
-                        groupedData.map((farmerGroup) => (
-                            <FarmerSalesAccordion
-                                key={farmerGroup.id}
-                                farmer={farmerGroup}
-                                onRefresh={refetch}
-                            />
-                        ))
-                    ) : (
-                        <View className="flex-1 items-center justify-center py-20 opacity-50">
-                            <Icon as={FileText} size={48} className="text-muted-foreground mb-4" />
-                            <Text className="text-muted-foreground font-medium">No sales found.</Text>
-                        </View>
+                <>
+                    {refreshing && (
+                        <LoadingState fullPage title="Synchronizing" description="Fetching latest sales..." />
                     )}
-                </ScrollView>
+                    <ScrollView
+                        contentContainerClassName="p-4 pb-20 gap-4"
+                        className="flex-1"
+                        refreshControl={
+                            <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
+                        }
+                    >
+                        {groupedData.length > 0 ? (
+                            groupedData.map((farmerGroup) => (
+                                <FarmerSalesAccordion
+                                    key={farmerGroup.id}
+                                    farmer={farmerGroup}
+                                    onRefresh={refetch}
+                                />
+                            ))
+                        ) : (
+                            <View className="flex-1 items-center justify-center py-20 opacity-50">
+                                <Icon as={FileText} size={48} className="text-muted-foreground mb-4" />
+                                <Text className="text-muted-foreground font-medium">No sales found.</Text>
+                            </View>
+                        )}
+                    </ScrollView>
+                </>
             )}
         </View>
     );

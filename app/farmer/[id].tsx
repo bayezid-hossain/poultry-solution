@@ -20,7 +20,7 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
-import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
@@ -162,7 +162,12 @@ export default function FarmerDetailScreen() {
     }, [ledgerExpanded, ledgerData, ledgerLoading]);
 
     if (isLoading) {
-        return <LoadingState fullPage title="Synchronizing" description="Crunching data..." />;
+        return (
+            <View className="flex-1 bg-background items-center justify-center">
+                <BirdyLoader size={48} color={"#10b981"} />
+                <Text className="mt-4 text-muted-foreground font-medium uppercase tracking-widest text-xs">Fetching Detail...</Text>
+            </View>
+        );
     }
 
     if (!farmer) {

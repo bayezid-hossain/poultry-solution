@@ -62,35 +62,26 @@ export const BirdyLoader = ({ size = 48, color = "#10b981", withGlow = true }: {
 export const LoadingState = ({ title, description, className, fullPage = false }: Props) => {
     return (
         <View className={cn(
-            "flex items-center justify-center text-center",
-            fullPage ? "absolute inset-0 z-50 bg-[#27272a]/95 backdrop-blur-sm" : "min-h-[200px] w-full bg-transparent",
+            "flex-1 items-center justify-center bg-background",
+            fullPage ? "absolute inset-0 z-50 bg-background/100 backdrop-blur-xl" : "min-h-[200px] w-full bg-transparent",
             className
         )}>
-            <View className="items-center justify-center">
-                {/* Ambient Glow Circles */}
-                <View className="absolute w-[280px] h-[280px] rounded-full bg-emerald-950/40" />
-                <View className="absolute w-[200px] h-[200px] rounded-full bg-emerald-900/30" />
+            <BirdyLoader size={48} color={"#10b981"} />
 
-                {/* Main Card */}
-                <View className="relative p-8 pt-10 pb-9 w-[260px] rounded-[36px] bg-[#18181b] border border-white/5 shadow-2xl items-center overflow-hidden">
-
-                    {/* Inner Icon Container */}
-                    <View className="mb-8 h-16 w-16 items-center justify-center bg-[#27272a] rounded-[20px] shadow-sm border border-white/5">
-                        <BirdyLoader size={28} color="#10b981" />
-                    </View>
-
+            {(title || description) && (
+                <View className="mt-4 items-center">
                     {title && (
-                        <Text className="text-[13px] font-black uppercase tracking-[0.25em] text-zinc-100 mb-2.5">
+                        <Text className="text-[12px] font-black uppercase tracking-[0.25em] text-foreground mb-1.5 text-center">
                             {title}
                         </Text>
                     )}
                     {description && (
-                        <Text className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">
+                        <Text className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground text-center">
                             {description}
                         </Text>
                     )}
                 </View>
-            </View>
+            )}
         </View>
     );
 };

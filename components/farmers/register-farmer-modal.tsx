@@ -2,14 +2,13 @@
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
-import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react-native";
 import { useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Modal, Pressable, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, TextInput, View } from "react-native";
 import { toast, Toaster } from "sonner-native";
 import { z } from "zod";
 
@@ -195,7 +194,7 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
                             className="h-14 rounded-2xl bg-primary mt-4 active:opacity-90"
                         >
                             {createMutation.isPending ? (
-                                <BirdyLoader size={48} color={"#ffffff"} />
+                                <ActivityIndicator color={"#ffffff"} />
                             ) : (
                                 <Text className="text-white font-black text-base uppercase tracking-widest">Register Farmer</Text>
                             )}

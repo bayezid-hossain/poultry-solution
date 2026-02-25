@@ -160,11 +160,14 @@ export default function HomeScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader title="Dashboard" />
+      {refreshing && (
+        <LoadingState fullPage title="Synchronizing" description="Updating your dashboard..." />
+      )}
       <ScrollView
         contentContainerClassName="p-4 pb-20"
         className="flex-1"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#16a34a" colors={["#16a34a"]} />
+          <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
         }
       >
         {/* Premium Welcome Header */}

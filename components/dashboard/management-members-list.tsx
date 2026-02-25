@@ -15,9 +15,11 @@ export const ManagementMembersList = ({ orgId }: { orgId: string }) => {
 
     if (isLoading) {
         return (
-            <View className="py-8 items-center justify-center">
-                <BirdyLoader size={24} color={"#10b981"} />
-                <Text className="text-muted-foreground mt-2 text-xs">Loading members...</Text>
+            <View className="py-12 items-center justify-center">
+                <BirdyLoader size={48} color={"#10b981"} />
+                <Text className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+                    Retrieving Members...
+                </Text>
             </View>
         );
     }

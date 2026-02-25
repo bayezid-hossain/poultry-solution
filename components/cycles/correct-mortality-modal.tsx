@@ -129,8 +129,11 @@ export function CorrectMortalityModal({
 
                     <View className="p-6 pt-2">
                         {isLoading ? (
-                            <View className="py-10 items-center">
+                            <View className="py-12 items-center justify-center">
                                 <BirdyLoader size={48} color={"#10b981"} />
+                                <Text className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+                                    Retrieving History...
+                                </Text>
                             </View>
                         ) : mortalityLogs.length === 0 ? (
                             <Text className="text-center text-muted-foreground py-10">No mortality logs found.</Text>

@@ -191,9 +191,7 @@ export default function CyclesScreen() {
     };
 
     const currentItems = activeTab === 'active' ? filteredActiveCycles : historyItems;
-    const isLoading = activeTab === 'active'
-        ? (activeQuery.isLoading && !activeQuery.isFetching)
-        : (historyQuery.isLoading && !historyQuery.isFetching);
+    const isLoading = activeTab === 'active' ? activeQuery.isLoading : historyQuery.isLoading;
     const isFetching = activeTab === 'active' ? activeQuery.isFetching : historyQuery.isFetching;
 
     return (
@@ -298,74 +296,85 @@ export default function CyclesScreen() {
 
             {
                 isLoading ? (
-                    <View className='flex-1 items-center justify-center'>
-                        <LoadingState title="Loading" description="Fetching records..." />
+                    <View className='flex-1 items-center justify-center bg-background'>
+                        <BirdyLoader size={48} color={"#10b981"} />
+                        <Text className='mt-4 text-muted-foreground font-medium uppercase tracking-widest text-xs'>Loading Cycles...</Text>
                     </View>
                 ) : viewMode === 'group' ? (
-                    <FlatList
-                        data={groupedCycles}
-                        keyExtractor={(item) => item.farmerName}
-                        renderItem={({ item: group }) => (
-                            <View className="mx-4 mb-4 bg-card border border-border/50 rounded-2xl overflow-hidden">
-                                {/* Group Header */}
-                                <View className="flex-row items-center justify-between p-4 border-b border-border/20">
-                                    <Text className="font-black text-base text-foreground uppercase flex-1 pr-4" numberOfLines={3}>
-                                        {group.farmerName}
-                                    </Text>
-                                    <View className="flex-row items-center">
-                                        <View className="h-6 w-px bg-border/50 mr-3" />
-                                        <View className="bg-muted/50 border border-border/50 rounded-xl px-3 mt-1 active:bg-muted">
-                                            <Text className="text-xs font-black text-foreground text-center">{group.cycles.length}</Text>
-                                            <Text className="text-[8px] font-bold text-muted-foreground uppercase text-center">{group.cycles.length === 1 ? 'Cycle' : 'Cycles'}</Text>
+                    <View className="flex-1">
+                        {isFetching && !isLoading && (
+                            <LoadingState fullPage title="Synchronizing" description="Updating cycle data..." />
+                        )}
+                        <FlatList
+                            data={groupedCycles}
+                            keyExtractor={(item) => item.farmerName}
+                            renderItem={({ item: group }) => (
+                                <View className="mx-4 mb-4 bg-card border border-border/50 rounded-2xl overflow-hidden">
+                                    {/* Group Header */}
+                                    <View className="flex-row items-center justify-between p-4 border-b border-border/20">
+                                        <Text className="font-black text-base text-foreground uppercase flex-1 pr-4" numberOfLines={3}>
+                                            {group.farmerName}
+                                        </Text>
+                                        <View className="flex-row items-center">
+                                            <View className="h-6 w-px bg-border/50 mr-3" />
+                                            <View className="bg-muted/50 border border-border/50 rounded-xl px-3 mt-1 active:bg-muted">
+                                                <Text className="text-xs font-black text-foreground text-center">{group.cycles.length}</Text>
+                                                <Text className="text-[8px] font-bold text-muted-foreground uppercase text-center">{group.cycles.length === 1 ? 'Cycle' : 'Cycles'}</Text>
+                                            </View>
                                         </View>
                                     </View>
-                                </View>
 
-                                {/* Cycles within group */}
-                                <View className="bg-muted/5 py-1 px-1.5">
-                                    {group.cycles.map((cycle: any, idx: number) => (
-                                        <View key={cycle.id} className={idx < group.cycles.length - 1 ? "border-b border-border/30 pb-1 mb-1" : ""}>
-                                            <CycleCard
-                                                isGrouped={true}
-                                                cycle={{
-                                                    ...cycle,
-                                                    intake: Number(cycle.intake ?? 0),
-                                                    farmerId: cycle.farmerId
-                                                }}
-                                                onPress={() => router.push(`/cycle/${cycle.id}` as any)}
-                                                onAction={handleCycleAction}
-                                            />
-                                        </View>
-                                    ))}
+                                    {/* Cycles within group */}
+                                    <View className="bg-muted/5 py-1 px-1.5">
+                                        {group.cycles.map((cycle: any, idx: number) => (
+                                            <View key={cycle.id} className={idx < group.cycles.length - 1 ? "border-b border-border/30 pb-1 mb-1" : ""}>
+                                                <CycleCard
+                                                    isGrouped={true}
+                                                    cycle={{
+                                                        ...cycle,
+                                                        intake: Number(cycle.intake ?? 0),
+                                                        farmerId: cycle.farmerId
+                                                    }}
+                                                    onPress={() => router.push(`/cycle/${cycle.id}` as any)}
+                                                    onAction={handleCycleAction}
+                                                />
+                                            </View>
+                                        ))}
+                                    </View>
                                 </View>
-                            </View>
-                        )}
-                        contentContainerClassName="pt-2 pb-20"
-                        refreshing={isFetching && !isLoading}
-                        onRefresh={() => activeTab === 'active' ? activeQuery.refetch() : historyQuery.refetch()}
-                        ListEmptyComponent={renderEmpty}
-                    />
+                            )}
+                            contentContainerClassName="pt-2 pb-20"
+                            refreshing={false}
+                            onRefresh={() => activeTab === 'active' ? activeQuery.refetch() : historyQuery.refetch()}
+                            ListEmptyComponent={renderEmpty}
+                        />
+                    </View>
                 ) : (
-                    <FlatList
-                        data={currentItems}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
-                            <CycleCard
-                                cycle={{
-                                    ...item,
-                                    intake: Number(item.intake ?? 0),
-                                    farmerId: item.farmerId
-                                }}
-                                onPress={() => router.push(`/cycle/${item.id}` as any)}
-                                onAction={handleCycleAction}
-                            />
+                    <View className="flex-1">
+                        {isFetching && !isLoading && (
+                            <LoadingState fullPage title="Synchronizing" description="Updating cycle data..." />
                         )}
-                        contentContainerClassName='p-4 pt-2 pb-20'
-                        onRefresh={() => activeTab === 'active' ? activeQuery.refetch() : historyQuery.refetch()}
-                        refreshing={isFetching && !isLoading}
-                        ListEmptyComponent={renderEmpty}
-                        ListFooterComponent={activeTab === 'history' ? renderHistoryFooter : undefined}
-                    />
+                        <FlatList
+                            data={currentItems}
+                            keyExtractor={(item) => item.id}
+                            renderItem={({ item }) => (
+                                <CycleCard
+                                    cycle={{
+                                        ...item,
+                                        intake: Number(item.intake ?? 0),
+                                        farmerId: item.farmerId
+                                    }}
+                                    onPress={() => router.push(`/cycle/${item.id}` as any)}
+                                    onAction={handleCycleAction}
+                                />
+                            )}
+                            contentContainerClassName='p-4 pt-2 pb-20'
+                            onRefresh={() => activeTab === 'active' ? activeQuery.refetch() : historyQuery.refetch()}
+                            refreshing={false}
+                            ListEmptyComponent={renderEmpty}
+                            ListFooterComponent={activeTab === 'history' ? renderHistoryFooter : undefined}
+                        />
+                    </View>
                 )
             }
 

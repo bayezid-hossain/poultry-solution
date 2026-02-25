@@ -11,7 +11,7 @@ import { SellModal } from "@/components/cycles/sell-modal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
-import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
@@ -52,7 +52,12 @@ export default function CycleDetailsScreen() {
     const { data: response, isLoading, error, refetch } = trpc.officer.cycles.getDetails.useQuery({ id: id as string });
 
     if (isLoading) {
-        return <LoadingState fullPage title="Synchronizing" description="Loading cycle details..." />;
+        return (
+            <View className="flex-1 bg-background items-center justify-center">
+                <BirdyLoader size={48} color={"#10b981"} />
+                <Text className="mt-4 text-muted-foreground font-medium uppercase tracking-widest text-xs">Fetching Details...</Text>
+            </View>
+        );
     }
 
     if (error || !response) {

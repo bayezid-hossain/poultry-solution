@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { Link, router } from "expo-router";
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, ChevronDown, ChevronUp, ClipboardList, Package, RotateCcw, User, Wheat } from "lucide-react-native";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
 export default function StockLedgerScreen() {
@@ -67,56 +67,72 @@ function StockTab({ isManagement, officerId, orgId }: { isManagement: boolean; o
     const data = isManagement ? mgmtQuery.data : officerQuery.data;
     const isLoading = isManagement ? mgmtQuery.isLoading : officerQuery.isLoading;
     const refetch = isManagement ? mgmtQuery.refetch : officerQuery.refetch;
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        refetch().finally(() => setRefreshing(false));
+    }, [refetch]);
 
     if (isLoading) {
-        return <LoadingState fullPage title="Synchronizing" description="Fetching Stock Ledger..." />;
+        return (
+            <View className="flex-1 items-center justify-center bg-background">
+                <BirdyLoader size={48} color={"#10b981"} />
+                <Text className='mt-4 text-muted-foreground font-medium uppercase tracking-widest text-xs'>Synchronizing Stock...</Text>
+            </View>
+        );
     }
 
     const items = data?.items ?? [];
     const totalStock = items.reduce((acc: number, f: { mainStock: number | null; }) => acc + Number(f.mainStock ?? 0), 0);
 
     return (
-        <ScrollView
-            contentContainerClassName="p-4 pb-20"
-            className="flex-1"
-            refreshControl={
-                <RefreshControl refreshing={isLoading} onRefresh={refetch} />
-            }
-        >
-            {/* Total Summary */}
-            <Card className="mb-6 border-border/50 bg-primary/5">
-                <CardContent className="p-4 items-center">
-                    <View className="w-12 h-12 rounded-2xl bg-primary/10 items-center justify-center mb-2">
-                        <Icon as={Wheat} size={24} className="text-primary" />
-                    </View>
-                    <Text className="text-3xl font-black text-primary tracking-tight">
-                        {totalStock.toFixed(1)}
-                    </Text>
-                    <Text className="text-[10px] text-muted-foreground font-bold uppercase mt-1">Total Feed Stock (bags)</Text>
-                </CardContent>
-            </Card>
-
-            {/* Per-Farmer Stock */}
-            <View className="flex-row items-center gap-2 mb-3 px-1">
-                <Icon as={ClipboardList} size={16} className="text-primary" />
-                <Text className="text-base font-bold text-foreground">By Farmer</Text>
-                <Badge variant="outline" className="ml-auto border-primary/30 h-6 px-2.5">
-                    <Text className="text-[10px] text-primary font-bold">{items.length}</Text>
-                </Badge>
-            </View>
-
-            {items.map((item: any) => (
-                <FarmerStockRow key={item.id} farmer={item} isManagement={isManagement} orgId={orgId} />
-            ))}
-
-            {items.length === 0 && (
-                <Card className="border-dashed border-border/50 bg-muted/10 h-32">
-                    <CardContent className="flex-1 items-center justify-center">
-                        <Text className="text-muted-foreground">No stock data</Text>
+        <>
+            {refreshing && (
+                <LoadingState fullPage title="Synchronizing" description="Updating stock records..." />
+            )}
+            <ScrollView
+                contentContainerClassName="p-4 pb-20"
+                className="flex-1"
+                refreshControl={
+                    <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
+                }
+            >
+                {/* Total Summary */}
+                <Card className="mb-6 border-border/50 bg-primary/5">
+                    <CardContent className="p-4 items-center">
+                        <View className="w-12 h-12 rounded-2xl bg-primary/10 items-center justify-center mb-2">
+                            <Icon as={Wheat} size={24} className="text-primary" />
+                        </View>
+                        <Text className="text-3xl font-black text-primary tracking-tight">
+                            {totalStock.toFixed(1)}
+                        </Text>
+                        <Text className="text-[10px] text-muted-foreground font-bold uppercase mt-1">Total Feed Stock (bags)</Text>
                     </CardContent>
                 </Card>
-            )}
-        </ScrollView>
+
+                {/* Per-Farmer Stock */}
+                <View className="flex-row items-center gap-2 mb-3 px-1">
+                    <Icon as={ClipboardList} size={16} className="text-primary" />
+                    <Text className="text-base font-bold text-foreground">By Farmer</Text>
+                    <Badge variant="outline" className="ml-auto border-primary/30 h-6 px-2.5">
+                        <Text className="text-[10px] text-primary font-bold">{items.length}</Text>
+                    </Badge>
+                </View>
+
+                {items.map((item: any) => (
+                    <FarmerStockRow key={item.id} farmer={item} isManagement={isManagement} orgId={orgId} />
+                ))}
+
+                {items.length === 0 && (
+                    <Card className="border-dashed border-border/50 bg-muted/10 h-32">
+                        <CardContent className="flex-1 items-center justify-center">
+                            <Text className="text-muted-foreground">No stock data</Text>
+                        </CardContent>
+                    </Card>
+                )}
+            </ScrollView>
+        </>
     );
 }
 
@@ -124,7 +140,7 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
     const [expanded, setExpanded] = useState(false);
 
     const stockHistoryProcedure = isManagement ? trpc.management.stock.getHistory : trpc.officer.stock.getHistory;
-    const { data: history, isLoading } = (stockHistoryProcedure as any).useQuery(
+    const { data: stockLogs, isLoading } = (stockHistoryProcedure as any).useQuery(
         { farmerId: farmer.id, orgId: isManagement ? orgId : undefined },
         { enabled: expanded && (isManagement ? !!orgId : true) }
     );
@@ -185,8 +201,8 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                             <BirdyLoader size={48} />
                             <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Fetching History</Text>
                         </View>
-                    ) : history && history.length > 0 ? (
-                        history.slice(0, 10).map((log: any) => {
+                    ) : stockLogs && stockLogs.length > 0 ? (
+                        stockLogs.slice(0, 10).map((log: any) => {
                             const ti = typeIcon(log.type);
                             const amount = Number(log.amount);
                             const isReverted = false; // Simplified for this view
@@ -208,7 +224,7 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
 
                                     <View className="flex-[1.2] pr-2 justify-center">
                                         {log.type === "CORRECTION" && log.referenceId ? (() => {
-                                            const originalLog = history.find((l: any) => l.id === log.referenceId);
+                                            const originalLog = stockLogs.find((l: any) => l.id === log.referenceId);
                                             if (originalLog) {
                                                 const origAmt = parseFloat(originalLog.amount);
                                                 const deltaAmt = parseFloat(log.amount);
@@ -269,43 +285,57 @@ function ImportHistoryTab({ isManagement, officerId, orgId }: { isManagement: bo
     const data = isManagement ? mgmtQuery.data : officerQuery.data;
     const isLoading = isManagement ? mgmtQuery.isLoading : officerQuery.isLoading;
     const refetch = isManagement ? mgmtQuery.refetch : officerQuery.refetch;
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        refetch().finally(() => setRefreshing(false));
+    }, [refetch]);
 
     if (isLoading) {
         return (
-            <LoadingState />
+            <View className="flex-1 items-center justify-center bg-background">
+                <BirdyLoader size={48} color={"#10b981"} />
+                <Text className='mt-4 text-muted-foreground font-medium uppercase tracking-widest text-xs'>Loading Imports...</Text>
+            </View>
         );
     }
 
     const batches = data?.items ?? [];
 
     return (
-        <ScrollView
-            contentContainerClassName="p-4 pb-20"
-            className="flex-1"
-            refreshControl={
-                <RefreshControl refreshing={isLoading} onRefresh={refetch} />
-            }
-        >
-            <View className="flex-row items-center gap-2 mb-4 px-1">
-                <Icon as={Package} size={16} className="text-primary" />
-                <Text className="text-base font-bold text-foreground">Bulk Imports</Text>
-                <Badge variant="outline" className="ml-auto border-primary/30 h-6 px-2.5">
-                    <Text className="text-[10px] text-primary font-bold">{batches.length}</Text>
-                </Badge>
-            </View>
-
-            {batches.map((batch: any) => (
-                <BatchHistoryRow key={batch.batchId} batch={batch} isManagement={isManagement} orgId={orgId} />
-            ))}
-
-            {batches.length === 0 && (
-                <Card className="border-dashed border-border/50 bg-muted/10 h-32">
-                    <CardContent className="flex-1 items-center justify-center">
-                        <Text className="text-muted-foreground">No import history</Text>
-                    </CardContent>
-                </Card>
+        <>
+            {refreshing && (
+                <LoadingState fullPage title="Synchronizing" description="Fetching import history..." />
             )}
-        </ScrollView>
+            <ScrollView
+                contentContainerClassName="p-4 pb-20"
+                className="flex-1"
+                refreshControl={
+                    <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
+                }
+            >
+                <View className="flex-row items-center gap-2 mb-4 px-1">
+                    <Icon as={Package} size={16} className="text-primary" />
+                    <Text className="text-base font-bold text-foreground">Bulk Imports</Text>
+                    <Badge variant="outline" className="ml-auto border-primary/30 h-6 px-2.5">
+                        <Text className="text-[10px] text-primary font-bold">{batches.length}</Text>
+                    </Badge>
+                </View>
+
+                {batches.map((batch: any) => (
+                    <BatchHistoryRow key={batch.batchId} batch={batch} isManagement={isManagement} orgId={orgId} />
+                ))}
+
+                {batches.length === 0 && (
+                    <Card className="border-dashed border-border/50 bg-muted/10 h-32">
+                        <CardContent className="flex-1 items-center justify-center">
+                            <Text className="text-muted-foreground">No import history</Text>
+                        </CardContent>
+                    </Card>
+                )}
+            </ScrollView>
+        </>
     );
 }
 

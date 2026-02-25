@@ -21,7 +21,7 @@ import {
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 import { toast, Toaster } from "sonner-native";
 import { z } from "zod";
 import { CorrectAgeModal } from "./correct-age-modal";
@@ -440,7 +440,7 @@ export const SellModal = ({
                                 disabled={mutation.isPending}
                             >
                                 {mutation.isPending ? (
-                                    <BirdyLoader size={24} color={"#ffffff"} />
+                                    <ActivityIndicator color={"#ffffff"} />
                                 ) : (
                                     <Icon as={Check} size={18} className="text-primary-foreground" />
                                 )}

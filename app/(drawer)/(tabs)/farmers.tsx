@@ -12,7 +12,7 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
-import { LoadingState } from "@/components/ui/loading-state";
+import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
@@ -167,37 +167,48 @@ export default function FarmersScreen() {
 
             {
                 isLoading ? (
-                    <LoadingState fullPage title="Synchronizing" description="Fetching Farmer Records..." />
+                    <View className="flex-1 items-center justify-center bg-background">
+                        <BirdyLoader size={48} color={"#10b981"} />
+                        <Text className='mt-4 text-muted-foreground font-medium uppercase tracking-widest text-xs'>Loading Farmers...</Text>
+                    </View>
                 ) : (
-                    <FlatList
-                        data={farmers}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
-                            <FarmerCard
-                                farmer={item}
-                                activeConsumption={item.cycles?.filter((c: any) => c.status === 'active').reduce((acc: number, c: any) => acc + (parseFloat(c.intake) || 0), 0) || 0}
-                                onRestock={activeTab === 'archived' ? undefined : () => setRestockingFarmer({ id: item.id, name: item.name })}
-                                onTransfer={activeTab === 'archived' ? undefined : () => setTransferringFarmer({
-                                    id: item.id,
-                                    name: item.name,
-                                    availableStock: Number(item.mainStock || 0) - (item.cycles?.filter((c: any) => c.status === 'active').reduce((acc: number, c: any) => acc + (parseFloat(c.intake) || 0), 0) || 0)
-                                })}
-                                onDelete={activeTab === 'archived' ? undefined : () => setDeleteFarmer({ id: item.id, name: item.name, organizationId: item.organizationId })}
-                                onEdit={activeTab === 'archived' ? undefined : () => setEditingFarmer(item)}
-                                onRestore={activeTab === 'archived' ? () => setRestoringFarmer({ id: item.id, name: item.name }) : undefined}
-                            />
+                    <View className="flex-1">
+                        {mgmtQuery.isFetching && !mgmtQuery.isLoading && (
+                            <LoadingState fullPage title="Synchronizing" description="Updating farmer inventories..." />
                         )}
-                        contentContainerClassName="p-4 pt-4 pb-20" // Extra padding for tab bar
-                        onRefresh={refetch}
-                        refreshing={isLoading}
-                        ListEmptyComponent={
-                            <View className="items-center justify-center p-20 opacity-30 mt-10">
-                                <Icon as={Search} size={64} className="text-muted-foreground mb-6" />
-                                <Text className="text-center text-xl font-black uppercase tracking-widest">Empty State</Text>
-                                <Text className="text-center text-xs text-muted-foreground mt-2 font-medium">No inventory records found</Text>
-                            </View>
-                        }
-                    />
+                        {officerQuery.isFetching && !officerQuery.isLoading && (
+                            <LoadingState fullPage title="Synchronizing" description="Updating farmer inventories..." />
+                        )}
+                        <FlatList
+                            data={farmers}
+                            keyExtractor={(item) => item.id}
+                            renderItem={({ item }) => (
+                                <FarmerCard
+                                    farmer={item}
+                                    activeConsumption={item.cycles?.filter((c: any) => c.status === 'active').reduce((acc: number, c: any) => acc + (parseFloat(c.intake) || 0), 0) || 0}
+                                    onRestock={activeTab === 'archived' ? undefined : () => setRestockingFarmer({ id: item.id, name: item.name })}
+                                    onTransfer={activeTab === 'archived' ? undefined : () => setTransferringFarmer({
+                                        id: item.id,
+                                        name: item.name,
+                                        availableStock: Number(item.mainStock || 0) - (item.cycles?.filter((c: any) => c.status === 'active').reduce((acc: number, c: any) => acc + (parseFloat(c.intake) || 0), 0) || 0)
+                                    })}
+                                    onDelete={activeTab === 'archived' ? undefined : () => setDeleteFarmer({ id: item.id, name: item.name, organizationId: item.organizationId })}
+                                    onEdit={activeTab === 'archived' ? undefined : () => setEditingFarmer(item)}
+                                    onRestore={activeTab === 'archived' ? () => setRestoringFarmer({ id: item.id, name: item.name }) : undefined}
+                                />
+                            )}
+                            contentContainerClassName="p-4 pt-4 pb-20" // Extra padding for tab bar
+                            onRefresh={refetch}
+                            refreshing={false}
+                            ListEmptyComponent={
+                                <View className="items-center justify-center p-20 opacity-30 mt-10">
+                                    <Icon as={Search} size={64} className="text-muted-foreground mb-6" />
+                                    <Text className="text-center text-xl font-black uppercase tracking-widest">Empty State</Text>
+                                    <Text className="text-center text-xs text-muted-foreground mt-2 font-medium">No inventory records found</Text>
+                                </View>
+                            }
+                        />
+                    </View>
                 )
             }
 

@@ -6,7 +6,7 @@ import { Text } from '@/components/ui/text';
 import { trpc } from '@/lib/trpc';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function JoinOrganizationScreen() {
@@ -53,7 +53,12 @@ export default function JoinOrganizationScreen() {
                 <Text className="text-lg font-semibold mt-4 mb-3">1. Choose Organization</Text>
 
                 {isLoadingOrgs ? (
-                    <BirdyLoader size={48} color={"#10b981"} />
+                    <View className="py-6 items-center justify-center">
+                        <BirdyLoader size={48} color={"#10b981"} />
+                        <Text className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+                            Finding Organizations...
+                        </Text>
+                    </View>
                 ) : (
                     <View className="z-10">
                         {/* Dropdown Trigger */}
@@ -130,7 +135,7 @@ export default function JoinOrganizationScreen() {
                     size="lg"
                 >
                     {joinMutation.isPending ? (
-                        <BirdyLoader size={48} color={"#ffffff"} />
+                        <ActivityIndicator color={"#ffffff"} />
                     ) : (
                         <Text className="text-primary-foreground font-bold text-base">Request to Join</Text>
                     )}

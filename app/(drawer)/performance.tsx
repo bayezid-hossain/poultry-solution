@@ -95,8 +95,11 @@ export default function PerformanceScreen() {
                 </View>
 
                 {isLoading ? (
-                    <View className="items-center justify-center py-10">
+                    <View className="items-center justify-center py-12">
                         <BirdyLoader size={48} color={"#10b981"} />
+                        <Text className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+                            Crunching performance data...
+                        </Text>
                     </View>
                 ) : data ? (
                     <>

@@ -2,12 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
-import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { RotateCcw, X } from "lucide-react-native";
 import { useState } from "react";
-import { Modal, Pressable, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, View } from "react-native";
 
 interface RestoreFarmerModalProps {
     open: boolean;
@@ -105,7 +104,7 @@ export function RestoreFarmerModal({
                             disabled={restoreMutation.isPending || !newName.trim()}
                         >
                             {restoreMutation.isPending ? (
-                                <BirdyLoader size={24} color={"#ffffff"} />
+                                <ActivityIndicator color={"#ffffff"} />
                             ) : (
                                 <Icon as={RotateCcw} size={18} className="text-white" />
                             )}

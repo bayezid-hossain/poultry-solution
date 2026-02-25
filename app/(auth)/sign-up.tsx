@@ -1,18 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BirdyLoader } from "@/components/ui/loading-state";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { authClient } from "@/lib/auth-client";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import {
+    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     Pressable,
     ScrollView,
-    View,
+    View
 } from "react-native";
 
 export default function SignUpScreen() {
@@ -158,7 +158,7 @@ export default function SignUpScreen() {
                         size="lg"
                     >
                         {loading ? (
-                            <BirdyLoader size={48} color={"#ffffff"} />
+                            <ActivityIndicator color={"#ffffff"} />
                         ) : (
                             <Text className="text-primary-foreground text-base font-bold">
                                 Create Account
@@ -182,7 +182,7 @@ export default function SignUpScreen() {
                         size="lg"
                     >
                         {googleLoading ? (
-                            <BirdyLoader size={48} color={"#10b981"} />
+                            <ActivityIndicator color={"#10b981"} />
                         ) : (
                             <>
                                 <Text className="text-lg">G</Text>

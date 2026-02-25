@@ -47,8 +47,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     if (inAuthGroup) {
       action = "render";
     } else {
-      action = "redirect";
-      redirectTarget = "/(auth)/sign-in";
+      // If we are not in the auth group and have no session, we need to redirect.
+      // We wait a moment for the URL to resolve to avoid flickering sign-in if a deep link is coming.
+      if (!url && Platform.OS !== 'web') {
+        action = "loading";
+      } else {
+        action = "redirect";
+        redirectTarget = "/(auth)/sign-in";
+      }
     }
   } else {
     // Session exists
@@ -98,7 +104,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [action, redirectTarget]);
 
-  if (action === "loading" || action === "redirect") {
+  if (action === "loading" || action === "redirect" || (session && segments[0] === "(auth)")) {
     return (
       <LoadingState
         fullPage

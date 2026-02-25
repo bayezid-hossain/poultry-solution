@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { authClient } from "@/lib/auth-client";
 import { Link, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
+    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -182,7 +182,7 @@ export default function ForgotPasswordScreen() {
                             size="lg"
                         >
                             {loading ? (
-                                <BirdyLoader size={48} color={"#ffffff"} />
+                                <ActivityIndicator color={"#ffffff"} />
                             ) : (
                                 <Text className="text-primary-foreground text-base font-bold">
                                     Send Verification Code
@@ -253,7 +253,7 @@ export default function ForgotPasswordScreen() {
                             size="lg"
                         >
                             {loading ? (
-                                <BirdyLoader size={48} color={"#ffffff"} />
+                                <ActivityIndicator color={"#ffffff"} />
                             ) : (
                                 <Text className="text-primary-foreground text-base font-bold">
                                     Reset Password
@@ -265,7 +265,7 @@ export default function ForgotPasswordScreen() {
                         <View className="items-center mt-2">
                             <Pressable onPress={handleResend} disabled={resending}>
                                 {resending ? (
-                                    <BirdyLoader size={24} color={"#10b981"} />
+                                    <ActivityIndicator color={"#10b981"} />
                                 ) : (
                                     <Text className="text-primary text-sm font-bold">
                                         Resend Code

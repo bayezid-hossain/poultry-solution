@@ -1,10 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
-import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Info, RotateCcw } from "lucide-react-native";
-import { Modal, View } from "react-native";
+import { ActivityIndicator, Modal, View } from "react-native";
 import { toast, Toaster } from "sonner-native";
 
 interface ReopenCycleModalProps {
@@ -70,7 +69,7 @@ export const ReopenCycleModal = ({ historyId, cycleName, open, onOpenChange, onS
                                 disabled={mutation.isPending}
                             >
                                 {mutation.isPending ? (
-                                    <BirdyLoader size={48} color={"#ffffff"} />
+                                    <ActivityIndicator color={"#ffffff"} />
                                 ) : (
                                     <Text className="text-white font-bold">Reopen</Text>
                                 )}
