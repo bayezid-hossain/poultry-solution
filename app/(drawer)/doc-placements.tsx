@@ -113,7 +113,9 @@ export default function DocPlacementsScreen() {
 
                 {isLoading ? (
                     <View className="items-center justify-center py-10">
-                        <BirdyLoader size={48} />
+                        <BirdyLoader size={48} /> <Text className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+                            Crunching Monthly DOC data...
+                        </Text>
                     </View>
                 ) : (
                     <>

@@ -114,9 +114,9 @@ export const SellModal = ({
                 { type: "B2", bags: 0 }
             ],
             medicineCost: 0,
-            recoveryPrice: 141,
-            feedPricePerBag: 3220,
-            docPricePerBird: 41.5,
+            recoveryPrice: undefined,
+            feedPricePerBag: undefined,
+            docPricePerBird: undefined,
         },
     });
 
@@ -181,9 +181,9 @@ export const SellModal = ({
                 feedConsumed: defaultFeedConsumed,
                 feedStock: defaultFeedStock,
                 medicineCost: 0,
-                recoveryPrice: 141,
-                feedPricePerBag: 3220,
-                docPricePerBird: 41.5,
+                recoveryPrice: undefined,
+                feedPricePerBag: undefined,
+                docPricePerBird: undefined,
             });
         }
     }, [open, doc, mortality, birdsSold, intake, farmerLocation, farmerMobile, form, lastSale]);

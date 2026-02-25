@@ -130,8 +130,9 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
     );
 
     // Sync local state if prop changes from outside (e.g. after mutation)
+    // Only sync for latest sales — non-latest sales manage their version locally
     const [prevReportId, setPrevReportId] = useState(sale.selectedReportId);
-    if (sale.selectedReportId !== prevReportId) {
+    if (isLatest && sale.selectedReportId !== prevReportId) {
         setPrevReportId(sale.selectedReportId);
         setSelectedVersionId(sale.selectedReportId);
     }
@@ -156,11 +157,13 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
         setSelectedVersionId(reportId);
         setShowVersionPicker(false);
 
-        // Persist to backend
-        setActiveMutation.mutate({
-            saleEventId: sale.id,
-            saleReportId: reportId,
-        });
+        // Only persist to backend for the latest sale
+        if (isLatest) {
+            setActiveMutation.mutate({
+                saleEventId: sale.id,
+                saleReportId: reportId,
+            });
+        }
     };
 
     // Derive display values from selected report
@@ -198,15 +201,17 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                         <Text className="text-xs text-muted-foreground">{sale.location}</Text>
                     </View>
 
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-3 border-amber-500/20 bg-amber-500/5 flex-row gap-1.5 active:bg-amber-500/10"
-                        onPress={() => setIsAdjustModalOpen(true)}
-                    >
-                        <Icon as={Edit} size={14} className="text-amber-600" />
-                        <Text className="text-amber-600 font-bold text-xs">Adjust</Text>
-                    </Button>
+                    {isLatest && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-3 border-amber-500/20 bg-amber-500/5 flex-row gap-1.5 active:bg-amber-500/10"
+                            onPress={() => setIsAdjustModalOpen(true)}
+                        >
+                            <Icon as={Edit} size={14} className="text-amber-600" />
+                            <Text className="text-amber-600 font-bold text-xs">Adjust</Text>
+                        </Button>
+                    )}
                 </View>
 
                 {/* Active Version Summary */}

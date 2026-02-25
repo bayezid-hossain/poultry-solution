@@ -7,11 +7,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Banknote, Bird, Box, FileText, Settings, ShoppingCart, Truck } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
 import { toast, Toaster } from "sonner-native";
 import { z } from "zod";
 import { SaleDetailsContent } from "./sale-details-content";
 import { FarmerInfoHeader, FeedFieldArray, SaleMetricsBar } from "./sale-form-sections";
+// import { Alert } from "../ui/alert";
 
 const ensureB1B2 = (feed: any[]) => {
     if (!feed || !Array.isArray(feed) || feed.length === 0) {
@@ -264,6 +265,25 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         });
     };
 
+    const handleConfirmClick = () => {
+        form.handleSubmit((values: any) => {
+            const v = values as FormValues;
+            if (saleEvent.historyId && (v.birdsSold + v.totalMortality < saleEvent.houseBirds)) {
+                const remaining = saleEvent.houseBirds - v.birdsSold - v.totalMortality;
+                Alert.alert(
+                    "⚠️ This will reopen the cycle",
+                    `This adjustment results in ${remaining} remaining birds. The ended cycle will be reopened as active, and farmer's feed stock will be restored.\n\nAre you sure?`,
+                    [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Reopen & Save", style: "destructive", onPress: () => onSubmit(v) }
+                    ]
+                );
+                return;
+            }
+            onSubmit(v);
+        })();
+    };
+
     const remainingBirdsAfterAdjustment = Math.max(0,
         (saleEvent.cycleContext?.doc || saleEvent.houseBirds || 0) -
         ((saleEvent.cycleContext?.cumulativeBirdsSold || saleEvent.birdsSold) - saleEvent.birdsSold) -
@@ -334,7 +354,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                             </Button>
                             <Button
                                 className="flex-1 h-12 flex-row gap-2 bg-emerald-600 active:bg-emerald-700"
-                                onPress={form.handleSubmit((values: any) => onSubmit(values as FormValues))}
+                                onPress={handleConfirmClick}
                                 disabled={generateReport.isPending}
                             >
                                 {generateReport.isPending ? (
