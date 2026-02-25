@@ -10,15 +10,23 @@ import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { Link, router } from "expo-router";
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, ChevronDown, ChevronUp, ClipboardList, Package, RotateCcw, User, Wheat } from "lucide-react-native";
-import { useCallback, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, View } from "react-native";
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, ChevronDown, ChevronUp, ClipboardList, Package, RotateCcw, Search, User, Wheat } from "lucide-react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Pressable, RefreshControl, ScrollView, TextInput, View } from "react-native";
 
 export default function StockLedgerScreen() {
     const [tab, setTab] = useState<"stock" | "imports">("stock");
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
+
+    const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     return (
         <View className="flex-1 bg-background">
@@ -48,20 +56,35 @@ export default function StockLedgerScreen() {
                         </Text>
                     </Pressable>
                 </View>
+
+                <View className="mt-4 flex-row items-center bg-muted/30 border border-border/50 rounded-xl px-3 h-10 mb-1">
+                    <Icon as={Search} size={16} className="text-muted-foreground mr-2" />
+                    <TextInput
+                        className="flex-1 font-medium text-foreground text-sm"
+                        placeholder={tab === "stock" ? "Search farmers..." : "Search by driver or farmer..."}
+                        placeholderTextColor="#64748B"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                    />
+                </View>
             </View>
 
-            {tab === "stock" ? <StockTab isManagement={isManagement} officerId={isManagement ? (selectedOfficerId || undefined) : undefined} orgId={membership?.orgId ?? ""} /> : <ImportHistoryTab isManagement={isManagement} officerId={isManagement ? (selectedOfficerId || undefined) : undefined} orgId={membership?.orgId ?? ""} />}
+            {tab === "stock" ? (
+                <StockTab isManagement={isManagement} officerId={isManagement ? (selectedOfficerId || undefined) : undefined} orgId={membership?.orgId ?? ""} searchQuery={debouncedSearch} />
+            ) : (
+                <ImportHistoryTab isManagement={isManagement} officerId={isManagement ? (selectedOfficerId || undefined) : undefined} orgId={membership?.orgId ?? ""} searchQuery={debouncedSearch} />
+            )}
         </View>
     );
 }
 
-function StockTab({ isManagement, officerId, orgId }: { isManagement: boolean; officerId?: string; orgId: string }) {
+function StockTab({ isManagement, officerId, orgId, searchQuery }: { isManagement: boolean; officerId?: string; orgId: string; searchQuery: string }) {
     const officerQuery = trpc.officer.stock.getAllFarmersStock.useQuery(
-        { limit: 100, cursor: 0 },
+        { limit: 100, cursor: 0, search: searchQuery },
         { enabled: !isManagement }
     );
     const mgmtQuery = trpc.management.stock.getAllFarmersStock.useQuery(
-        { orgId, limit: 100, cursor: 0, officerId },
+        { orgId, limit: 100, cursor: 0, officerId, search: searchQuery },
         { enabled: isManagement }
     );
     const data = isManagement ? mgmtQuery.data : officerQuery.data;
@@ -158,17 +181,14 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
     return (
         <Card className="mb-2 border-border/50 overflow-hidden">
             <CardContent className="p-0 flex-row items-center justify-between">
+
                 <Pressable
-                    className="flex-1 p-3 active:bg-muted/30"
-                    onPress={() => router.push(`/farmer/${farmer.id}` as any)}
-                    hitSlop={{ top: 25, bottom: 25, left: 20, right: 20 }}
-                    style={{ backgroundColor: 'transparent' }}
+                    className="flex-1 p-1 active:bg-muted/30"
                 >
-                    <View pointerEvents="none">
-                        <Text className="font-bold text-foreground active:opacity-70">
-                            {farmer.name}
-                        </Text>
-                    </View>
+                    <Text numberOfLines={2} className="font-bold text-foreground underline cursor-pointer" onPress={() => router.push(`/farmer/${farmer.id}` as any)}
+                    >
+                        {farmer.name}
+                    </Text>
                 </Pressable>
                 <Pressable
                     className="flex-row items-center gap-2 p-3 active:bg-muted/30 border-l border-border/10"
@@ -273,13 +293,13 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
     );
 }
 
-function ImportHistoryTab({ isManagement, officerId, orgId }: { isManagement: boolean; officerId?: string; orgId: string }) {
+function ImportHistoryTab({ isManagement, officerId, orgId, searchQuery }: { isManagement: boolean; officerId?: string; orgId: string; searchQuery: string }) {
     const officerQuery = trpc.officer.stock.getImportHistory.useQuery(
-        { limit: 50, cursor: 0 },
+        { limit: 50, cursor: 0, search: searchQuery },
         { enabled: !isManagement }
     );
     const mgmtQuery = trpc.management.stock.getImportHistory.useQuery(
-        { orgId, limit: 50, cursor: 0, officerId },
+        { orgId, limit: 50, cursor: 0, officerId, search: searchQuery },
         { enabled: isManagement }
     );
     const data = isManagement ? mgmtQuery.data : officerQuery.data;
@@ -415,20 +435,14 @@ function BatchHistoryRow({ batch, isManagement, orgId }: { batch: any; isManagem
                                         className={`flex-row items-center px-4 py-4 ${index !== details.length - 1 ? "border-b border-border/5" : ""}`}
                                     >
                                         <View className="flex-[2]">
-                                            <Pressable
-                                                onPress={() => router.push(`/farmer/${item.farmerId}` as any)}
-                                                hitSlop={{ top: 25, bottom: 25, left: 20, right: 20 }}
-                                                style={{ backgroundColor: 'transparent' }}
+
+                                            <Text onPress={() => router.push(`/farmer/${item.farmerId}` as any)}
+
+                                                className="text-[15px] font-bold text-foreground active:text-primary tracking-tight"
+                                                numberOfLines={2}
                                             >
-                                                <View pointerEvents="none">
-                                                    <Text
-                                                        className="text-[15px] font-bold text-foreground active:opacity-70 tracking-tight"
-                                                        numberOfLines={2}
-                                                    >
-                                                        {item.farmerName}
-                                                    </Text>
-                                                </View>
-                                            </Pressable>
+                                                {item.farmerName}
+                                            </Text>
                                             <View className="flex-row items-center gap-1.5 mt-1">
                                                 <View className="w-1.5 h-1.5 rounded-full bg-primary/40" />
                                                 <Text className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider text-wrap flex-1" pointerEvents="none">Confirmed Receipt</Text>
