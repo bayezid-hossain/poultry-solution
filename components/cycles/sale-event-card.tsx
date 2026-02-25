@@ -6,7 +6,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
-import { Check, CheckCircle2, ChevronDown, ChevronUp, ClipboardCopy, Edit, Eye, EyeOff, Loader2 } from "lucide-react-native";
+import { Check, CheckCircle2, ChevronDown, ChevronUp, ClipboardCopy, Edit, Eye, EyeOff, History, Loader2 } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { toast } from "sonner-native";
@@ -211,45 +211,20 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                 {/* Active Version Summary */}
                 <View className="p-4">
                     <View className="p-3 rounded-xl border bg-muted/40 border-border/50">
-                        {/* Version selector header */}
-                        <Pressable
-                            onPress={() => sortedReports.length > 1 && setShowVersionPicker(!showVersionPicker)}
-                            className="flex-row justify-between items-center mb-3"
-                        >
-                            <View className="flex-row items-center gap-2">
-                                <View className="w-6 h-6 rounded-full items-center justify-center bg-muted border border-border/50">
-                                    <Text className="text-[10px] font-black text-foreground/70">
-                                        V{selectedReport?.version || 1}
-                                    </Text>
+                        {/* Summary Header */}
+                        <View className="flex-row justify-between items-center mb-2">
+                            <Text className="text-xs font-bold text-muted-foreground uppercase">Sale Summary</Text>
+                            {isLatestVersion ? (
+                                <View className="flex-row items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/10">
+                                    <Icon as={CheckCircle2} size={10} className="text-emerald-500" />
+                                    <Text className="text-[9px] font-black text-emerald-600 uppercase">Settled</Text>
                                 </View>
-                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                                    {selectedReport ? format(new Date(selectedReport.createdAt), "HH:mm | d MMM") : ""}
-                                </Text>
-                                {sortedReports.length > 1 && (
-                                    <View className="flex-row items-center bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10">
-                                        <Icon as={showVersionPicker ? ChevronUp : ChevronDown} size={12} className="text-primary" />
-                                        <Text className="text-[9px] text-primary font-black ml-1 uppercase">
-                                            {sortedReports.length} Ver
-                                        </Text>
-                                    </View>
-                                )}
-                                {setActiveMutation.isPending && (
-                                    <Icon as={Loader2} size={10} className="text-primary animate-spin" />
-                                )}
-                            </View>
-                            <View className="flex-row items-center gap-1">
-                                {isLatestVersion ? (
-                                    <View className="flex-row items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/10">
-                                        <Icon as={CheckCircle2} size={10} className="text-emerald-500" />
-                                        <Text className="text-[9px] font-black text-emerald-600 uppercase">Settled</Text>
-                                    </View>
-                                ) : (
-                                    <Badge variant="outline" className="h-5 px-1.5 border-amber-500/30 bg-amber-500/5">
-                                        <Text className="text-[8px] text-amber-600 font-black uppercase">Archived</Text>
-                                    </Badge>
-                                )}
-                            </View>
-                        </Pressable>
+                            ) : (
+                                <Badge variant="outline" className="h-5 px-1.5 border-amber-500/30 bg-amber-500/5">
+                                    <Text className="text-[8px] text-amber-600 font-black uppercase">Archived</Text>
+                                </Badge>
+                            )}
+                        </View>
 
                         {/* Compact stats row */}
                         <View className="flex-row justify-between pt-2 border-t border-border/10">
@@ -278,6 +253,27 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                             </View>
                         )}
                     </View>
+
+                    {/* Version Picker Button */}
+                    {sortedReports.length > 1 && (
+                        <View className="mt-3 flex-row items-center">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 flex-row gap-1.5 bg-muted/10"
+                                onPress={() => setShowVersionPicker(!showVersionPicker)}
+                            >
+                                <Icon as={History} size={14} className="text-muted-foreground mr-1" />
+                                <Text className="text-xs font-medium text-foreground">
+                                    Version {sortedReports.length - sortedReports.findIndex((r: any) => r.id === selectedReport?.id)} • {selectedReport ? format(new Date(selectedReport.createdAt), "dd/MM/yyyy HH:mm") : ""}
+                                </Text>
+                                <Icon as={showVersionPicker ? ChevronUp : ChevronDown} size={14} className="text-muted-foreground opacity-50 ml-1" />
+                            </Button>
+                            {setActiveMutation.isPending && (
+                                <Icon as={Loader2} size={12} className="text-primary animate-spin ml-2" />
+                            )}
+                        </View>
+                    )}
 
                     {/* Version Picker Dropdown */}
                     {showVersionPicker && sortedReports.length > 1 && (
@@ -344,18 +340,28 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                 </View>
 
                 {showDetails && (
-                    <View className="px-4 pb-4 pt-2 border-t border-border/30">
-                        <SaleDetailsContent
-                            sale={sale}
-                            isLatest={isLatest}
-                            displayBirdsSold={displayBirdsSold}
-                            displayTotalWeight={displayTotalWeight}
-                            displayAvgWeight={displayAvgWeight}
-                            displayPricePerKg={displayPricePerKg}
-                            displayTotalAmount={displayTotalAmount}
-                            displayMortality={displayMortality}
-                            selectedReport={selectedReport}
-                        />
+                    <View className="px-4 pb-4 pt-2 border-t border-border/30 relative">
+                        <View className={setActiveMutation.isPending ? "opacity-30" : ""} pointerEvents={setActiveMutation.isPending ? "none" : "auto"}>
+                            <SaleDetailsContent
+                                sale={sale}
+                                isLatest={isLatest}
+                                displayBirdsSold={displayBirdsSold}
+                                displayTotalWeight={displayTotalWeight}
+                                displayAvgWeight={displayAvgWeight}
+                                displayPricePerKg={displayPricePerKg}
+                                displayTotalAmount={displayTotalAmount}
+                                displayMortality={displayMortality}
+                                selectedReport={selectedReport}
+                            />
+                        </View>
+                        {setActiveMutation.isPending && (
+                            <View className="absolute inset-0 items-center justify-center z-10" pointerEvents="none">
+                                <View className="bg-background/90 px-4 py-2.5 rounded-full flex-row items-center justify-center gap-2 border border-border pb-3 shadow-sm">
+                                    <Icon as={Loader2} size={14} className="text-primary animate-spin" />
+                                    <Text className="text-xs font-bold text-foreground">Loading Version...</Text>
+                                </View>
+                            </View>
+                        )}
                     </View>
                 )}
 

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Banknote, Bird, Box, FileText, ShoppingCart, Truck } from "lucide-react-native";
+import { ArrowLeft, Banknote, Bird, Box, FileText, Settings, ShoppingCart, Truck } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
@@ -47,6 +47,9 @@ const adjustSaleSchema = z.object({
     party: z.string().optional(),
     farmerMobile: z.string().optional(),
     adjustmentNote: z.string().min(0, "Please provide a more detailed reason for this adjustment"),
+    recoveryPrice: z.coerce.number().positive().optional(),
+    feedPricePerBag: z.coerce.number().positive().optional(),
+    docPricePerBird: z.coerce.number().positive().optional(),
 });
 
 type FormValues = z.infer<typeof adjustSaleSchema>;
@@ -91,6 +94,9 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         party: saleEvent.party || "",
         farmerMobile: saleEvent.farmerMobile || "",
         adjustmentNote: "",
+        recoveryPrice: typeof saleEvent.cycleContext?.recoveryPrice === 'number' ? saleEvent.cycleContext.recoveryPrice : undefined,
+        feedPricePerBag: typeof saleEvent.cycleContext?.feedPriceUsed === 'number' ? saleEvent.cycleContext.feedPriceUsed : undefined,
+        docPricePerBird: typeof saleEvent.cycleContext?.docPriceUsed === 'number' ? saleEvent.cycleContext.docPriceUsed : undefined,
     };
 
     const form = useForm<FormValues>({
@@ -105,6 +111,9 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
     const totalWeightRef = useRef<TextInput>(null);
     const pricePerKgRef = useRef<TextInput>(null);
     const adjustmentNoteRef = useRef<TextInput>(null);
+    const recoveryPriceRef = useRef<TextInput>(null);
+    const feedPriceRef = useRef<TextInput>(null);
+    const docPriceRef = useRef<TextInput>(null);
 
     const feedConsumedArray = useFieldArray({
         control: form.control,
@@ -222,7 +231,10 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
             farmerMobile: values.farmerMobile || "",
             excludeSaleId: saleEvent.id,
             historyId: saleEvent.historyId || null,
-            saleDate: saleEvent.saleDate
+            saleDate: saleEvent.saleDate,
+            recoveryPrice: values.recoveryPrice,
+            feedPricePerBag: values.feedPricePerBag,
+            docPricePerBird: values.docPricePerBird,
         });
     };
 
@@ -244,6 +256,9 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
             location: values.location,
             party: values.party,
             adjustmentNote: values.adjustmentNote,
+            recoveryPrice: values.recoveryPrice,
+            feedPricePerBag: values.feedPricePerBag,
+            docPricePerBird: values.docPricePerBird,
         });
     };
 
@@ -272,7 +287,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         >
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior={Platform.OS === "ios" ? "padding" : "padding"}
                 className="flex-1 bg-background"
             >
                 <View className="px-4 py-3 border-b border-border/50 bg-card/50 flex-row items-center justify-between">
@@ -516,6 +531,71 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                     />
                                 </View>
                             </View>
+
+                            {/* SECTION 4: CONSTANTS (ONLY IF CLOSING) */}
+                            {remainingBirdsAfterAdjustment === 0 && (
+                                <View className="space-y-4 gap-y-2">
+                                    <View className="flex-row items-center gap-2 ml-1 mb-2">
+                                        <Icon as={Settings} size={16} className="text-muted-foreground" />
+                                        <Text className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Cycle Constants</Text>
+                                    </View>
+                                    <View className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-3">
+                                        <View className="grid grid-cols-3 gap-2">
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Rec. Price</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="recoveryPrice"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={recoveryPriceRef}
+                                                            value={value?.toString() || ""}
+                                                            onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="141"
+                                                            className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
+                                                        />
+                                                    )}
+                                                />
+                                            </View>
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Feed/Bag</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="feedPricePerBag"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={feedPriceRef}
+                                                            value={value?.toString() || ""}
+                                                            onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="3220"
+                                                            className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
+                                                        />
+                                                    )}
+                                                />
+                                            </View>
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">DOC/Bird</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="docPricePerBird"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={docPriceRef}
+                                                            value={value?.toString() || ""}
+                                                            onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="41.5"
+                                                            className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
+                                                        />
+                                                    )}
+                                                />
+                                            </View>
+                                        </View>
+                                    </View>
+                                </View>
+                            )}
 
                             <View className="space-y-4">
                                 <View className="flex-row items-center gap-2 mb-2">

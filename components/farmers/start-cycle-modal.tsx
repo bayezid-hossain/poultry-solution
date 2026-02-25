@@ -124,7 +124,7 @@ export function StartCycleModal({
         >
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior={Platform.OS === "ios" ? "padding" : "padding"}
                 className="flex-1"
             >
                 <Pressable
@@ -162,7 +162,7 @@ export function StartCycleModal({
                         </View>
 
                         {/* Form */}
-                        <ScrollView className="p-8 pt-2" bounces={false} contentContainerStyle={{ paddingBottom: 40 }}>
+                        <ScrollView className="p-8 pt-2" bounces={false} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
                             <View className="space-y-6 gap-y-2">
                                 <View className="flex-row gap-4">
                                     <View className="flex-1 gap-2">
@@ -217,7 +217,7 @@ export function StartCycleModal({
                                             onRequestClose={() => setIsBirdTypeOpen(false)}
                                         >
                                             <KeyboardAvoidingView
-                                                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                                                behavior={Platform.OS === "ios" ? "padding" : "padding"}
                                                 className="flex-1"
                                             >
                                                 <Pressable className="flex-1 bg-black/40 justify-end" onPress={() => setIsBirdTypeOpen(false)}>

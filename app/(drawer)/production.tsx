@@ -143,7 +143,7 @@ export default function ProductionScreen() {
 
 
                                                 <Text className="text-xs font-black text-foreground uppercase active:text-primary leading-tight" numberOfLines={3} onPress={() => {
-                                                    console.log("touched");
+                                                    // console.log("touched");
                                                     router.push({
                                                         pathname: `/farmer/${f.farmerId}` as any,
                                                     })

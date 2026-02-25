@@ -255,6 +255,7 @@ export const SaleDetailsContent = ({
                         feedCost={ctx.feedCost || 0}
                         docCost={ctx.docCost || 0}
                         profit={ctx.profit || 0}
+                        baseRate={ctx.recoveryPrice ?? 141}
                     />
                 </>
             )}

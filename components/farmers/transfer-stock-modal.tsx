@@ -113,7 +113,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
             onRequestClose={() => onOpenChange(false)}
         >
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior={Platform.OS === "ios" ? "padding" : "padding"}
                 className="flex-1"
             >
                 <Pressable

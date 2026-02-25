@@ -14,6 +14,7 @@ import {
     Bird,
     Box,
     Check,
+    Settings,
     ShoppingCart,
     Truck
 } from "lucide-react-native";
@@ -46,6 +47,9 @@ const formSchema = z.object({
     feedConsumed: z.array(feedItemSchema).min(1, "At least one feed entry required"),
     feedStock: z.array(feedItemSchema),
     medicineCost: z.number().min(0),
+    recoveryPrice: z.number().positive().optional(),
+    feedPricePerBag: z.number().positive().optional(),
+    docPricePerBird: z.number().positive().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -108,6 +112,9 @@ export const SellModal = ({
                 { type: "B2", bags: 0 }
             ],
             medicineCost: 0,
+            recoveryPrice: 141,
+            feedPricePerBag: 3220,
+            docPricePerBird: 41.5,
         },
     });
 
@@ -122,6 +129,9 @@ export const SellModal = ({
     const cashReceivedRef = useRef<TextInput>(null);
     const depositReceivedRef = useRef<TextInput>(null);
     const medicineCostRef = useRef<TextInput>(null);
+    const recoveryPriceRef = useRef<TextInput>(null);
+    const feedPriceRef = useRef<TextInput>(null);
+    const docPriceRef = useRef<TextInput>(null);
 
     const { data: previousSales } = trpc.officer.sales.getSaleEvents.useQuery(
         { cycleId },
@@ -169,6 +179,9 @@ export const SellModal = ({
                 feedConsumed: defaultFeedConsumed,
                 feedStock: defaultFeedStock,
                 medicineCost: 0,
+                recoveryPrice: 141,
+                feedPricePerBag: 3220,
+                docPricePerBird: 41.5,
             });
         }
     }, [open, doc, mortality, birdsSold, intake, farmerLocation, farmerMobile, form, lastSale]);
@@ -236,6 +249,9 @@ export const SellModal = ({
                 feedStock: values.feedStock,
                 medicineCost: values.medicineCost,
                 farmerMobile: values.farmerMobile ?? "",
+                recoveryPrice: values.recoveryPrice,
+                feedPricePerBag: values.feedPricePerBag,
+                docPricePerBird: values.docPricePerBird,
             });
         } else {
             toast.error("Please fix form errors before continuing");
@@ -265,6 +281,9 @@ export const SellModal = ({
             feedStock: values.feedStock,
             medicineCost: values.medicineCost,
             farmerMobile: values.farmerMobile ?? "",
+            recoveryPrice: values.recoveryPrice,
+            feedPricePerBag: values.feedPricePerBag,
+            docPricePerBird: values.docPricePerBird,
         });
     });
 
@@ -354,7 +373,7 @@ export const SellModal = ({
         >
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior={Platform.OS === "ios" ? "padding" : "padding"}
                 className="flex-1 bg-background"
             >
                 {/* Header */}
@@ -738,6 +757,71 @@ export const SellModal = ({
                                     showRemoveOnSingle
                                 />
                             </View>
+
+                            {/* SECTION 4: CONSTANTS (ONLY IF CLOSING) */}
+                            {remainingBirdsAfterTransaction === 0 && (
+                                <View className="space-y-4 gap-y-2">
+                                    <View className="flex-row items-center gap-2 ml-1 mb-2">
+                                        <Icon as={Settings} size={16} className="text-muted-foreground" />
+                                        <Text className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Cycle Constants</Text>
+                                    </View>
+                                    <View className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-3">
+                                        <View className="grid grid-cols-3 gap-2">
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Rec. Price</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="recoveryPrice"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={recoveryPriceRef}
+                                                            value={value?.toString() || ""}
+                                                            onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="141"
+                                                            className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
+                                                        />
+                                                    )}
+                                                />
+                                            </View>
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Feed/Bag</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="feedPricePerBag"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={feedPriceRef}
+                                                            value={value?.toString() || ""}
+                                                            onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="3220"
+                                                            className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
+                                                        />
+                                                    )}
+                                                />
+                                            </View>
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">DOC/Bird</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="docPricePerBird"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={docPriceRef}
+                                                            value={value?.toString() || ""}
+                                                            onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="41.5"
+                                                            className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
+                                                        />
+                                                    )}
+                                                />
+                                            </View>
+                                        </View>
+                                    </View>
+                                </View>
+                            )}
                         </ScrollView>
 
                         {/* Sticky Footer */}

@@ -20,7 +20,7 @@ export default function PendingApprovalScreen() {
 
     const handleSignOut = async () => {
         await authClient.signOut();
-        router.replace('/sign-in');
+        router.replace('/(auth)/sign-in');
     };
 
     return (

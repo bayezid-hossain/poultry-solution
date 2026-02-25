@@ -38,7 +38,7 @@ export default function SignInScreen() {
             if (result.error) {
                 setError(result.error.message ?? "Sign in failed. Please try again.");
             } else {
-                router.replace("/(tabs)");
+                router.replace("/");
             }
         } catch (e: any) {
             setError(e?.message ?? "An unexpected error occurred.");
@@ -53,7 +53,7 @@ export default function SignInScreen() {
         try {
             const result = await authClient.signIn.social({
                 provider: "google",
-                callbackURL: "/(tabs)",
+                callbackURL: "/",
             });
             if (result?.error) {
                 setError(result.error.message ?? "Google sign-in failed.");

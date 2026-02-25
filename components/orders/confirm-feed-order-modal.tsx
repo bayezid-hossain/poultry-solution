@@ -41,7 +41,7 @@ export function ConfirmFeedOrderModal({ open, onOpenChange, feedOrderId, onSucce
         <Modal visible={open} animationType="fade" transparent onRequestClose={() => !confirmMutation.isPending && onOpenChange(false)}>
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior={Platform.OS === "ios" ? "padding" : "padding"}
                 className="flex-1 justify-center items-center bg-black/50 px-4"
             >
                 <View className="bg-card w-full max-w-sm rounded-3xl overflow-hidden border border-border/50">

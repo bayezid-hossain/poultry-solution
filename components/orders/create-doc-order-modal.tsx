@@ -565,7 +565,7 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                 onRequestClose={() => setBirdTypePickerItemId(null)}
             >
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : undefined}
+                    behavior={Platform.OS === "ios" ? "padding" : "padding"}
                     className="flex-1"
                 >
                     <Pressable className="flex-1 bg-black/50 justify-end" onPress={() => setBirdTypePickerItemId(null)}>

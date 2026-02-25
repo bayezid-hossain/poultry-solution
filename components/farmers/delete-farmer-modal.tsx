@@ -52,7 +52,7 @@ export function DeleteFarmerModal({
         >
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior={Platform.OS === "ios" ? "padding" : "padding"}
                 className="flex-1"
             >
                 <Pressable

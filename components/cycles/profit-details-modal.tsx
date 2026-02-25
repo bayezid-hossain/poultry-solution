@@ -19,6 +19,7 @@ interface ProfitDetailsModalProps {
     feedCost: number;
     docCost: number;
     profit: number;
+    baseRate?: number;
 }
 
 const StatRow = ({ label, sublabel, value, highlight, color }: { label: string; sublabel?: string; value: string; highlight?: boolean; color?: string }) => (
@@ -45,6 +46,7 @@ export const ProfitDetailsModal = ({
     feedCost,
     docCost,
     profit,
+    baseRate = BASE_SELLING_PRICE,
 }: ProfitDetailsModalProps) => {
     const adjustmentType = netAdjustment > 0 ? "surplus" : netAdjustment < 0 ? "deficit" : "neutral";
 
@@ -67,7 +69,7 @@ export const ProfitDetailsModal = ({
                     <View className="bg-muted/30 p-4 rounded-2xl border border-border/50">
                         <Text className="text-xs font-bold text-foreground mb-1">Profit Formula:</Text>
                         <Text className="text-xs text-muted-foreground font-mono">(Weight × Effective Rate) - (Feed Cost + DOC Cost)</Text>
-                        <Text className="text-[10px] text-muted-foreground/70 mt-1 font-mono">Effective Rate = max({BASE_SELLING_PRICE}, {BASE_SELLING_PRICE} + Σ Adjustments)</Text>
+                        <Text className="text-[10px] text-muted-foreground/70 mt-1 font-mono">Effective Rate = max({baseRate}, {baseRate} + Σ Adjustments)</Text>
                     </View>
 
                     {/* Step A: Average Price */}
@@ -102,12 +104,12 @@ export const ProfitDetailsModal = ({
                             <Text className="text-sm font-bold text-primary">Effective Rate Calculation</Text>
                         </View>
                         <View className="ml-9 gap-2">
-                            <StatRow label="Base Rate" value={`৳${BASE_SELLING_PRICE}`} />
+                            <StatRow label="Base Rate" value={`৳${baseRate}`} />
                             <View className="flex-row justify-between items-center p-3 rounded-xl bg-muted/20">
                                 <View className="flex-1 mr-4">
                                     <Text className="text-xs font-medium text-muted-foreground">Total Net Adjustment</Text>
                                     <Text className="text-[10px] text-muted-foreground/70 mt-0.5">
-                                        {adjustmentType === "surplus" ? "Σ Surplus(P-141)/2" : adjustmentType === "deficit" ? "Σ Deficit(P-141)" : "No adjustment"}
+                                        {adjustmentType === "surplus" ? `Σ Surplus(P-${baseRate})/2` : adjustmentType === "deficit" ? `Σ Deficit(P-${baseRate})` : "No adjustment"}
                                     </Text>
                                 </View>
                                 <Text className={`font-mono font-semibold ${netAdjustment >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -118,7 +120,7 @@ export const ProfitDetailsModal = ({
                                 <View className="flex-1 mr-4">
                                     <Text className="text-xs font-bold text-foreground">Farmer's Effective Rate</Text>
                                     <Text className="text-[10px] text-muted-foreground/70 mt-0.5">
-                                        max({BASE_SELLING_PRICE}, {BASE_SELLING_PRICE} + {netAdjustment.toFixed(2)})
+                                        max({baseRate}, {baseRate} + {netAdjustment.toFixed(2)})
                                     </Text>
                                 </View>
                                 <Text className="font-mono font-bold text-primary">৳{effectiveRate.toFixed(2)}</Text>

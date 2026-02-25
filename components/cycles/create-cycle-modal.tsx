@@ -131,7 +131,7 @@ export function CreateCycleModal({
             onRequestClose={() => onOpenChange(false)}
         >
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                behavior={Platform.OS === "ios" ? "padding" : "padding"}
                 className="flex-1"
             >
                 <Pressable
@@ -291,7 +291,7 @@ export function CreateCycleModal({
                                             onRequestClose={() => setIsBirdTypeOpen(false)}
                                         >
                                             <KeyboardAvoidingView
-                                                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                                                behavior={Platform.OS === "ios" ? "padding" : "padding"}
                                                 className="flex-1"
                                             >
                                                 <Pressable className="flex-1 bg-black/40 justify-end" onPress={() => setIsBirdTypeOpen(false)}>

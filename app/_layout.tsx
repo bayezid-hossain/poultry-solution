@@ -47,7 +47,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       action = "render";
     } else {
       action = "redirect";
-      redirectTarget = "/sign-in";
+      redirectTarget = "/(auth)/sign-in";
     }
   } else {
     // Session exists
@@ -67,7 +67,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           action = "render";
         } else {
           action = "redirect";
-          redirectTarget = "/join-org";
+          redirectTarget = "/(org)/join-org";
         }
       } else if (status === "PENDING" || status === "REJECTED") {
         const isOnPendingScreen = inOrgGroup && segments[1] === "pending-approval";
@@ -75,7 +75,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           action = "render";
         } else {
           action = "redirect";
-          redirectTarget = "/pending-approval";
+          redirectTarget = "/(org)/pending-approval";
         }
       } else if (status === "ACTIVE") {
         // Active User
@@ -115,7 +115,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           Failed to load membership status.
           {membershipError?.message}
         </Text>
-        <Pressable onPress={() => authClient.signOut().then(() => router.replace("/sign-in"))} className="mt-4 bg-destructive p-3 rounded">
+        <Pressable onPress={() => authClient.signOut().then(() => router.replace("/(auth)/sign-in"))} className="mt-4 bg-destructive p-3 rounded">
           <Text className="text-destructive-foreground">Sign Out</Text>
         </Pressable>
       </View>
