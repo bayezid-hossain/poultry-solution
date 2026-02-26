@@ -9,9 +9,9 @@ import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
-import { ChevronDown, ChevronUp, FileText, Search, User } from "lucide-react-native";
+import { ChevronDown, ChevronUp, FileText, Search, User, X } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
-import { RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
 
 export default function SalesScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -102,22 +102,34 @@ export default function SalesScreen() {
         <View className="flex-1 bg-background">
             <ScreenHeader title="Sales" />
 
-            <View className="p-4 pb-2">
+            <View className="bg-card border-b border-border/50 px-3 pb-3 pt-2">
                 {isManagement && (
                     <View className="mb-3">
                         <OfficerSelector orgId={membership?.orgId ?? ""} />
                     </View>
                 )}
-                <View className="relative">
-                    <View className="absolute z-10 left-3 top-1/2 -translate-y-1/2 bottom-0 justify-center">
-                        <Icon as={Search} size={18} className="text-muted-foreground" />
+                {/* Search Bar */}
+                <View className="relative flex-row items-center gap-2">
+                    <View className="flex-1 relative">
+                        <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                            <Icon as={Search} size={18} className="text-muted-foreground opacity-50" />
+                        </View>
+                        <Input
+                            placeholder="Search by farmer or location..."
+                            className="pl-12 pr-12 h-12 bg-muted/30 border-border/50 rounded-2xl text-base font-bold"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            placeholderTextColor="rgba(255,255,255,0.2)"
+                        />
+                        {searchQuery.length > 0 && (
+                            <Pressable
+                                onPress={() => setSearchQuery("")}
+                                className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full active:bg-muted/50 z-20"
+                            >
+                                <Icon as={X} size={20} className="text-muted-foreground" />
+                            </Pressable>
+                        )}
                     </View>
-                    <Input
-                        placeholder="Search by farmer or location..."
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        className="pl-10 h-12 bg-card/60 border-border/30 rounded-xl"
-                    />
                 </View>
             </View>
 

@@ -12,7 +12,6 @@ import { SellModal } from "@/components/cycles/sell-modal";
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { CreateDocOrderModal } from "@/components/orders/create-doc-order-modal";
 import { ScreenHeader } from "@/components/screen-header";
-import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
@@ -20,7 +19,7 @@ import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { router } from "expo-router";
-import { Activity, Archive, Bird, ChevronDown, ChevronUp, History, LayoutGrid, List, Pencil, Plus, Search, ShoppingCart, Skull, Sparkles, Table2 } from "lucide-react-native";
+import { Activity, Archive, Bird, ChevronDown, ChevronUp, History, LayoutGrid, List, Pencil, Plus, Search, ShoppingCart, Skull, Sparkles, Table2, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Modal, Pressable, View } from "react-native";
 
@@ -190,28 +189,37 @@ export default function CyclesScreen() {
         <View className='flex-1 bg-background'>
             <ScreenHeader title='Cycles' />
 
-            <View className="px-4 pt-2 pb-1">
+            <View className="bg-card border-b border-border/50 px-3 pb-3 pt-2">
                 {isManagement && (
                     <View className="mb-3">
                         <OfficerSelector orgId={membership?.orgId ?? ""} />
                     </View>
                 )}
                 {/* Search + Toggle */}
-                <View className="relative flex-row items-center gap-2 mb-3">
+                <View className="relative flex-row items-center gap-2">
                     <View className="flex-1 relative">
-                        <View className="absolute left-3 z-10 top-1/2 -translate-y-1/2">
-                            <Icon as={Search} size={18} className="text-muted-foreground" />
+                        <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                            <Icon as={Search} size={18} className="text-muted-foreground opacity-50" />
                         </View>
                         <Input
                             placeholder="Search by farmer, officer or cycle..."
+                            className="pl-12 pr-12 h-12 bg-muted/30 border-border/50 rounded-2xl text-base font-bold"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
-                            className="flex-1 pl-10 h-10 bg-muted/50 border-0"
+                            placeholderTextColor="rgba(255,255,255,0.2)"
                         />
+                        {searchQuery.length > 0 && (
+                            <Pressable
+                                onPress={() => setSearchQuery("")}
+                                className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full active:bg-muted/50 z-20"
+                            >
+                                <Icon as={X} size={20} className="text-muted-foreground" />
+                            </Pressable>
+                        )}
                     </View>
                     <Pressable
                         onPress={() => setActionsExpanded(!actionsExpanded)}
-                        className="h-10 w-10 rounded-xl bg-muted/50 items-center justify-center active:bg-muted"
+                        className="h-12 w-12 rounded-2xl bg-muted/30 border border-border/50 items-center justify-center active:bg-muted"
                     >
                         <Icon as={actionsExpanded ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
                     </Pressable>
@@ -219,33 +227,44 @@ export default function CyclesScreen() {
 
                 {/* Collapsible: Action Buttons + View Mode */}
                 {actionsExpanded && (
-                    <View className="mb-3 gap-3">
-                        <View className="flex-row items-center gap-2">
-                            <Button variant="outline" size="sm" className="h-10 border-border/50 bg-card rounded-xl px-4 flex-row gap-2" onPress={() => setIsBulkImportOpen(true)}>
-                                <Icon as={Sparkles} size={16} className="text-yellow-500" />
-                                <Text className="text-foreground font-bold">Import</Text>
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-10 border-border/50 bg-card rounded-xl px-4 flex-row gap-2" onPress={() => setIsCreateOrderOpen(true)}>
-                                <Icon as={Bird} size={16} className="text-blue-500" />
-                                <Text className="text-foreground font-bold">Order</Text>
-                            </Button>
-                            <Button size="sm" className="h-10 bg-muted rounded-xl px-4 flex-row gap-2" onPress={() => setIsCreateCycleOpen(true)}>
-                                <Icon as={Plus} size={16} className="text-foreground" />
-                                <Text className="text-foreground font-bold">Start</Text>
-                            </Button>
+                    <View className="flex-col gap-3 mt-3">
+                        <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1">Actions</Text>
+                        <View className="flex-row gap-3">
+                            <Pressable
+                                onPress={() => setIsBulkImportOpen(true)}
+                                className="flex-1 bg-emerald-500/10 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-emerald-500/20 active:bg-emerald-500/20"
+                            >
+                                <Icon as={Sparkles} size={16} className="text-emerald-500" />
+                                <Text className="text-emerald-500 font-black text-[10px] uppercase tracking-widest">Import</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setIsCreateOrderOpen(true)}
+                                className="flex-1 bg-muted/50 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-border active:bg-muted"
+                            >
+                                <Icon as={Bird} size={16} className="text-muted-foreground" />
+                                <Text className="text-muted-foreground font-black text-[10px] uppercase tracking-widest">Order</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setIsCreateCycleOpen(true)}
+                                className="flex-1 bg-primary h-12 rounded-2xl items-center justify-center flex-row gap-2 active:opacity-90"
+                            >
+                                <Icon as={Plus} size={16} className="text-white" />
+                                <Text className="text-white font-black text-[10px] uppercase tracking-widest">Start</Text>
+                            </Pressable>
                         </View>
 
-                        <View className="flex-row gap-2 p-1 bg-muted/50 rounded-2xl">
+                        <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1 mt-1">View Style</Text>
+                        <View className="flex-row gap-2 p-1 bg-muted/50 rounded-xl">
                             <Pressable
                                 onPress={() => setViewMode('detailed')}
-                                className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-xl ${viewMode === 'detailed' ? 'bg-card dark:bg-zinc-800 border border-border/50' : 'border border-transparent'}`}
+                                className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-lg ${viewMode === 'detailed' ? 'bg-card dark:bg-zinc-800 border border-border/50' : 'border border-transparent'}`}
                             >
                                 <Icon as={Table2} size={14} className={viewMode === 'detailed' ? "text-foreground" : "text-muted-foreground"} />
                                 <Text className={`text-xs font-bold ${viewMode === 'detailed' ? "text-foreground" : "text-muted-foreground"}`}>Detailed</Text>
                             </Pressable>
                             <Pressable
                                 onPress={() => setViewMode('group')}
-                                className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-xl ${viewMode === 'group' ? 'bg-card dark:bg-zinc-800 border border-border/50' : 'border border-transparent'}`}
+                                className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-lg ${viewMode === 'group' ? 'bg-card dark:bg-zinc-800 border border-border/50' : 'border border-transparent'}`}
                             >
                                 <Icon as={LayoutGrid} size={14} className={viewMode === 'group' ? "text-foreground" : "text-muted-foreground"} />
                                 <Text className={`text-xs font-bold ${viewMode === 'group' ? "text-foreground" : "text-muted-foreground"}`}>Group</Text>
@@ -254,36 +273,36 @@ export default function CyclesScreen() {
                     </View>
                 )}
 
-                {/* Tabs - Always visible */}
-                <View className="flex-row bg-muted/50 rounded-xl p-1 mb-3">
-                    <Pressable
-                        onPress={() => setActiveTab('active')}
-                        className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-lg ${activeTab === 'active' ? 'bg-card dark:bg-zinc-800 border border-border/50' : 'border border-transparent'}`}
-                    >
-                        <Icon as={List} size={14} className={activeTab === 'active' ? "text-foreground" : "text-muted-foreground"} />
-                        <Text className={`text-xs font-black uppercase ${activeTab === 'active' ? "text-foreground" : "text-muted-foreground"}`}>
-                            Active Cycles
-                        </Text>
-                        <View className={`rounded-full px-1.5 py-0.5 ${activeTab === 'active' ? 'bg-primary/10' : 'bg-muted'}`}>
-                            <Text className={`text-[10px] font-black ${activeTab === 'active' ? 'text-primary' : 'text-muted-foreground'}`}>{activeCount}</Text>
-                        </View>
-                    </Pressable>
-                    <Pressable
-                        onPress={() => setActiveTab('history')}
-                        className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-lg ${activeTab === 'history' ? 'bg-card dark:bg-zinc-800 border border-border/50' : 'border border-transparent'}`}
-                    >
-                        <Icon as={History} size={14} className={activeTab === 'history' ? "text-foreground" : "text-muted-foreground"} />
-                        <Text className={`text-xs font-black uppercase ${activeTab === 'history' ? "text-foreground" : "text-muted-foreground"}`}>
-                            History
-                        </Text>
-                        {historyCount > 0 && (
-                            <View className={`rounded-full px-1.5 py-0.5 ${activeTab === 'history' ? 'bg-primary/10' : 'bg-muted'}`}>
-                                <Text className={`text-[10px] font-black ${activeTab === 'history' ? 'text-primary' : 'text-muted-foreground'}`}>{historyCount}</Text>
-                            </View>
-                        )}
-                    </Pressable>
-                </View>
 
+
+            </View>{/* Tabs - Always visible */}
+            <View className="mt-2 flex-row bg-muted/50 rounded-xl p-1 ">
+                <Pressable
+                    onPress={() => setActiveTab('active')}
+                    className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-lg ${activeTab === 'active' ? 'bg-card dark:bg-zinc-800 border border-border/50' : 'border border-transparent'}`}
+                >
+                    <Icon as={List} size={14} className={activeTab === 'active' ? "text-foreground" : "text-muted-foreground"} />
+                    <Text className={`text-xs font-black uppercase ${activeTab === 'active' ? "text-foreground" : "text-muted-foreground"}`}>
+                        Active Cycles
+                    </Text>
+                    <View className={`rounded-full px-1.5 py-0.5 ${activeTab === 'active' ? 'bg-primary/10' : 'bg-muted'}`}>
+                        <Text className={`text-[10px] font-black ${activeTab === 'active' ? 'text-primary' : 'text-muted-foreground'}`}>{activeCount}</Text>
+                    </View>
+                </Pressable>
+                <Pressable
+                    onPress={() => setActiveTab('history')}
+                    className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-lg ${activeTab === 'history' ? 'bg-card dark:bg-zinc-800 border border-border/50' : 'border border-transparent'}`}
+                >
+                    <Icon as={History} size={14} className={activeTab === 'history' ? "text-foreground" : "text-muted-foreground"} />
+                    <Text className={`text-xs font-black uppercase ${activeTab === 'history' ? "text-foreground" : "text-muted-foreground"}`}>
+                        History
+                    </Text>
+                    {historyCount > 0 && (
+                        <View className={`rounded-full px-1.5 py-0.5 ${activeTab === 'history' ? 'bg-primary/10' : 'bg-muted'}`}>
+                            <Text className={`text-[10px] font-black ${activeTab === 'history' ? 'text-primary' : 'text-muted-foreground'}`}>{historyCount}</Text>
+                        </View>
+                    )}
+                </Pressable>
             </View>
 
             {

@@ -115,29 +115,32 @@ export default function FarmersScreen() {
 
                 {/* Collapsible Action Buttons */}
                 {actionsExpanded && (
-                    <View className="flex-row gap-3 mt-3">
-                        <Pressable
-                            onPress={() => setIsBulkImportOpen(true)}
-                            className="flex-1 bg-emerald-500/10 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-emerald-500/20 active:bg-emerald-500/20"
-                        >
-                            <Icon as={Sparkles} size={16} className="text-emerald-500" />
-                            <Text className="text-emerald-500 font-black text-[10px] uppercase tracking-widest">Import</Text>
-                        </Pressable>
-                        <Pressable
-                            onPress={() => setIsFeedOrderOpen(true)}
-                            className="flex-1 bg-muted/50 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-border active:bg-muted"
-                        >
-                            <Icon as={ShoppingCart} size={16} className="text-muted-foreground" />
-                            <Text className="text-muted-foreground font-black text-[10px] uppercase tracking-widest">Order</Text>
-                        </Pressable>
-                        <Pressable
-                            onPress={() => setIsRegisterModalOpen(true)}
-                            className="flex-1 bg-primary h-12 rounded-2xl items-center justify-center flex-row gap-2 active:opacity-90"
-                        >
-                            <Icon as={Plus} size={16} className="text-white" />
-                            <Text className="text-white font-black text-[10px] uppercase tracking-widest">Register</Text>
-                        </Pressable>
-                    </View>
+                    <View className="flex flex-col mt-4">
+                        <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1">Actions</Text>
+                        <View className="flex-row gap-3 mt-3">
+
+                            <Pressable
+                                onPress={() => setIsBulkImportOpen(true)}
+                                className="flex-1 bg-emerald-500/10 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-emerald-500/20 active:bg-emerald-500/20"
+                            >
+                                <Icon as={Sparkles} size={16} className="text-emerald-500" />
+                                <Text className="text-emerald-500 font-black text-[10px] uppercase tracking-widest">Import</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setIsFeedOrderOpen(true)}
+                                className="flex-1 bg-muted/50 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-border active:bg-muted"
+                            >
+                                <Icon as={ShoppingCart} size={16} className="text-muted-foreground" />
+                                <Text className="text-muted-foreground font-black text-[10px] uppercase tracking-widest">Order</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setIsRegisterModalOpen(true)}
+                                className="flex-1 bg-primary h-12 rounded-2xl items-center justify-center flex-row gap-2 active:opacity-90"
+                            >
+                                <Icon as={Plus} size={16} className="text-white" />
+                                <Text className="text-white font-black text-[10px] uppercase tracking-widest">Register</Text>
+                            </Pressable>
+                        </View></View>
                 )}
 
                 {/* Segmented Tabs - Only for Management */}
