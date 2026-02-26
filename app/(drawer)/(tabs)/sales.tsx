@@ -9,9 +9,10 @@ import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
-import { CheckCircle2, ChevronDown, ChevronUp, FileText, RefreshCw, Search, Trash2, User } from "lucide-react-native";
-import { useCallback, useMemo, useState } from "react";
+import { CheckCircle2, ChevronDown, ChevronUp, CircleDashed, FileText, Search, Trash2, User } from "lucide-react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 
 export default function SalesScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -229,7 +230,20 @@ function CycleRowAccordion({ cycle, isLast, onRefresh }: { cycle: any, isLast: b
                 }
             ]
         );
-    };
+    }; // Animation for spinning icon
+    const rotation = useSharedValue(0);
+    useEffect(() => {
+        rotation.value = withRepeat(
+            withTiming(360, { duration: 3000, easing: Easing.linear }),
+            -1 // Infinite repeat
+        );
+    }, []);
+
+    const animatedStyle = useAnimatedStyle(() => {
+        return {
+            transform: [{ rotate: `${rotation.value}deg` }]
+        };
+    });
 
     return (
         <View className={`${!isLast ? 'border-b border-border/10' : ''}`}>
@@ -239,8 +253,15 @@ function CycleRowAccordion({ cycle, isLast, onRefresh }: { cycle: any, isLast: b
                 onPress={() => setIsOpen(!isOpen)}
             >
                 <View className="flex-row items-center gap-1.5 flex-[1.5]">
-                    <Icon as={cycle.isEnded ? CheckCircle2 : RefreshCw} size={14} className={cycle.isEnded ? "text-emerald-500" : "text-amber-500"} />
-                    <Text className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">
+                    <View className="ml-1 justify-center">
+                        {cycle.isEnded ? (
+                            <Icon as={CheckCircle2} size={16} className="text-emerald-500" />
+                        ) : (
+                            <Animated.View style={animatedStyle}>
+                                <Icon as={CircleDashed} size={16} className="text-blue-500" />
+                            </Animated.View>
+                        )}
+                    </View><Text className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">
                         {cycle.sales.length} {cycle.sales.length === 1 ? 'SALE' : 'SALES'}
                     </Text>
                 </View>

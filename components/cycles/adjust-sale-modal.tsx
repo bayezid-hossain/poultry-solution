@@ -7,9 +7,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Banknote, Bird, Box, FileText, Settings, ShoppingCart, Truck } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
 import { toast, Toaster } from "sonner-native";
 import { z } from "zod";
+import { ConfirmModal } from "./confirm-modal";
 import { SaleDetailsContent } from "./sale-details-content";
 import { FarmerInfoHeader, FeedFieldArray, SaleMetricsBar } from "./sale-form-sections";
 // import { Alert } from "../ui/alert";
@@ -67,7 +68,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
     const utils = trpc.useUtils();
     const [step, setStep] = useState<"form" | "preview">("form");
     const [previewData, setPreviewData] = useState<any | null>(null);
-
+    const [showConfirm, setShowConfirm] = useState(false);
     const defaultValues: FormValues = {
         birdsSold: latestReport ? latestReport.birdsSold : saleEvent.birdsSold,
         totalMortality: latestReport
@@ -191,6 +192,15 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
             utils.officer.sales.invalidate();
             utils.officer.sales.getRecentSales.invalidate();
             utils.management.sales.getRecentSales.invalidate();
+
+            // Invalidate cycles because adjustment might auto-close or reopen a cycle
+            utils.officer.cycles.invalidate();
+            utils.management.cycles.invalidate();
+
+            // Invalidate farmers because farmer stock might change due to adjustment
+            utils.officer.farmers.invalidate();
+            utils.management.farmers.invalidate();
+
             onOpenChange(false);
         },
         onError: (err) => {
@@ -265,31 +275,32 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         });
     };
 
-    const handleConfirmClick = () => {
-        form.handleSubmit((values: any) => {
-            const v = values as FormValues;
-            if (saleEvent.historyId && (v.birdsSold + v.totalMortality < saleEvent.houseBirds)) {
-                const remaining = saleEvent.houseBirds - v.birdsSold - v.totalMortality;
-                Alert.alert(
-                    "⚠️ This will reopen the cycle",
-                    `This adjustment results in ${remaining} remaining birds. The ended cycle will be reopened as active, and farmer's feed stock will be restored.\n\nAre you sure?`,
-                    [
-                        { text: "Cancel", style: "cancel" },
-                        { text: "Reopen & Save", style: "destructive", onPress: () => onSubmit(v) }
-                    ]
-                );
-                return;
-            }
-            onSubmit(v);
-        })();
-    };
-
     const remainingBirdsAfterAdjustment = Math.max(0,
         (saleEvent.cycleContext?.doc || saleEvent.houseBirds || 0) -
         ((saleEvent.cycleContext?.cumulativeBirdsSold || saleEvent.birdsSold) - saleEvent.birdsSold) -
         wBirdsSold -
         wMortality
     );
+
+    const handleConfirmClick = () => {
+        form.handleSubmit((values: any) => {
+            const v = values as FormValues;
+            // If cycle is archived/history, and remaining birds > 0, it will Reopen
+            if (saleEvent.historyId && remainingBirdsAfterAdjustment > 0) {
+                setShowConfirm(true);
+                return;
+            }
+
+            // If cycle is active, and remaining birds === 0, it will Auto-Close
+            if (!saleEvent.historyId && remainingBirdsAfterAdjustment === 0) {
+                setShowConfirm(true);
+                return;
+            }
+
+            onSubmit(v);
+        })();
+    };
+
 
     const isLatest = saleEvent.isLatestInCycle || false;
     const cumulativeWeight = saleEvent.cycleContext?.totalWeight || 0;
@@ -636,7 +647,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                                 onChangeText={onChange}
                                                 placeholder="e.g. Buyer disputed weight"
                                                 returnKeyType="next"
-                                                onSubmitEditing={remainingBirdsAfterAdjustment === 0 ? handlePreview : form.handleSubmit((values: any) => onSubmit(values as FormValues))}
+                                                onSubmitEditing={remainingBirdsAfterAdjustment === 0 ? handlePreview : handleConfirmClick}
                                             />
                                         </View>
                                     )}
@@ -647,7 +658,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                         <View className="p-4 border-t border-border/50 bg-card">
                             <Button
                                 className="h-14 flex-row gap-2 bg-emerald-600 active:bg-emerald-700"
-                                onPress={remainingBirdsAfterAdjustment === 0 ? handlePreview : form.handleSubmit((values: any) => onSubmit(values as FormValues))}
+                                onPress={remainingBirdsAfterAdjustment === 0 ? handlePreview : handleConfirmClick}
                                 disabled={generateReport.isPending || previewMutation.isPending}
                             >
                                 <Icon as={ShoppingCart} className="text-white" size={20} />
@@ -660,6 +671,23 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                 )}
             </KeyboardAvoidingView>
             <Toaster position="bottom-center" offset={40} />
+
+            <ConfirmModal
+                visible={showConfirm}
+                destructive
+                title={saleEvent.historyId ? "Reopen Cycle?" : "Close Cycle?"}
+                description={
+                    saleEvent.historyId
+                        ? `This adjustment results in ${remainingBirdsAfterAdjustment} remaining birds.\n\nThe ended cycle will be reopened as active and feed stock restored.\n\nAre you sure you want to continue?`
+                        : `This adjustment results in ${remainingBirdsAfterAdjustment} remaining birds.\n\nThe active cycle will be closed.\n\nAre you sure you want to continue?`
+                }
+                confirmText={saleEvent.historyId ? "Reopen & Save" : "Close & Save"}
+                onCancel={() => setShowConfirm(false)}
+                onConfirm={() => {
+                    setShowConfirm(false);
+                    form.handleSubmit((values: any) => onSubmit(values as FormValues))();
+                }}
+            />
         </Modal>
     );
 };
