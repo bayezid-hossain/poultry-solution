@@ -1,5 +1,5 @@
-/// <reference types="nativewind/types" />
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
+import { ProBlocker } from "@/components/pro-blocker";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -66,6 +66,10 @@ export default function ProductionScreen() {
         const prefix = v < 0 ? '-' : '';
         return `${prefix}BDT ${Math.abs(v).toLocaleString()}`;
     };
+
+    if (!membership?.isPro) {
+        return <ProBlocker feature="Monthly Production" description="Gain insights into monthly production records and historical performance." />;
+    }
 
     return (
         <View className="flex-1 bg-background">

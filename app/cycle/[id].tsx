@@ -8,6 +8,7 @@ import { LogsTimeline } from "@/components/cycles/logs-timeline";
 import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
 import { SalesHistoryList } from "@/components/cycles/sales-history-list";
 import { SellModal } from "@/components/cycles/sell-modal";
+import { ProAccessModal } from "@/components/pro-access-modal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
@@ -34,6 +35,9 @@ export default function CycleDetailsScreen() {
     // Accordions
     const [openSection, setOpenSection] = useState<'activity' | 'sales' | 'other' | 'insights' | null>(null);
     const [renderSection, setRenderSection] = useState<'activity' | 'sales' | 'other' | 'insights' | null>(null);
+    const [proModal, setProModal] = useState<{ open: boolean, feature: string }>({ open: false, feature: "" });
+
+    const { data: membership } = trpc.auth.getMyMembership.useQuery();
 
     useEffect(() => {
         if (openSection) {
@@ -332,7 +336,11 @@ export default function CycleDetailsScreen() {
 
                         {!isArchived ? (
                             <View className="">
-                                <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => { setIsMenuOpen(false); setIsSellModalOpen(true); }}>
+                                <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => {
+                                    setIsMenuOpen(false);
+                                    if (!membership?.isPro) { setProModal({ open: true, feature: "Sell Birds" }); return; }
+                                    setIsSellModalOpen(true);
+                                }}>
                                     <View className="w-8 items-center justify-center mr-3">
                                         <Icon as={ShoppingCart} size={20} className="text-primary" />
                                     </View>
@@ -346,7 +354,12 @@ export default function CycleDetailsScreen() {
                                 </Pressable>
                                 <Pressable
                                     className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`}
-                                    onPress={() => { if (soldValue === 0) { setIsMenuOpen(false); setIsDocModalOpen(true); } }}
+                                    onPress={() => {
+                                        if (soldValue > 0) return;
+                                        setIsMenuOpen(false);
+                                        if (!membership?.isPro) { setProModal({ open: true, feature: "Edit Initial Birds (DOC)" }); return; }
+                                        setIsDocModalOpen(true);
+                                    }}
                                 >
                                     <View className="w-8 items-center justify-center mr-3">
                                         <Icon as={Bird} size={20} className={soldValue > 0 ? "text-muted-foreground" : "text-foreground"} />
@@ -355,7 +368,12 @@ export default function CycleDetailsScreen() {
                                 </Pressable>
                                 <Pressable
                                     className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`}
-                                    onPress={() => { if (soldValue === 0) { setIsMenuOpen(false); setIsAgeModalOpen(true); } }}
+                                    onPress={() => {
+                                        if (soldValue > 0) return;
+                                        setIsMenuOpen(false);
+                                        if (!membership?.isPro) { setProModal({ open: true, feature: "Edit Age" }); return; }
+                                        setIsAgeModalOpen(true);
+                                    }}
                                 >
                                     <View className="w-8 items-center justify-center mr-3">
                                         <Icon as={Activity} size={20} className={soldValue > 0 ? "text-muted-foreground" : "text-foreground"} />
@@ -364,7 +382,12 @@ export default function CycleDetailsScreen() {
                                 </Pressable>
                                 <Pressable
                                     className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`}
-                                    onPress={() => { if (soldValue === 0) { setIsMenuOpen(false); setIsMortalityCorrectionOpen(true); } }}
+                                    onPress={() => {
+                                        if (soldValue > 0) return;
+                                        setIsMenuOpen(false);
+                                        if (!membership?.isPro) { setProModal({ open: true, feature: "Correct Total Mortality" }); return; }
+                                        setIsMortalityCorrectionOpen(true);
+                                    }}
                                 >
                                     <View className="w-8 items-center justify-center mr-3">
                                         <Icon as={Pencil} size={20} className={soldValue > 0 ? "text-muted-foreground" : "text-foreground"} />
@@ -434,7 +457,13 @@ export default function CycleDetailsScreen() {
                             intake: Number(cycle.intake)
                         }}
                         farmerName={farmer.name}
-                        onRecordSale={() => setIsSellModalOpen(true)}
+                        onRecordSale={() => {
+                            if (!membership?.isPro) {
+                                setProModal({ open: true, feature: "Sell Birds" });
+                                return;
+                            }
+                            setIsSellModalOpen(true);
+                        }}
                         onSuccess={() => {
                             refetch();
                         }}
@@ -481,6 +510,12 @@ export default function CycleDetailsScreen() {
                     />
                 </>
             )}
+
+            <ProAccessModal
+                open={proModal.open}
+                onOpenChange={(open) => setProModal(prev => ({ ...prev, open }))}
+                feature={proModal.feature}
+            />
         </View>
     );
 }

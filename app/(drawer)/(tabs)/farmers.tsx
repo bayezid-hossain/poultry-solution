@@ -8,6 +8,7 @@ import { RestockModal } from "@/components/farmers/restock-modal";
 import { RestoreFarmerModal } from "@/components/farmers/restore-farmer-modal";
 import { TransferStockModal } from "@/components/farmers/transfer-stock-modal";
 import { CreateFeedOrderModal } from "@/components/orders/create-feed-order-modal";
+import { ProAccessModal } from "@/components/pro-access-modal";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -42,6 +43,7 @@ export default function FarmersScreen() {
     const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
     const [isFeedOrderOpen, setIsFeedOrderOpen] = useState(false);
     const [restoringFarmer, setRestoringFarmer] = useState<{ id: string; name: string } | null>(null);
+    const [proModal, setProModal] = useState<{ open: boolean, feature: string }>({ open: false, feature: "" });
 
     // Officer mode → officer route (always scoped to current user)
     const officerQuery = trpc.officer.farmers.listWithStock.useQuery(
@@ -71,6 +73,14 @@ export default function FarmersScreen() {
     // console.log(isManagement, selectedOfficerId)
 
     const farmers = data?.items ?? [];
+
+    const handleProAction = (action: () => void, featureName: string) => {
+        if (!membership?.isPro) {
+            setProModal({ open: true, feature: featureName });
+            return;
+        }
+        action();
+    };
 
     return (
         <View className="flex-1 bg-background">
@@ -120,14 +130,14 @@ export default function FarmersScreen() {
                         <View className="flex-row gap-3 mt-3">
 
                             <Pressable
-                                onPress={() => setIsBulkImportOpen(true)}
+                                onPress={() => handleProAction(() => setIsBulkImportOpen(true), "Bulk Import")}
                                 className="flex-1 bg-emerald-500/10 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-emerald-500/20 active:bg-emerald-500/20"
                             >
                                 <Icon as={Sparkles} size={16} className="text-emerald-500" />
                                 <Text className="text-emerald-500 font-black text-[10px] uppercase tracking-widest">Import</Text>
                             </Pressable>
                             <Pressable
-                                onPress={() => setIsFeedOrderOpen(true)}
+                                onPress={() => handleProAction(() => setIsFeedOrderOpen(true), "Feed Orders")}
                                 className="flex-1 bg-muted/50 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-border active:bg-muted"
                             >
                                 <Icon as={ShoppingCart} size={16} className="text-muted-foreground" />
@@ -293,6 +303,12 @@ export default function FarmersScreen() {
                     />
                 )
             }
+
+            <ProAccessModal
+                open={proModal.open}
+                onOpenChange={(open) => setProModal(prev => ({ ...prev, open }))}
+                feature={proModal.feature}
+            />
 
         </View >
     );

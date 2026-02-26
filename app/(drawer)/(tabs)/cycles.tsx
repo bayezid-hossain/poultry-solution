@@ -11,6 +11,7 @@ import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
 import { SellModal } from "@/components/cycles/sell-modal";
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { CreateDocOrderModal } from "@/components/orders/create-doc-order-modal";
+import { ProAccessModal } from "@/components/pro-access-modal";
 import { ScreenHeader } from "@/components/screen-header";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
@@ -52,9 +53,20 @@ export default function CyclesScreen() {
     // Group Layout Action Menu
     const [isGroupMenuOpen, setIsGroupMenuOpen] = useState(false);
     const [groupMenuCycle, setGroupMenuCycle] = useState<any>(null);
+    const [proModal, setProModal] = useState<{ open: boolean, feature: string }>({ open: false, feature: "" });
+
+    const { data: membership } = trpc.auth.getMyMembership.useQuery();
+    const isManagement = membership?.activeMode === "MANAGEMENT";
+    const { selectedOfficerId } = useGlobalFilter();
 
     const handleCycleAction = useCallback((action: CycleAction, cycle: any) => {
         setSelectedCycleId(cycle.id);
+        const requiresPro = ['sell', 'edit_doc', 'edit_age', 'correct_mortality'];
+        if (requiresPro.includes(action) && !membership?.isPro) {
+            setProModal({ open: true, feature: "Advanced Cycle Actions" });
+            return;
+        }
+
         switch (action) {
             case 'sell': setIsSellOpen(true); break;
             case 'add_mortality': setIsAddMortalityOpen(true); break;
@@ -65,11 +77,15 @@ export default function CyclesScreen() {
             case 'reopen': setIsReopenModalOpen(true); break;
             case 'delete': setIsDeleteModalOpen(true); break;
         }
-    }, []);
+    }, [membership?.isPro]);
 
-    const { data: membership } = trpc.auth.getMyMembership.useQuery();
-    const isManagement = membership?.activeMode === "MANAGEMENT";
-    const { selectedOfficerId } = useGlobalFilter();
+    const handleProAction = (action: () => void, featureName: string) => {
+        if (!membership?.isPro) {
+            setProModal({ open: true, feature: featureName });
+            return;
+        }
+        action();
+    };
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -231,14 +247,14 @@ export default function CyclesScreen() {
                         <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1">Actions</Text>
                         <View className="flex-row gap-3">
                             <Pressable
-                                onPress={() => setIsBulkImportOpen(true)}
+                                onPress={() => handleProAction(() => setIsBulkImportOpen(true), "Bulk Import")}
                                 className="flex-1 bg-emerald-500/10 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-emerald-500/20 active:bg-emerald-500/20"
                             >
                                 <Icon as={Sparkles} size={16} className="text-emerald-500" />
                                 <Text className="text-emerald-500 font-black text-[10px] uppercase tracking-widest">Import</Text>
                             </Pressable>
                             <Pressable
-                                onPress={() => setIsCreateOrderOpen(true)}
+                                onPress={() => handleProAction(() => setIsCreateOrderOpen(true), "Orders")}
                                 className="flex-1 bg-muted/50 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-border active:bg-muted"
                             >
                                 <Icon as={Bird} size={16} className="text-muted-foreground" />
@@ -552,6 +568,12 @@ export default function CyclesScreen() {
                     </Pressable>
                 </Pressable>
             </Modal>
+
+            <ProAccessModal
+                open={proModal.open}
+                onOpenChange={(open) => setProModal(prev => ({ ...prev, open }))}
+                feature={proModal.feature}
+            />
         </View >
     );
 }

@@ -1,5 +1,6 @@
 /// <reference types="nativewind/types" />
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
+import { ProBlocker } from "@/components/pro-blocker";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +28,10 @@ export default function StockLedgerScreen() {
         const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
         return () => clearTimeout(timer);
     }, [searchQuery]);
+
+    if (!membership?.isPro) {
+        return <ProBlocker feature="Stock Ledger" description="Access full stock history and realtime balances for all farmers." />;
+    }
 
     return (
         <View className="flex-1 bg-background">

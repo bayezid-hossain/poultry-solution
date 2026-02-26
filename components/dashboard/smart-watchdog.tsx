@@ -1,9 +1,11 @@
 /// <reference types="nativewind/types" />
+import { ProBlocker } from "@/components/pro-blocker";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
+import { trpc } from "@/lib/trpc";
 import { router } from "expo-router";
 import { AlertCircle, Package, Sparkles } from "lucide-react-native";
 import { Pressable, View } from "react-native";
@@ -24,6 +26,12 @@ interface SmartWatchdogProps {
 }
 
 export const SmartWatchdog = ({ data, isLoading }: SmartWatchdogProps) => {
+    const { data: membership } = trpc.auth.getMyMembership.useQuery();
+
+    if (!membership?.isPro) {
+        return <ProBlocker feature="Smart Watchdog" description="Unlock AI-powered supply monitoring and predictions." />;
+    }
+
     return (
         <Card className="border-primary/20 bg-card overflow-hidden">
             <CardHeader className="pb-4 border-b border-border/10">

@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { CheckCircle2, ChevronDown, ChevronUp, CircleDashed, Trash2 } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, TouchableOpacity, View } from "react-native";
+import { ProAccessModal } from "../pro-access-modal";
 import { ConfirmModal } from "./confirm-modal";
 import { SaleEventCard } from "./sale-event-card";
 
@@ -17,7 +18,17 @@ interface CycleRowAccordionProps {
 export function CycleRowAccordion({ cycle, isLast, onRefresh }: CycleRowAccordionProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [isProModalOpen, setIsProModalOpen] = useState(false);
+    const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const trpcContext = trpc.useUtils();
+
+    const handlePress = () => {
+        if (!membership?.isPro) {
+            setIsProModalOpen(true);
+            return;
+        }
+        setIsOpen(!isOpen);
+    };
 
     const deleteMutation = trpc.officer.sales.delete.useMutation({
         onSuccess: () => {
@@ -55,7 +66,7 @@ export function CycleRowAccordion({ cycle, isLast, onRefresh }: CycleRowAccordio
             <TouchableOpacity
                 activeOpacity={0.7}
                 className="py-3 px-3 flex-row items-center justify-between active:bg-muted/10 transition-colors"
-                onPress={() => setIsOpen(!isOpen)}
+                onPress={handlePress}
             >
                 <View className="flex-row items-center gap-1.5 flex-[1.5]">
                     <View className="ml-1 justify-center">
@@ -116,6 +127,13 @@ export function CycleRowAccordion({ cycle, isLast, onRefresh }: CycleRowAccordio
                     ))}
                 </View>
             )}
+
+            <ProAccessModal
+                open={isProModalOpen}
+                onOpenChange={setIsProModalOpen}
+                feature="Sales History Logs"
+                description="Detailed sales history is available exclusively on the Pro plan."
+            />
         </View>
     );
 }

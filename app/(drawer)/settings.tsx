@@ -40,6 +40,7 @@ export default function SettingsScreen() {
 
     const handleSignOut = async () => {
         await authClient.signOut();
+        queryClient.clear();
     };
 
     const handleModeChange = (mode: "MANAGEMENT" | "OFFICER") => {

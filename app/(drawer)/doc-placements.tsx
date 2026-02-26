@@ -1,4 +1,5 @@
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
+import { ProBlocker } from "@/components/pro-blocker";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,10 @@ export default function DocPlacementsScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
+
+    if (!membership?.isPro) {
+        return <ProBlocker feature="DOC Placements" description="View detailed Day Old Chick placement reports and analytics." />;
+    }
 
     const officerDocQuery = trpc.officer.reports.getMonthlyDocPlacements.useQuery(
         { month, year },

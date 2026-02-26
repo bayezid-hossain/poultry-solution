@@ -1,5 +1,6 @@
 /// <reference types="nativewind/types" />
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
+import { ProBlocker } from "@/components/pro-blocker";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +24,10 @@ export default function PerformanceScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
+
+    if (!membership?.isPro) {
+        return <ProBlocker feature="Performance Reports" description="Access advanced flock performance metrics, FCR, and EPI analytics." />;
+    }
 
     const { data, isLoading, refetch } = trpc.officer.performanceReports.getAnnualPerformance.useQuery(
         { year, officerId: isManagement ? (selectedOfficerId || undefined) : undefined },

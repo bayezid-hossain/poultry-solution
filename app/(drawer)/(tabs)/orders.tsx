@@ -9,6 +9,7 @@ import { DeleteFeedOrderModal } from "@/components/orders/delete-feed-order-moda
 import { DocOrderCard } from "@/components/orders/doc-order-card";
 import { FeedOrderCard } from "@/components/orders/feed-order-card";
 import { SaleOrderCard } from "@/components/orders/sale-order-card";
+import { ProBlocker } from "@/components/pro-blocker";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -51,6 +52,10 @@ export default function OrdersScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
+
+    if (!membership?.isPro) {
+        return <ProBlocker feature="Order Management" description="Manage feed, DOC, and sale orders efficiently." />;
+    }
 
     // Feed Orders
     const officerFeedQuery = trpc.officer.feedOrders.list.useQuery(

@@ -1,4 +1,5 @@
 /// <reference types="nativewind/types" />
+import { ProBlocker } from "@/components/pro-blocker";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +16,10 @@ export default function ReportsScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const router = useRouter();
     const orgId = membership?.orgId ?? "";
+
+    if (!membership?.isPro) {
+        return <ProBlocker feature="Management Reports" description="Unlock comprehensive sales and stock summary reports." />;
+    }
 
     const { data: salesSummary, isLoading: salesLoading, refetch: refetchSales } = trpc.management.reports.getSalesSummary.useQuery(
         { orgId },

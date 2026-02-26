@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { authClient } from "@/lib/auth-client";
@@ -81,6 +82,12 @@ export default function SignUpScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             className="flex-1 bg-background"
         >
+            {googleLoading && (
+                <View className="absolute inset-0 z-50 bg-background items-center justify-center">
+                    <BirdyLoader size={64} color="#10b981" />
+                    <Text className="mt-4 font-bold text-lg text-foreground">Creating account...</Text>
+                </View>
+            )}
             <ScrollView
                 contentContainerClassName="flex-1 justify-center px-6 py-12"
                 keyboardShouldPersistTaps="handled"

@@ -15,6 +15,7 @@ import { SecurityMoneyModal } from "@/components/farmers/security-money-modal";
 import { StartCycleModal } from "@/components/farmers/start-cycle-modal";
 import { StockCorrectionModal } from "@/components/farmers/stock-correction-modal";
 import { TransferStockModal } from "@/components/farmers/transfer-stock-modal";
+import { ProAccessModal } from "@/components/pro-access-modal";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,6 +47,7 @@ export default function FarmerDetailScreen() {
     const [salesExpanded, setSalesExpanded] = useState(false);
     const [historyExpanded, setHistoryExpanded] = useState(false);
     const [ledgerExpanded, setLedgerExpanded] = useState(false);
+    const [proModal, setProModal] = useState<{ open: boolean, feature: string }>({ open: false, feature: "" });
 
     // Cycle action modal states
     const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
@@ -147,6 +149,12 @@ export default function FarmerDetailScreen() {
 
     const handleCycleAction = useCallback((action: CycleAction, cycle: any) => {
         setSelectedCycleId(cycle.id);
+        const requiresPro = ['sell', 'edit_doc', 'edit_age', 'correct_mortality'];
+        if (requiresPro.includes(action) && !membership?.isPro) {
+            setProModal({ open: true, feature: "Advanced Cycle Actions" });
+            return;
+        }
+
         switch (action) {
             case 'sell': setIsSellOpen(true); break;
             case 'add_mortality': setIsAddMortalityOpen(true); break;
@@ -157,7 +165,7 @@ export default function FarmerDetailScreen() {
             case 'reopen': setIsReopenModalOpen(true); break;
             case 'delete': setIsDeleteCycleOpen(true); break;
         }
-    }, []);
+    }, [membership?.isPro]);
 
     const [renderSalesCards, setRenderSalesCards] = useState(false);
     const [renderHistoryCards, setRenderHistoryCards] = useState(false);
@@ -399,7 +407,13 @@ export default function FarmerDetailScreen() {
 
                     {/* SALES HISTORY */}
                     <View className="border-t border-border/10">
-                        <Pressable className="flex-row items-center justify-between py-5" onPress={() => setSalesExpanded(!salesExpanded)}>
+                        <Pressable className="flex-row items-center justify-between py-5" onPress={() => {
+                            if (!membership?.isPro) {
+                                setProModal({ open: true, feature: "Sales History" });
+                                return;
+                            }
+                            setSalesExpanded(!salesExpanded);
+                        }}>
                             <View className="flex-row items-center gap-3">
                                 <Icon as={ShoppingCart} size={20} className="text-blue-500" />
                                 <Text className="text-lg font-black text-foreground">Sales History</Text>
@@ -558,37 +572,44 @@ export default function FarmerDetailScreen() {
                 open={isRestockOpen}
                 onOpenChange={setIsRestockOpen}
                 farmerId={farmer.id}
-                farmerName={farmer.name}
-                onSuccess={() => {
-                    refetchAll();
+                farmerName={farmer.name} onSuccess={() => {
+                    refetchAll(); utils.officer.stock.getAllFarmersStock.invalidate();
+                    utils.management.stock.getAllFarmersStock.invalidate();
                 }}
             />
             <StockCorrectionModal
                 open={isCorrectionOpen}
                 onOpenChange={setIsCorrectionOpen}
                 farmerId={farmer.id}
-                farmerName={farmer.name}
-                onSuccess={() => {
-                    refetchAll();
+                farmerName={farmer.name} onSuccess={() => {
+                    refetchAll(); utils.officer.stock.getAllFarmersStock.invalidate();
+                    utils.management.stock.getAllFarmersStock.invalidate();
                 }}
             />
             <SecurityMoneyModal
                 open={isSecurityOpen}
                 onOpenChange={setIsSecurityOpen}
-                farmer={farmer}
-                onSuccess={refetchAll}
+                farmer={farmer} onSuccess={() => {
+                    refetchAll(); utils.officer.stock.getAllFarmersStock.invalidate();
+                    utils.management.stock.getAllFarmersStock.invalidate();
+                }}
             />
             <EditFarmerModal
                 open={isEditOpen}
                 onOpenChange={setIsEditOpen}
-                farmer={farmer}
-                onSuccess={refetchAll}
+                farmer={farmer} onSuccess={() => {
+                    refetchAll(); utils.officer.stock.getAllFarmersStock.invalidate();
+                    utils.management.stock.getAllFarmersStock.invalidate();
+                }}
             />
             <StartCycleModal
                 open={isStartCycleOpen}
                 onOpenChange={setIsStartCycleOpen}
                 farmer={farmer}
-                onSuccess={refetchAll}
+                onSuccess={() => {
+                    refetchAll(); utils.officer.stock.getAllFarmersStock.invalidate();
+                    utils.management.stock.getAllFarmersStock.invalidate();
+                }}
             />
             <DeleteFarmerModal
                 open={isDeleteOpen}
@@ -668,7 +689,13 @@ export default function FarmerDetailScreen() {
                         farmerName={selectedCycle.farmerName || farmer.name}
                         open={isEndCycleOpen}
                         onOpenChange={setIsEndCycleOpen}
-                        onRecordSale={() => setIsSellOpen(true)}
+                        onRecordSale={() => {
+                            if (!membership?.isPro) {
+                                setProModal({ open: true, feature: "Sell Birds" });
+                                return;
+                            }
+                            setIsSellOpen(true);
+                        }}
                         onSuccess={refetchAll}
                     />
 
@@ -689,6 +716,12 @@ export default function FarmerDetailScreen() {
                     />
                 </>
             )}
+
+            <ProAccessModal
+                open={proModal.open}
+                onOpenChange={(open) => setProModal(prev => ({ ...prev, open }))}
+                feature={proModal.feature}
+            />
         </View>
     );
 }

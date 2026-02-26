@@ -1,5 +1,6 @@
 import { CycleRowAccordion } from "@/components/cycles/cycle-row-accordion";
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
+import { ProBlocker } from "@/components/pro-blocker";
 import { ScreenHeader } from "@/components/screen-header";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
@@ -20,6 +21,10 @@ export default function SalesScreen() {
     const [searchQuery, setSearchQuery] = useState("");
     const [refreshing, setRefreshing] = useState(false);
     // console.log('[Tabs-SalesScreen] isManagement:', isManagement, 'orgId:', membership?.orgId, 'selectedOfficerId:', selectedOfficerId);
+
+    if (!membership?.isPro) {
+        return <ProBlocker feature="Sales History" description="Access the complete sales ledger and profit margins." />;
+    }
 
     const officerSalesQuery = trpc.officer.sales.getRecentSales.useQuery(
         { limit: 100, search: searchQuery },
