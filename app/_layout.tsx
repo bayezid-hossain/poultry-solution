@@ -122,7 +122,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [action, redirectTarget]);
 
-  if (action === "loading" || action === "redirect" || (session && segments[0] === "(auth)")) {
+  if (action === "loading" || (session && segments[0] === "(auth)")) {
     return (
       <LoadingState
         fullPage
@@ -139,7 +139,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           Failed to load membership status.
           {membershipError?.message}
         </Text>
-        <Pressable onPress={() => authClient.signOut().then(() => router.replace("/(auth)/sign-in"))} className="mt-4 bg-destructive p-3 rounded">
+        <Pressable onPress={() => authClient.signOut()} className="mt-4 bg-destructive p-3 rounded">
           <Text className="text-destructive-foreground">Sign Out</Text>
         </Pressable>
       </View>

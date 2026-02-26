@@ -40,7 +40,6 @@ export default function SettingsScreen() {
 
     const handleSignOut = async () => {
         await authClient.signOut();
-        router.replace("/(auth)/sign-in");
     };
 
     const handleModeChange = (mode: "MANAGEMENT" | "OFFICER") => {
