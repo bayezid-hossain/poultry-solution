@@ -389,6 +389,7 @@ export default function CyclesScreen() {
                             startDate={selectedCycle.createdAt ? new Date(selectedCycle.createdAt) : new Date()}
                             open={isSellOpen}
                             onOpenChange={setIsSellOpen}
+                            onSuccess={activeQuery.refetch}
                         />
 
                         <AddMortalityModal
@@ -397,6 +398,7 @@ export default function CyclesScreen() {
                             farmerName={selectedCycle.farmerName || selectedCycle.name}
                             open={isAddMortalityOpen}
                             onOpenChange={setIsAddMortalityOpen}
+                            onSuccess={activeQuery.refetch}
                         />
 
                         <CorrectDocModal
@@ -404,6 +406,7 @@ export default function CyclesScreen() {
                             currentDoc={parseInt(String(selectedCycle.doc || 0))}
                             open={isEditDocOpen}
                             onOpenChange={setIsEditDocOpen}
+                            onSuccess={activeQuery.refetch}
                         />
 
                         <CorrectAgeModal
@@ -418,6 +421,7 @@ export default function CyclesScreen() {
                             cycleId={selectedCycle.id}
                             open={isCorrectMortalityOpen}
                             onOpenChange={setIsCorrectMortalityOpen}
+                            onSuccess={activeQuery.refetch}
                         />
 
                         <EndCycleModal
@@ -426,6 +430,7 @@ export default function CyclesScreen() {
                             open={isEndCycleOpen}
                             onOpenChange={setIsEndCycleOpen}
                             onRecordSale={() => setIsSellOpen(true)}
+                            onSuccess={activeQuery.refetch}
                         />
 
                         {/* History Modals */}

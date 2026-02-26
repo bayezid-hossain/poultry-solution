@@ -10,7 +10,7 @@ type SaleEvent = any;
 type SaleReport = any;
 
 export interface SaleDetailsContentProps {
-    sale: Partial<SaleEvent> & { cycleContext?: any; houseBirds?: number; cashReceived?: string; depositReceived?: string; medicineCost?: string; feedConsumed?: string; feedStock?: string };
+    sale: Partial<SaleEvent> & { cycleContext?: any; houseBirds?: number; cashReceived?: string; depositReceived?: string; medicineCost?: string; feedConsumed?: string; feedStock?: string; saleAge?: number };
     isLatest?: boolean;
     displayBirdsSold: number;
     displayTotalWeight: string;
@@ -97,13 +97,32 @@ export const SaleDetailsContent = ({
             {/* Main Stats Grid */}
             <View className="flex-row gap-4">
                 <View className="flex-1 space-y-4">
-                    <View className="flex-row justify-between items-baseline">
-                        <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Sale Age</Text>
-                        <View className="flex-row items-baseline gap-1">
-                            <Text className="font-bold text-foreground">{sale.cycleContext?.age || "N/A"}</Text>
-                            <Text className="text-[10px] text-muted-foreground">days</Text>
+                    {hasEndedCycleData ? (
+                        <>
+                            <View className="flex-row justify-between items-baseline">
+                                <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Weighted Age</Text>
+                                <View className="flex-row items-baseline gap-1">
+                                    <Text className="font-bold text-primary">{sale.cycleContext?.age || "N/A"}</Text>
+                                    <Text className="text-[10px] text-muted-foreground">days</Text>
+                                </View>
+                            </View>
+                            <View className="flex-row justify-between items-baseline">
+                                <Text className="text-muted-foreground text-[10px] uppercase tracking-tight font-bold opacity-70">Sale Age</Text>
+                                <View className="flex-row items-baseline gap-1">
+                                    <Text className="font-semibold text-muted-foreground opacity-80">{sale.saleAge ?? "N/A"}</Text>
+                                    <Text className="text-[8px] text-muted-foreground opacity-80">days</Text>
+                                </View>
+                            </View>
+                        </>
+                    ) : (
+                        <View className="flex-row justify-between items-baseline">
+                            <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Sale Age</Text>
+                            <View className="flex-row items-baseline gap-1">
+                                <Text className="font-bold text-foreground">{sale.saleAge ?? sale.cycleContext?.age ?? "N/A"}</Text>
+                                <Text className="text-[10px] text-muted-foreground">days</Text>
+                            </View>
                         </View>
-                    </View>
+                    )}
                     <View className="flex-row justify-between items-baseline">
                         <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Total DOC</Text>
                         <Text className="font-bold text-foreground">{sale.cycleContext?.doc || sale.houseBirds}</Text>

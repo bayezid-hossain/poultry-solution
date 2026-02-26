@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
+import * as ExpoClipboard from 'expo-clipboard';
 import { AlertTriangle, CheckCircle2, Edit2, History, Plus, Sparkles, Trash2, X } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
@@ -402,16 +403,29 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                     <View className="flex-1">
                         {step === "INPUT" ? (
                             <View className="flex-1 p-6">
-                                <View className="flex-1 bg-muted/30 border border-border rounded-3xl p-5 mb-6 shadow-inner">
+                                <View className="flex-1 bg-muted/30 border border-border rounded-3xl p-2 mb-6 shadow-inner relative">
+                                    <View className="flex flex-row gap-2 w-full items-end justify-end">
+                                        {inputText.length > 0 && (
+                                            <Pressable onPress={() => setInputText("")} className="bg-background/80 flex-row items-center gap-1.5 px-3 py-2 rounded-xl border border-border active:opacity-70">
+                                                <Icon as={X} size={14} className="text-muted-foreground" />
+                                                <Text className="text-xs font-bold text-muted-foreground">Clear</Text>
+                                            </Pressable>
+                                        )}
+                                        <Pressable onPress={async () => { const text = await ExpoClipboard.getStringAsync(); setInputText(text); }} className="bg-background/80 flex-row items-center gap-1.5 px-3 py-2 rounded-xl border border-border active:opacity-70">
+                                            <Icon as={History} size={14} className="text-foreground" />
+                                            <Text className="text-xs font-bold text-foreground">Paste</Text>
+                                        </Pressable>
+                                    </View>
                                     <TextInput
                                         multiline
                                         placeholder={`Paste daily reports here...\n\nExample:\nDate: 26 Feb 2026\n\nFarm 01\nHashem Ali\n2000 pcs\nRoss A\nLoc: Gazipur\nPh: 017...`}
-                                        className="flex-1 text-foreground text-sm leading-relaxed font-medium"
+                                        className="flex-1 text-foreground text-sm leading-relaxed font-medium pb-12"
                                         style={{ textAlignVertical: 'top' }}
                                         value={inputText}
                                         onChangeText={setInputText}
                                         placeholderTextColor="rgba(128,128,128,0.5)"
                                     />
+
                                 </View>
                                 <Button
                                     onPress={handleExtract}
@@ -526,7 +540,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                                                         onPress={() => handleRemove(item.id)}
                                                         className="h-8 w-8 items-center justify-center rounded-full bg-muted/50"
                                                     >
-                                                        <Icon as={Trash2} size={14} className="text-destructive/60" />
+                                                        <Icon as={Trash2} size={14} className="text-destructive/60" color={"red"} />
                                                     </Pressable>
                                                 </View>
 

@@ -245,7 +245,7 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
     };
 
     const handleAddBatch = (itemId: string) => {
-        const defaultBirdType = birdTypes?.[0]?.name || "Broiler";
+        const defaultBirdType = birdTypes?.[birdTypes.length - 1]?.name || "Broiler";
         setItems(prev => prev.map(item => {
             if (item.id !== itemId) return item;
             return {
@@ -546,10 +546,15 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                         <View>
                             <Text className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Total Requirements</Text>
                             <Text className="text-xl font-black">
+                                {items.length}
+                                <Text className="text-sm font-medium text-muted-foreground"> Farmers</Text>
+                            </Text>
+                            <Text className="text-xl font-black">
                                 {items.reduce((sum, item) => sum + item.batches.reduce((bSum, b) => bSum + (Number(b.docCount) || 0), 0), 0)}
                                 <Text className="text-sm font-medium text-muted-foreground"> DOCs</Text>
                             </Text>
                         </View>
+
                         <Button
                             onPress={handleCreate}
                             disabled={isSubmitting || items.length === 0}
