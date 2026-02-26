@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { useRouter } from "expo-router";
-import { Bird, CalendarDays, MoreHorizontal, Pencil, Power, RefreshCw, RotateCcw, ShoppingCart, Skull, Trash2, Wheat, Wrench } from "lucide-react-native";
+import { Bird, CalendarDays, CircleDashed, MoreHorizontal, Pencil, Power, RotateCcw, ShoppingCart, Skull, Trash2, Wheat, Wrench } from "lucide-react-native";
 import { useState } from "react";
 import { Modal, Pressable, TouchableOpacity, View } from "react-native";
 
@@ -88,7 +88,11 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
 
                             {soldValue > 0 && (
                                 <View className={`flex-row items-center gap-1 px-1.5 py-0.5 rounded ${isActive ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-muted/30 border border-border/50'}`}>
-                                    {isActive && <Icon as={RefreshCw} size={10} className="text-emerald-500 animate-spin" />}
+                                    {isActive && (
+                                        <View className="animate-spin">
+                                            <Icon as={CircleDashed} size={12} className="text-primary" />
+                                        </View>
+                                    )}
                                     <Text className={`text-[9px] font-bold uppercase ${isActive ? 'text-emerald-600' : 'text-muted-foreground'}`}>
                                         {soldValue} SOLD {isActive ? '• RUNNING' : ''}
                                     </Text>

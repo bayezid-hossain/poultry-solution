@@ -1,13 +1,12 @@
-/// <reference types="nativewind/types" />
 import { AddMortalityModal } from "@/components/cycles/add-mortality-modal";
 import { CorrectAgeModal } from "@/components/cycles/correct-age-modal";
 import { CorrectDocModal } from "@/components/cycles/correct-doc-modal";
 import { CorrectMortalityModal } from "@/components/cycles/correct-mortality-modal";
 import { CycleAction, CycleCard } from "@/components/cycles/cycle-card";
+import { CycleRowAccordion } from "@/components/cycles/cycle-row-accordion";
 import { DeleteCycleModal } from "@/components/cycles/delete-cycle-modal";
 import { EndCycleModal } from "@/components/cycles/end-cycle-modal";
 import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
-import { SaleEventCard } from "@/components/cycles/sale-event-card";
 import { SellModal } from "@/components/cycles/sell-modal";
 import { DeleteFarmerModal } from "@/components/farmers/delete-farmer-modal";
 import { EditFarmerModal } from "@/components/farmers/edit-farmer-modal";
@@ -26,7 +25,7 @@ import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
 import { Activity, Archive, ArrowLeft, ArrowRightLeft, Bird, ChevronDown, ChevronUp, History, Link, MoreVertical, Package, Pencil, Plus, Scale, ShoppingCart, Trash2, Wrench } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
 export default function FarmerDetailScreen() {
@@ -82,6 +81,42 @@ export default function FarmerDetailScreen() {
         { farmerId: id },
         { enabled: !!id && salesExpanded }
     );
+
+    const groupedSales = useMemo(() => {
+        if (!salesData) return [];
+
+        const cycles: Record<string, any> = {};
+
+        salesData.forEach((sale: any) => {
+            const cKey = sale.cycleId || sale.historyId || "unknown";
+            const cName = sale.cycleName || "Unknown Cycle";
+
+            if (!cycles[cKey]) {
+                cycles[cKey] = {
+                    id: cKey,
+                    name: cName,
+                    sales: [sale],
+                    doc: sale.cycleContext?.doc || Number(sale.cycle?.doc) || 0,
+                    age: sale.cycleContext?.age || 0,
+                    totalSold: sale.cycleContext?.cumulativeBirdsSold || sale.birdsSold || 0,
+                    isEnded: !!sale.historyId
+                };
+            } else {
+                cycles[cKey].sales.push(sale);
+                cycles[cKey].totalSold = Math.max(
+                    cycles[cKey].totalSold,
+                    sale.cycleContext?.cumulativeBirdsSold || 0
+                );
+            }
+        });
+
+        return Object.values(cycles).sort((a: any, b: any) => {
+            // Sort by latest sale date in each cycle
+            const latestA = Math.max(...a.sales.map((s: any) => new Date(s.saleDate).getTime()));
+            const latestB = Math.max(...b.sales.map((s: any) => new Date(s.saleDate).getTime()));
+            return latestB - latestA;
+        });
+    }, [salesData]);
 
     const stockHistoryProcedure = isManagement ? trpc.management.stock.getHistory : trpc.officer.stock.getHistory;
     const { data: ledgerData, isLoading: ledgerLoading } = (stockHistoryProcedure as any).useQuery(
@@ -378,11 +413,18 @@ export default function FarmerDetailScreen() {
                                         <BirdyLoader size={48} />
                                         <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Fetching Sales</Text>
                                     </View>
-                                ) : salesData?.length ? (
+                                ) : groupedSales.length ? (
                                     renderSalesCards ? (
-                                        salesData.map((sale: any, index: number) => (
-                                            <SaleEventCard key={sale.id} sale={sale} isLatest={index === 0} />
-                                        ))
+                                        <View className="gap-2">
+                                            {groupedSales.map((cycleGroup: any, idx: number) => (
+                                                <CycleRowAccordion
+                                                    key={cycleGroup.id}
+                                                    cycle={cycleGroup}
+                                                    isLast={idx === groupedSales.length - 1}
+                                                    onRefresh={refetchAll}
+                                                />
+                                            ))}
+                                        </View>
                                     ) : (
                                         <View className="py-20 items-center justify-center">
                                             <BirdyLoader size={48} color="#10b981" />

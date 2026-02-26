@@ -1,4 +1,4 @@
-import { SaleEventCard } from "@/components/cycles/sale-event-card";
+import { CycleRowAccordion } from "@/components/cycles/cycle-row-accordion";
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ScreenHeader } from "@/components/screen-header";
 import { Card } from "@/components/ui/card";
@@ -9,10 +9,9 @@ import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
-import { CheckCircle2, ChevronDown, ChevronUp, CircleDashed, FileText, Search, Trash2, User } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
+import { ChevronDown, ChevronUp, FileText, Search, User } from "lucide-react-native";
+import { useCallback, useMemo, useState } from "react";
+import { RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
 
 export default function SalesScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -197,117 +196,3 @@ function FarmerSalesAccordion({ farmer, onRefresh }: { farmer: any, onRefresh: (
     );
 }
 
-function CycleRowAccordion({ cycle, isLast, onRefresh }: { cycle: any, isLast: boolean, onRefresh: () => void }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const trpcContext = trpc.useUtils();
-
-    const deleteMutation = trpc.officer.sales.delete.useMutation({
-        onSuccess: () => {
-            onRefresh();
-            trpcContext.officer.cycles.listActive.invalidate();
-            trpcContext.officer.farmers.listWithStock.invalidate();
-        },
-        onError: (err) => {
-            Alert.alert("Error", err.message || "Failed to delete sales record.");
-        }
-    });
-
-    const handleDeleteClick = (firstSaleId: string, historyId?: string) => {
-        Alert.alert(
-            "Delete Sales",
-            "This will delete ALL sales records for this cycle and revert stats. This cannot be undone.",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: () => {
-                        deleteMutation.mutate({
-                            saleEventId: firstSaleId,
-                            historyId: historyId
-                        });
-                    }
-                }
-            ]
-        );
-    }; // Animation for spinning icon
-    const rotation = useSharedValue(0);
-    useEffect(() => {
-        rotation.value = withRepeat(
-            withTiming(360, { duration: 3000, easing: Easing.linear }),
-            -1 // Infinite repeat
-        );
-    }, []);
-
-    const animatedStyle = useAnimatedStyle(() => {
-        return {
-            transform: [{ rotate: `${rotation.value}deg` }]
-        };
-    });
-
-    return (
-        <View className={`${!isLast ? 'border-b border-border/10' : ''}`}>
-            <TouchableOpacity
-                activeOpacity={0.7}
-                className="py-3 px-3 flex-row items-center justify-between active:bg-muted/10 transition-colors"
-                onPress={() => setIsOpen(!isOpen)}
-            >
-                <View className="flex-row items-center gap-1.5 flex-[1.5]">
-                    <View className="ml-1 justify-center">
-                        {cycle.isEnded ? (
-                            <Icon as={CheckCircle2} size={16} className="text-emerald-500" />
-                        ) : (
-                            <Animated.View style={animatedStyle}>
-                                <Icon as={CircleDashed} size={16} className="text-blue-500" />
-                            </Animated.View>
-                        )}
-                    </View><Text className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1">
-                        {cycle.sales.length} {cycle.sales.length === 1 ? 'SALE' : 'SALES'}
-                    </Text>
-                </View>
-
-                <View className="flex-1 items-center">
-                    <Text className="text-xs font-black text-foreground">{cycle.age}d</Text>
-                </View>
-
-                <View className="flex-[1.5] items-center">
-                    <Text className="text-xs font-black text-foreground">{cycle.doc.toLocaleString()}</Text>
-                </View>
-
-                <View className="flex-[1.5] items-center">
-                    <Text className="text-xs font-black text-emerald-500">{cycle.totalSold.toLocaleString()}</Text>
-                </View>
-
-                <View className="flex-row items-center flex-1 justify-end gap-2">
-                    <Pressable
-                        className="p-1 active:bg-destructive/10 rounded-full"
-                        onPress={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick(cycle.sales[0].id, cycle.sales[0].historyId);
-                        }}
-                        disabled={deleteMutation.isPending}
-                    >
-                        {deleteMutation.isPending ? (
-                            <BirdyLoader size={16} color="#ef4444" />
-                        ) : (
-                            <Icon as={Trash2} size={14} className="text-destructive/80" />
-                        )}
-                    </Pressable>
-                    <Icon as={isOpen ? ChevronUp : ChevronDown} size={16} className="text-muted-foreground/70" />
-                </View>
-            </TouchableOpacity>
-
-            {isOpen && (
-                <View className="bg-muted/10 px-2 pt-3 pb-1 border-t border-border/10">
-                    {cycle.sales.sort((a: any, b: any) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime()).map((event: any, sIdx: number) => (
-                        <SaleEventCard
-                            key={event.id}
-                            sale={event}
-                            isLatest={sIdx === 0}
-                        />
-                    ))}
-                </View>
-            )}
-        </View>
-    );
-}
