@@ -105,7 +105,9 @@ export function CycleRowAccordion({ cycle, isLast, onRefresh }: CycleRowAccordio
 
             {isOpen && (
                 <View className="bg-muted/10 px-2 pt-3 pb-1 border-t border-border/10">
-                    {cycle.sales.sort((a: any, b: any) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime()).map((event: any, sIdx: number) => (
+                    {[...cycle.sales].sort((a: any, b: any) => {
+                        return new Date(b.createdAt || b.saleDate).getTime() - new Date(a.createdAt || a.saleDate).getTime();
+                    }).map((event: any, sIdx: number) => (
                         <SaleEventCard
                             key={event.id}
                             sale={event}

@@ -16,9 +16,8 @@ import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
-import { useFocusEffect } from "expo-router";
 import { ChevronDown, ChevronUp, List, Plus, Search, ShoppingCart, Sparkles, X } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { FlatList, Pressable, View } from "react-native";
 
 export default function FarmersScreen() {
@@ -70,13 +69,6 @@ export default function FarmersScreen() {
     const isLoading = isManagement ? mgmtQuery.isLoading : officerQuery.isLoading;
     const refetch = isManagement ? mgmtQuery.refetch : officerQuery.refetch;
     // console.log(isManagement, selectedOfficerId)
-    useFocusEffect(
-        useCallback(() => {
-            if (membership?.orgId) {
-                refetch();
-            }
-        }, [membership?.orgId, refetch])
-    );
 
     const farmers = data?.items ?? [];
 

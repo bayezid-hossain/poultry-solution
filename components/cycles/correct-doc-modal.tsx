@@ -55,15 +55,10 @@ export function CorrectDocModal({
             setError("Please enter a valid number of birds (>0)");
             return;
         }
-        if (!reason || reason.trim().length < 3) {
-            setError("Please provide a reason (min 3 characters)");
-            return;
-        }
-        setError(null);
         mutation.mutate({
             cycleId,
             newDoc: numDoc,
-            reason: reason.trim(),
+            reason: reason.trim() || undefined,
         });
     };
 

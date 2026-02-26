@@ -55,15 +55,10 @@ export function CorrectAgeModal({
             setError("Please enter a valid age (>0)");
             return;
         }
-        if (!reason || reason.trim().length < 3) {
-            setError("Please provide a reason (min 3 characters)");
-            return;
-        }
-        setError(null);
         mutation.mutate({
             cycleId,
             newAge: numAge,
-            reason: reason.trim(),
+            reason: reason.trim() || undefined,
         });
     };
 

@@ -82,7 +82,20 @@ export default function SalesScreen() {
             }
         });
 
-        return Object.values(farmers).sort((a, b) => a.name.localeCompare(b.name));
+        return Object.values(farmers).sort((a, b) => {
+            const getLatestSaleTime = (farmerCycles: Record<string, any>) => {
+                let maxTime = 0;
+                Object.values(farmerCycles).forEach((cycle) => {
+                    cycle.sales.forEach((sale: any) => {
+                        const t = new Date(sale.createdAt || sale.saleDate).getTime();
+                        if (t > maxTime) maxTime = t;
+                    });
+                });
+                return maxTime;
+            };
+
+            return getLatestSaleTime(b.cycles) - getLatestSaleTime(a.cycles);
+        });
     }, [recentSales]);
 
     return (
@@ -157,6 +170,13 @@ function FarmerSalesAccordion({ farmer, onRefresh }: { farmer: any, onRefresh: (
     const [isOpen, setIsOpen] = useState(true);
     const cycleList = Object.values(farmer.cycles);
 
+    const sortedCycleList = [...cycleList].sort((a: any, b: any) => {
+        const getLatestTime = (sales: any[]) => {
+            return Math.max(...sales.map(s => new Date(s.createdAt || s.saleDate).getTime()));
+        };
+        return getLatestTime(b.sales) - getLatestTime(a.sales);
+    });
+
     return (
         <Card className="bg-card border-border/40 rounded-lg overflow-hidden">
             <TouchableOpacity
@@ -182,11 +202,11 @@ function FarmerSalesAccordion({ farmer, onRefresh }: { farmer: any, onRefresh: (
 
             {isOpen && (
                 <View className="pb-1">
-                    {cycleList.map((cycle: any, index: number) => (
+                    {sortedCycleList.map((cycle: any, index: number) => (
                         <CycleRowAccordion
                             key={cycle.id}
                             cycle={cycle}
-                            isLast={index === cycleList.length - 1}
+                            isLast={index === sortedCycleList.length - 1}
                             onRefresh={onRefresh}
                         />
                     ))}

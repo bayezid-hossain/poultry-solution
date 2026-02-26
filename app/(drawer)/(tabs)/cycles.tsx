@@ -19,7 +19,7 @@ import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
-import { router, useFocusEffect } from "expo-router";
+import { router } from "expo-router";
 import { Activity, Archive, Bird, ChevronDown, ChevronUp, History, LayoutGrid, List, Pencil, Plus, Search, ShoppingCart, Skull, Sparkles, Table2 } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Modal, Pressable, View } from "react-native";
@@ -101,16 +101,6 @@ export default function CyclesScreen() {
 
     const activeQuery = isManagement ? mgmtActiveQuery : officerActiveQuery;
     const historyQuery = isManagement ? mgmtHistoryQuery : officerHistoryQuery;
-
-    useFocusEffect(
-        useCallback(() => {
-            if (activeTab === 'active') {
-                activeQuery.refetch();
-            } else {
-                historyQuery.refetch();
-            }
-        }, [activeTab])
-    );
 
     const syncMutation = trpc.officer.cycles.syncFeed.useMutation({
         onSuccess: (data) => {
@@ -421,6 +411,7 @@ export default function CyclesScreen() {
                             currentAge={selectedCycle.age}
                             open={isEditAgeOpen}
                             onOpenChange={setIsEditAgeOpen}
+                            onSuccess={activeQuery.refetch}
                         />
 
                         <CorrectMortalityModal
