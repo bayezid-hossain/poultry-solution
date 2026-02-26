@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input";
 import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
+import { exportToExcel, exportToPDF } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
-import { ChevronDown, ChevronUp, FileText, Search, User, X } from "lucide-react-native";
+import { ChevronDown, ChevronUp, FileText, Search, Table, User, X } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
+import { Alert, Pressable, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
 
 export default function SalesScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -103,6 +104,110 @@ export default function SalesScreen() {
         });
     }, [recentSales]);
 
+    const exportPdf = async () => {
+        if (!recentSales || recentSales.length === 0) return;
+
+        let totalRevenue = 0;
+        let totalBirds = 0;
+        let totalWeight = 0;
+
+        recentSales.forEach((s: any) => {
+            totalRevenue += s.totalRevenue || 0;
+            totalBirds += s.birdsSold || 0;
+            totalWeight += Number(s.totalWeight) || 0;
+        });
+
+        const html = `
+            <h2>Sales Ledger</h2>
+            <div class="kpi-container">
+                <div class="kpi-card">
+                    <div class="kpi-value">৳${totalRevenue.toLocaleString()}</div>
+                    <div class="kpi-label">Total Revenue</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">${totalBirds.toLocaleString()}</div>
+                    <div class="kpi-label">Total Birds Sold</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">${totalWeight.toFixed(2)} kg</div>
+                    <div class="kpi-label">Total Weight</div>
+                </div>
+            </div>
+            
+            <h3>Recent Sales</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Farmer</th>
+                        <th>Cycle</th>
+                        <th>Birds</th>
+                        <th>Weight (kg)</th>
+                        <th>Avg Wt. (kg)</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${recentSales.map((s: any) => `
+                        <tr>
+                            <td>${new Date(s.saleDate || s.createdAt).toLocaleDateString()}</td>
+                            <td>${s.farmerName || s.cycle?.farmer?.name || s.history?.farmer?.name || "-"}</td>
+                            <td>${s.cycleName || "-"}</td>
+                            <td>${s.birdsSold}</td>
+                            <td>${Number(s.totalWeight).toFixed(2)}</td>
+                            <td>${Number(s.averageWeight).toFixed(2)}</td>
+                            <td>৳${s.totalRevenue.toLocaleString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        try { await exportToPDF({ title: "Sales Ledger", htmlContent: html }); }
+        catch (e) { Alert.alert("Export Failed", "Error generating PDF."); }
+    };
+
+    const exportExcel = async () => {
+        if (!recentSales || recentSales.length === 0) return;
+
+        let totalRevenue = 0; let totalBirds = 0; let totalWeight = 0;
+        recentSales.forEach((s: any) => {
+            totalRevenue += s.totalRevenue || 0;
+            totalBirds += s.birdsSold || 0;
+            totalWeight += Number(s.totalWeight) || 0;
+        });
+
+        const summaryData = [
+            { Metric: "Total Revenue", Value: `৳${totalRevenue}` },
+            { Metric: "Total Birds Sold", Value: totalBirds },
+            { Metric: "Total Weight (kg)", Value: totalWeight.toFixed(2) },
+            { Metric: "Avg Price/kg", Value: totalWeight > 0 ? `৳${(totalRevenue / totalWeight).toFixed(2)}` : "0" }
+        ];
+
+        const rawData = recentSales.map((s: any) => ({
+            Date: new Date(s.saleDate || s.createdAt).toLocaleDateString(),
+            Farmer: s.farmerName || s.cycle?.farmer?.name || s.history?.farmer?.name || "-",
+            Cycle: s.cycleName || "-",
+            "Birds Sold": s.birdsSold,
+            "Total Weight (kg)": Number(s.totalWeight).toFixed(2),
+            "Average Weight (kg)": Number(s.averageWeight).toFixed(2),
+            "Price/kg": `৳${s.pricePerKg}`,
+            Revenue: `৳${s.totalRevenue}`
+        }));
+
+        try {
+            await exportToExcel({
+                title: "Sales_Ledger",
+                summaryData,
+                rawHeaders: ["Date", "Farmer", "Cycle", "Birds Sold", "Total Weight (kg)", "Average Weight (kg)", "Price/kg", "Revenue"],
+                rawDataTable: rawData,
+                definitions: [
+                    { Metric: "Avg Price/kg", Calculation: "Total Revenue / Total Weight" }
+                ]
+            });
+        } catch (e) { Alert.alert("Export Failed", "Error generating Excel."); }
+    };
+
     return (
         <View className="flex-1 bg-background">
             <ScreenHeader title="Sales" />
@@ -113,7 +218,7 @@ export default function SalesScreen() {
                         <OfficerSelector orgId={membership?.orgId ?? ""} />
                     </View>
                 )}
-                {/* Search Bar */}
+                {/* Search Bar & Actions */}
                 <View className="relative flex-row items-center gap-2">
                     <View className="flex-1 relative">
                         <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
@@ -135,6 +240,12 @@ export default function SalesScreen() {
                             </Pressable>
                         )}
                     </View>
+                    <Pressable onPress={exportExcel} className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl items-center justify-center active:bg-emerald-500/20">
+                        <Icon as={Table} size={20} className="text-emerald-600" />
+                    </Pressable>
+                    <Pressable onPress={exportPdf} className="w-12 h-12 bg-destructive/10 border border-destructive/20 rounded-2xl items-center justify-center active:bg-destructive/20">
+                        <Icon as={FileText} size={20} className="text-destructive" />
+                    </Pressable>
                 </View>
             </View>
 

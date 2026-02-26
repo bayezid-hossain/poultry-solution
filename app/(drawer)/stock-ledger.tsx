@@ -8,12 +8,13 @@ import { Icon } from "@/components/ui/icon";
 import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
+import { exportToExcel, exportToPDF } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { Link, router } from "expo-router";
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, ChevronDown, ChevronUp, ClipboardList, Package, RotateCcw, Search, User, Wheat } from "lucide-react-native";
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, ChevronDown, ChevronUp, ClipboardList, FileText, Package, RotateCcw, Search, Table, User, Wheat } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, TextInput, View } from "react-native";
+import { Alert, Pressable, RefreshControl, ScrollView, TextInput, View } from "react-native";
 
 export default function StockLedgerScreen() {
     const [tab, setTab] = useState<"stock" | "imports">("stock");
@@ -114,6 +115,65 @@ function StockTab({ isManagement, officerId, orgId, searchQuery }: { isManagemen
     const items = data?.items ?? [];
     const totalStock = items.reduce((acc: number, f: { mainStock: number | null; }) => acc + Number(f.mainStock ?? 0), 0);
 
+    const exportPdf = async () => {
+        if (!items || items.length === 0) return;
+        const html = `
+            <h2>Current Stock Ledger</h2>
+            <div class="kpi-container">
+                <div class="kpi-card">
+                    <div class="kpi-value">${totalStock.toFixed(1)} bags</div>
+                    <div class="kpi-label">Total Feed Stock</div>
+                </div>
+            </div>
+            
+            <h3>Stock by Farmer</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Farmer</th>
+                        <th>Main Stock (Bags)</th>
+                        <th>Last Updated</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${items.map((f: any) => `
+                        <tr>
+                            <td>${f.name}</td>
+                            <td>${Number(f.mainStock).toFixed(1)}</td>
+                            <td>${f.updatedAt ? new Date(f.updatedAt).toLocaleDateString() : "-"}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        try { await exportToPDF({ title: "Current Stock", htmlContent: html }); }
+        catch (e) { Alert.alert("Export Failed", "Error generating PDF."); }
+    };
+
+    const exportExcel = async () => {
+        if (!items || items.length === 0) return;
+
+        const summaryData = [
+            { Metric: "Total Feed Stock", Value: totalStock.toFixed(1) },
+            { Metric: "Total Farmers", Value: items.length },
+        ];
+
+        const rawData = items.map((f: any) => ({
+            Farmer: f.name,
+            "Main Stock (Bags)": Number(f.mainStock).toFixed(1),
+            "Last Updated": f.updatedAt ? new Date(f.updatedAt).toLocaleDateString() : "-"
+        }));
+
+        try {
+            await exportToExcel({
+                title: "Current_Stock",
+                summaryData,
+                rawHeaders: ["Farmer", "Main Stock (Bags)", "Last Updated"],
+                rawDataTable: rawData
+            });
+        } catch (e) { Alert.alert("Export Failed", "Error generating Excel."); }
+    };
+
     return (
         <>
             {refreshing && (
@@ -126,6 +186,18 @@ function StockTab({ isManagement, officerId, orgId, searchQuery }: { isManagemen
                     <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
                 }
             >
+                {/* Export Actions Center */}
+                <View className="flex-row justify-end gap-2 mb-4">
+                    <Pressable onPress={exportExcel} className="flex-row items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-lg active:bg-emerald-500/20">
+                        <Icon as={Table} size={16} className="text-emerald-600" />
+                        <Text className="text-xs font-bold text-emerald-700">Export Excel</Text>
+                    </Pressable>
+                    <Pressable onPress={exportPdf} className="flex-row items-center gap-1.5 bg-destructive/10 border border-destructive/20 px-3 py-2 rounded-lg active:bg-destructive/20">
+                        <Icon as={FileText} size={16} className="text-destructive" />
+                        <Text className="text-xs font-bold text-destructive">Export PDF</Text>
+                    </Pressable>
+                </View>
+
                 {/* Total Summary */}
                 <Card className="mb-6 border-border/50 bg-primary/5">
                     <CardContent className="p-4 items-center">
@@ -328,6 +400,59 @@ function ImportHistoryTab({ isManagement, officerId, orgId, searchQuery }: { isM
 
     const batches = data?.items ?? [];
 
+    const exportPdf = async () => {
+        if (!batches || batches.length === 0) return;
+        const html = `
+            <h2>Bulk Import History</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Batch ID</th>
+                        <th>Date</th>
+                        <th>Driver</th>
+                        <th>Farmers Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${batches.map((b: any) => `
+                        <tr>
+                            <td>${b.batchId?.slice(0, 8)}</td>
+                            <td>${format(new Date(b.createdAt), "dd/MM/yyyy h:mm a")}</td>
+                            <td>${b.driverName || "-"}</td>
+                            <td>${b.count}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        try { await exportToPDF({ title: "Bulk Imports", htmlContent: html }); }
+        catch (e) { Alert.alert("Export Failed", "Error generating PDF."); }
+    };
+
+    const exportExcel = async () => {
+        if (!batches || batches.length === 0) return;
+
+        const summaryData = [
+            { Metric: "Total Import Batches", Value: batches.length }
+        ];
+
+        const rawData = batches.map((b: any) => ({
+            "Batch ID": b.batchId,
+            Date: format(new Date(b.createdAt), "dd/MM/yyyy h:mm a"),
+            Driver: b.driverName || "-",
+            "Farmers Count": b.count
+        }));
+
+        try {
+            await exportToExcel({
+                title: "Bulk_Imports",
+                summaryData,
+                rawHeaders: ["Batch ID", "Date", "Driver", "Farmers Count"],
+                rawDataTable: rawData
+            });
+        } catch (e) { Alert.alert("Export Failed", "Error generating Excel."); }
+    };
+
     return (
         <>
             {refreshing && (
@@ -340,12 +465,24 @@ function ImportHistoryTab({ isManagement, officerId, orgId, searchQuery }: { isM
                     <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
                 }
             >
-                <View className="flex-row items-center gap-2 mb-4 px-1">
-                    <Icon as={Package} size={16} className="text-primary" />
-                    <Text className="text-base font-bold text-foreground">Bulk Imports</Text>
-                    <Badge variant="outline" className="ml-auto border-primary/30 h-6 px-2.5">
-                        <Text className="text-[10px] text-primary font-bold">{batches.length}</Text>
-                    </Badge>
+                <View className="flex-row items-center justify-between mb-4 px-1">
+                    <View className="flex-row items-center gap-2">
+                        <Icon as={Package} size={16} className="text-primary" />
+                        <Text className="text-base font-bold text-foreground">Bulk Imports</Text>
+                        <Badge variant="outline" className="border-primary/30 h-6 px-2.5">
+                            <Text className="text-[10px] text-primary font-bold">{batches.length}</Text>
+                        </Badge>
+                    </View>
+                    <View className="flex-row gap-2">
+                        <Pressable onPress={exportExcel} className="flex-row items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-lg active:bg-emerald-500/20">
+                            <Icon as={Table} size={16} className="text-emerald-600" />
+                            <Text className="text-xs font-bold text-emerald-700">Excel</Text>
+                        </Pressable>
+                        <Pressable onPress={exportPdf} className="flex-row items-center gap-1.5 bg-destructive/10 border border-destructive/20 px-3 py-2 rounded-lg active:bg-destructive/20">
+                            <Icon as={FileText} size={16} className="text-destructive" />
+                            <Text className="text-xs font-bold text-destructive">PDF</Text>
+                        </Pressable>
+                    </View>
                 </View>
 
                 {batches.map((batch: any) => (

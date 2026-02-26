@@ -8,11 +8,12 @@ import { Icon } from "@/components/ui/icon";
 import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
+import { exportToExcel, exportToPDF } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
-import { ChevronDown, ChevronRight, FileText, Filter } from "lucide-react-native";
+import { ChevronDown, ChevronRight, FileText, Filter, Table } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { Modal, Pressable, ScrollView, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, View } from "react-native";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
@@ -64,16 +65,102 @@ export default function DocPlacementsScreen() {
 
     const YEARS = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
 
+    const exportPdf = async () => {
+        if (!data) return;
+        const html = `
+            <div class="section-title">Summary Overview</div>
+            <div class="kpi-container">
+                <div class="kpi-card">
+                    <div class="kpi-value">${(data.summary?.totalDoc ?? 0).toLocaleString()}</div>
+                    <div class="kpi-label">Total DOC Placed</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">${data.summary?.farmerCount ?? 0}</div>
+                    <div class="kpi-label">Total Farmers</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">${data.summary?.cycleCount ?? 0}</div>
+                    <div class="kpi-label">Total Batches</div>
+                </div>
+            </div>
+
+            <div class="section-title">Detailed Placement Breakdown</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Farmer</th>
+                        <th>Batch #</th>
+                        <th>Date</th>
+                        <th>DOC</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${(data.farmers || []).flatMap((f: any) =>
+            f.cycles.map((c: any, i: number) => `
+                        <tr>
+                            <td>${f.farmerName}</td>
+                            <td>${i + 1}</td>
+                            <td>${formatDate(c.date)}</td>
+                            <td>${c.doc.toLocaleString()}</td>
+                            <td>${c.status === 'archived' || c.status === 'completed' ? 'Archived' : 'Active'}</td>
+                        </tr>
+                    `)).join('')}
+                </tbody>
+            </table>
+        `;
+        try { await exportToPDF({ title: `DOC Placement ${MONTHS[month - 1]}, ${year}`, htmlContent: html }); }
+        catch (e) { Alert.alert("Export Error", "Failed to generate PDF"); }
+    };
+
+    const exportExcel = async () => {
+        if (!data) return;
+        const summaryData = [
+            { Metric: "Total DOC Placed", Value: data.summary?.totalDoc ?? 0 },
+            { Metric: "Total Farmers", Value: data.summary?.farmerCount ?? 0 },
+            { Metric: "Total Batches", Value: data.summary?.cycleCount ?? 0 }
+        ];
+
+        const rawData = (data.farmers || []).flatMap((f: any) =>
+            f.cycles.map((c: any, i: number) => ({
+                Farmer: f.farmerName,
+                "Batch #": i + 1,
+                Date: formatDate(c.date),
+                DOC: c.doc,
+                Status: c.status === 'archived' || c.status === 'completed' ? 'Archived' : 'Active'
+            }))
+        );
+
+        try {
+            await exportToExcel({
+                title: `DOC_Placement_${MONTHS[month - 1]}_${year}`,
+                summaryData,
+                rawHeaders: ["Farmer", "Batch #", "Date", "DOC", "Status"],
+                rawDataTable: rawData
+            });
+        } catch (e) { Alert.alert("Export Error", "Failed to generate Excel"); }
+    };
+
     return (
         <View className="flex-1 bg-background">
             <ScreenHeader title="DOC Placements" />
 
             <ScrollView contentContainerClassName="p-4 pb-20" className="flex-1">
-                <View className="mb-6">
-                    <Text className="text-3xl font-black text-foreground mb-1">DOC Placement Report</Text>
-                    <Text className="text-sm text-muted-foreground opacity-70">
-                        Month-wise breakdown of Day Old Chick placements.
-                    </Text>
+                <View className="flex-row items-center justify-between mb-6">
+                    <View>
+                        <Text className="text-3xl font-black text-foreground mb-1">DOC Placement Report</Text>
+                        <Text className="text-sm text-muted-foreground opacity-70">
+                            Month-wise breakdown of Day Old Chick placements.
+                        </Text>
+                    </View>
+                    <View className="flex-row gap-2">
+                        <Pressable onPress={exportExcel} className="w-10 h-10 rounded-xl bg-emerald-500/10 items-center justify-center border border-emerald-500/20 active:bg-emerald-500/20">
+                            <Icon as={Table} size={18} className="text-emerald-600" />
+                        </Pressable>
+                        <Pressable onPress={exportPdf} className="w-10 h-10 rounded-xl bg-destructive/10 items-center justify-center border border-destructive/20 active:bg-destructive/20">
+                            <Icon as={FileText} size={18} className="text-destructive" />
+                        </Pressable>
+                    </View>
                 </View>
 
                 {/* Report Filters */}
@@ -199,9 +286,19 @@ export default function DocPlacementsScreen() {
                                                                 router.push(`/farmer/${f.farmerId}`)
                                                             }} className="font-black text-sm uppercase tracking-tight text-foreground active:text-primary" numberOfLines={1}>{f.farmerName}</Text>
                                                         </Pressable>
-                                                        <Text className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase mt-0.5">
-                                                            {f.cycles?.length ?? 0} {f.cycles?.length === 1 ? 'BATCH' : 'BATCHES'}
-                                                        </Text>
+                                                        <View className="flex-row items-center gap-1.5 mt-0.5">
+                                                            <Text className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase">
+                                                                {f.cycles?.length ?? 0} {f.cycles?.length === 1 ? 'Batch' : 'Batches'}
+                                                            </Text>
+                                                            {f.cycles?.length > 1 && (
+                                                                <>
+                                                                    <View className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                                                                    <Text className="text-[10px] font-medium text-muted-foreground opacity-50">
+                                                                        {f.cycles.map((c: any, i: number) => `B${i + 1}: ${c.doc}`).join(', ')}
+                                                                    </Text>
+                                                                </>
+                                                            )}
+                                                        </View>
                                                     </View>
                                                 </View>
                                                 <Badge variant="outline" className="h-8 px-3 rounded-full bg-primary/10 border-primary/20">

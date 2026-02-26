@@ -29,10 +29,6 @@ export default function TabsDrawerLayout() {
           name="members"
           options={{ title: "Members", headerShown: false }}
         />
-        <Drawer.Screen
-          name="reports"
-          options={{ title: "Reports", headerShown: false }}
-        />
 
         <Drawer.Screen
           name="stock-ledger"
