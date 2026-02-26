@@ -2,18 +2,19 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, CheckCircle2, Edit2, Plus, Sparkles, Trash2, Truck, X } from "lucide-react-native";
+import { AlertTriangle, CheckCircle2, Edit2, History, Plus, Sparkles, Trash2, X } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
 import { toast } from "sonner-native";
-import { ConfirmModal } from "../cycles/confirm-modal";
 import { AppModal } from "../ui/app-modal";
+import { ConfirmModal } from "./confirm-modal";
 
 interface ParsedItem {
     id: string; // Internal ID
     cleanName: string;
     rawName: string;
-    amount: number;
+    doc: number;
+    birdType: string | null;
     matchedFarmerId: string | null;
     matchedName: string | null;
     confidence: "HIGH" | "MEDIUM" | "LOW";
@@ -21,6 +22,7 @@ interface ParsedItem {
     isDuplicate?: boolean;
     location?: string | null;
     mobile?: string | null;
+    startDate?: Date | null;
 }
 
 interface BulkImportModalProps {
@@ -33,7 +35,7 @@ interface BulkImportModalProps {
 export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkImportModalProps) {
     const [step, setStep] = useState<"INPUT" | "REVIEW">("INPUT");
     const [inputText, setInputText] = useState("");
-    const [driverName, setDriverName] = useState("");
+    const [orderDate, setOrderDate] = useState<Date | null>(null);
     const [parsedData, setParsedData] = useState<ParsedItem[]>([]);
     const [isExtracting, setIsExtracting] = useState(false);
     const [loadingRowIds, setLoadingRowIds] = useState<Set<string>>(new Set());
@@ -51,7 +53,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
         pageSize: 1000
     }, { enabled: open });
 
-    const extractMutation = trpc.ai.extractFarmers.useMutation();
+    const extractMutation = trpc.ai.extractCycleOrders.useMutation();
 
     const createFarmerMutation = trpc.officer.farmers.create.useMutation({
         onSuccess: (data: any) => {
@@ -67,8 +69,9 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
         onSuccess: (data: any) => {
             trpcContext.officer.farmers.listWithStock.invalidate();
 
+            // Update matched rows for all created farmers
             setParsedData(prev => {
-                const updated = prev.map(p => {
+                return prev.map(p => {
                     const created = data.find((c: any) => c.name.toUpperCase() === p.cleanName.toUpperCase());
                     if (created && !p.matchedFarmerId) {
                         return {
@@ -80,37 +83,35 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                     }
                     return p;
                 });
-                return calculateDuplicates(updated);
             });
             toast.success(`Created ${data.length} farmers`);
         },
         onError: (err: any) => toast.error(`Failed to create farmers: ${err.message}`)
     });
 
-    const updateProfileMutation = trpc.officer.farmers.updateProfile.useMutation();
-
-    const bulkAddMutation = trpc.officer.stock.bulkAddStock.useMutation({
+    const bulkAddMutation = trpc.officer.cycles.createBulk.useMutation({
         onSuccess: (data: any) => {
-            toast.success(`Successfully added stock to ${data.count} farmers.`);
-            onOpenChange(false);
-            setStep("INPUT");
-            setInputText("");
-            setDriverName("");
-            setParsedData([]);
-            onSuccess?.();
+            if (data.created > 0) {
+                toast.success(`Successfully started ${data.created} cycles.`);
+                onOpenChange(false);
+                setStep("INPUT");
+                setInputText("");
+                setParsedData([]);
+                setOrderDate(null);
+                onSuccess?.();
+            }
+            if (data.errors && data.errors.length > 0) {
+                toast.error(`Failed to start ${data.errors.length} cycles. Check valid matches.`);
+                console.error(data.errors);
+            }
         },
         onError: (err: any) => toast.error(`Failed to import: ${err.message}`)
     });
 
+    const updateProfileMutation = trpc.officer.farmers.updateProfile.useMutation();
+
     const calculateDuplicates = (items: ParsedItem[]): ParsedItem[] => {
-        return items.map(item => {
-            const count = items.filter(r => {
-                if (item.matchedFarmerId && r.matchedFarmerId === item.matchedFarmerId) return true;
-                if (!item.matchedFarmerId && !r.matchedFarmerId && r.cleanName.toLowerCase() === item.cleanName.toLowerCase()) return true;
-                return false;
-            }).length;
-            return { ...item, isDuplicate: count > 1 };
-        });
+        return items.map(item => ({ ...item, isDuplicate: false }));
     };
 
     const handleFarmerCreated = (name: string, newId: string) => {
@@ -139,8 +140,8 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                 name: item.cleanName,
                 initialStock: 0,
                 orgId: orgId,
-                location: item.location || undefined,
-                mobile: item.mobile || undefined
+                location: item.location,
+                mobile: item.mobile
             });
             toast.success(`Farmer "${item.cleanName}" created!`);
         } catch (error) {
@@ -164,8 +165,8 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                 farmers: missing.map(item => ({
                     name: item.cleanName,
                     initialStock: 0,
-                    location: item.location || undefined,
-                    mobile: item.mobile || undefined
+                    location: item.location,
+                    mobile: item.mobile
                 })),
                 orgId: orgId
             });
@@ -193,13 +194,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
     };
 
     const handleNameEdit = (id: string, newName: string) => {
-        setParsedData(prev => {
-            const updatedItems = prev.map(p => {
-                if (p.id !== id) return p;
-                return { ...p, cleanName: newName };
-            });
-            return calculateDuplicates(updatedItems);
-        });
+        setParsedData(prev => prev.map(p => p.id === id ? { ...p, cleanName: newName } : p));
     };
 
     const handleLocationEdit = (id: string, newLocation: string) => {
@@ -210,43 +205,50 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
         setParsedData(prev => prev.map(p => p.id === id ? { ...p, mobile: newMobile } : p));
     };
 
-    const handleAmountEdit = (id: string, newAmount: string) => {
-        const val = parseInt(newAmount) || 0;
-        setParsedData(prev => prev.map(p => p.id === id ? { ...p, amount: val } : p));
+    const handleDocEdit = (id: string, newDoc: string) => {
+        const val = parseInt(newDoc) || 0;
+        setParsedData(prev => prev.map(p => p.id === id ? { ...p, doc: val } : p));
     };
 
     const handleExtract = async () => {
         if (!inputText.trim()) {
-            toast.error("Please paste your report text first.");
+            toast.error("Please paste your orders text first.");
             return;
         }
 
         setIsExtracting(true);
         try {
-            const candidates = (farmersList?.items || []).map((f: any) => ({ id: f.id, name: f.name }));
-            const extractedData = await extractMutation.mutateAsync({
+            const result = await extractMutation.mutateAsync({
                 text: inputText,
-                candidates: candidates
+                orgId: orgId
             });
 
-            const rows: ParsedItem[] = (extractedData as any[]).map((item: any, index: number) => {
+            if (result.orderDate) {
+                setOrderDate(new Date(result.orderDate));
+            } else {
+                setOrderDate(new Date());
+            }
+
+            const rows: ParsedItem[] = (result.items as any[]).map((item: any, index: number) => {
                 return {
                     id: `row-${index}`,
-                    cleanName: item.name || "Unknown",
-                    rawName: item.name || "Unknown",
-                    amount: item.amount || 0,
-                    matchedFarmerId: item.matchedId || null,
-                    matchedName: item.matchedName || null,
-                    confidence: item.confidence || "LOW",
+                    cleanName: item.name,
+                    rawName: item.name,
+                    doc: item.doc,
+                    birdType: item.birdType,
+                    matchedFarmerId: item.matchedId,
+                    matchedName: item.matchedName,
+                    confidence: item.confidence,
                     suggestions: item.suggestions || [],
                     isDuplicate: false,
-                    location: item.location || null,
-                    mobile: item.mobile || null
+                    location: item.location,
+                    mobile: item.mobile,
+                    startDate: result.orderDate ? new Date(result.orderDate) : new Date()
                 };
             });
 
             if (rows.length === 0) {
-                toast.warning("No farmer data found in the text.");
+                toast.warning("No cycle data found in the text.");
                 setIsExtracting(false);
                 return;
             }
@@ -266,28 +268,55 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
     };
 
     const performImport = async () => {
-        const validItems = parsedData.filter(p => p.matchedFarmerId && p.amount > 0);
-        const payload = {
-            driverName: driverName.trim() || undefined,
-            items: validItems.map(p => ({
-                farmerId: p.matchedFarmerId!,
-                amount: p.amount,
-                note: `Bulk Import: ${p.matchedName || p.cleanName}`
-            }))
-        };
-
-        bulkAddMutation.mutate(payload);
-    };
-
-    const handleSubmit = async () => {
-        const validItems = parsedData.filter(p => p.matchedFarmerId && p.amount > 0);
+        const validItems = parsedData.filter(p => p.matchedFarmerId && p.doc > 0);
 
         if (validItems.length === 0) {
             toast.error("No valid matches found to import.");
             return;
         }
 
-        // Check for profile updates
+        if (!orderDate) {
+            toast.error("Order date is missing.");
+            return;
+        }
+
+        try {
+            await bulkAddMutation.mutateAsync({
+                orgId: orgId,
+                cycles: validItems.map(item => ({
+                    farmerId: item.matchedFarmerId!,
+                    doc: item.doc,
+                    birdType: item.birdType || "BROILER",
+                    startDate: item.startDate || orderDate
+                }))
+            });
+        } catch (error) {
+            // Error handled by mutation
+        }
+    };
+
+    const handleSubmit = async () => {
+        const validItems = parsedData.filter(p => p.matchedFarmerId && p.doc > 0);
+
+        if (validItems.length === 0) {
+            toast.error("No valid matches found to import.");
+            return;
+        }
+
+        if (orderDate) {
+            const today = new Date();
+            today.setHours(23, 59, 59, 999);
+
+            const fortyDaysAgo = new Date();
+            fortyDaysAgo.setDate(fortyDaysAgo.getDate() - 40);
+            fortyDaysAgo.setHours(0, 0, 0, 0);
+
+            if (orderDate < fortyDaysAgo) {
+                toast.error("Dates older than 40 days are not allowed");
+                return;
+            }
+        }
+
         const updatesNeeded = validItems.filter(item => {
             const currentFarmer = farmersList?.items.find((f: any) => f.id === item.matchedFarmerId);
             if (!currentFarmer) return false;
@@ -355,7 +384,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                                 <Icon as={Sparkles} size={22} className="text-primary" />
                             </View>
                             <View>
-                                <Text className="text-xl font-black text-foreground uppercase tracking-tight">Bulk Stock Import</Text>
+                                <Text className="text-xl font-black text-foreground uppercase tracking-tight">Bulk Cycle Import</Text>
                                 <View className="flex-row items-center gap-1.5">
                                     <View className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                     <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">AI Powered Extraction</Text>
@@ -376,7 +405,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                                 <View className="flex-1 bg-muted/30 border border-border rounded-3xl p-5 mb-6 shadow-inner">
                                     <TextInput
                                         multiline
-                                        placeholder={`Paste daily stock reports here...\n\nExample:\nFarm 01\nHashem Ali\n20 Bags\nLoc: Gazipur\nPh: 017...`}
+                                        placeholder={`Paste daily reports here...\n\nExample:\nDate: 26 Feb 2026\n\nFarm 01\nHashem Ali\n2000 pcs\nRoss A\nLoc: Gazipur\nPh: 017...`}
                                         className="flex-1 text-foreground text-sm leading-relaxed font-medium"
                                         style={{ textAlignVertical: 'top' }}
                                         value={inputText}
@@ -402,29 +431,20 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                         ) : (
                             <View className="flex-1">
                                 <ScrollView className="flex-1 p-5" contentContainerStyle={{ paddingBottom: 40 }}>
-                                    {/* Sub-header with Stats */}
                                     <View className="flex-row items-center justify-between mb-6 px-1">
                                         <View>
                                             <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Extraction Result</Text>
-                                            <Text className="text-xs font-bold text-foreground mt-1">Review and confirm data</Text>
+                                            {orderDate && (
+                                                <View className="flex-row items-center gap-1.5 mt-1">
+                                                    <Icon as={History} size={12} className="text-primary" />
+                                                    <Text className="text-xs font-bold text-foreground">
+                                                        {orderDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    </Text>
+                                                </View>
+                                            )}
                                         </View>
                                         <View className="bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
                                             <Text className="text-[10px] font-black text-primary uppercase">{parsedData.length} Items</Text>
-                                        </View>
-                                    </View>
-
-                                    {/* Driver Name Input */}
-                                    <View className="mb-6">
-                                        <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 ml-1">Driver Name / Reference</Text>
-                                        <View className="flex-row items-center bg-card border border-border rounded-2xl px-4 h-14">
-                                            <Icon as={Truck} size={18} className="text-muted-foreground mr-3" />
-                                            <TextInput
-                                                placeholder="Driver Name (Optional)"
-                                                value={driverName}
-                                                onChangeText={setDriverName}
-                                                className="flex-1 text-foreground text-sm font-bold"
-                                                placeholderTextColor="rgba(128,128,128,0.5)"
-                                            />
                                         </View>
                                     </View>
 
@@ -438,7 +458,6 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                                                         ? 'bg-card border-emerald-500/20'
                                                         : 'bg-amber-500/5 border-amber-500/20'
                                                     }
-                                                    ${item.isDuplicate ? 'border-destructive/30' : ''}
                                                 `}
                                             >
                                                 {/* Header / Name */}
@@ -507,7 +526,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                                                         onPress={() => handleRemove(item.id)}
                                                         className="h-8 w-8 items-center justify-center rounded-full bg-muted/50"
                                                     >
-                                                        <Icon as={Trash2} size={14} className="text-destructive/60" color={"red"} />
+                                                        <Icon as={Trash2} size={14} className="text-destructive/60" />
                                                     </Pressable>
                                                 </View>
 
@@ -539,12 +558,6 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                                                             </View>
                                                         )}
 
-                                                        {item.isDuplicate && (
-                                                            <View className="bg-destructive/10 px-3 py-1.5 rounded-xl border border-destructive/20">
-                                                                <Text className="text-[9px] font-black text-destructive uppercase tracking-wider">Duplicate</Text>
-                                                            </View>
-                                                        )}
-
                                                         {!item.matchedFarmerId && item.suggestions && item.suggestions.length > 0 && (
                                                             <View className="w-full mt-3 pt-3 border-t border-border">
                                                                 <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-2">Suggestions</Text>
@@ -565,12 +578,12 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
 
                                                     <View className="items-end ml-4">
                                                         <TextInput
-                                                            value={String(item.amount)}
-                                                            onChangeText={(text) => handleAmountEdit(item.id, text)}
+                                                            value={String(item.doc)}
+                                                            onChangeText={(text) => handleDocEdit(item.id, text)}
                                                             keyboardType="numeric"
                                                             className="text-2xl font-black text-foreground tracking-tight p-0"
                                                         />
-                                                        <Text className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.1em] -mt-1">Bags</Text>
+                                                        <Text className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.1em] -mt-1">{item.birdType || 'Birds'}</Text>
                                                     </View>
                                                 </View>
                                             </View>
@@ -596,7 +609,8 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                                                 className="flex-1 h-16 rounded-2xl bg-secondary border border-border flex-row gap-2"
                                             >
                                                 {isCreatingAll ? (
-                                                    <ActivityIndicator className="text-foreground" />) : (
+                                                    <ActivityIndicator color={"#fff"} />
+                                                ) : (
                                                     <>
                                                         <Icon as={Plus} size={18} className="text-primary" />
                                                         <Text className="text-primary font-black text-xs uppercase tracking-widest">Create All</Text>
@@ -614,7 +628,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                                                 <ActivityIndicator color={"#ffffff"} />
                                             ) : (
                                                 <Text className="text-white font-black text-base uppercase tracking-widest">
-                                                    Import to {parsedData.filter(p => p.matchedFarmerId).length} Farmers
+                                                    Start {parsedData.filter(p => p.matchedFarmerId).length} Cycles
                                                 </Text>
                                             )}
                                         </Button>

@@ -8,9 +8,10 @@ import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
 import { Calendar as CalendarIcon, CheckCircle2, Copy, MapPin, Plus, Search, ShoppingBag, Trash2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
+import { AppModal } from "../ui/app-modal";
 
 interface CreateSaleOrderModalProps {
     open: boolean;
@@ -265,7 +266,7 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
     // Search screen
     if (isSearchOpen) {
         return (
-            <Modal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setIsSearchOpen(false)}>
+            <AppModal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setIsSearchOpen(false)}>
 
                 <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
                     <View className="px-4 py-4 border-b border-border/50 flex-row gap-2 items-center">
@@ -318,12 +319,12 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
                         />
                     )}
                 </View>
-            </Modal>
+            </AppModal>
         );
     }
 
     return (
-        <Modal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => !isSubmitting && onOpenChange(false)}>
+        <AppModal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => !isSubmitting && onOpenChange(false)}>
 
             <View className="flex-1 bg-background" style={{ paddingBottom: insets.bottom }}>
                 {/* Header */}
@@ -506,6 +507,6 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
                     </Button>
                 </View>
             </View>
-        </Modal>
+        </AppModal>
     );
 }

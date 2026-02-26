@@ -8,9 +8,10 @@ import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
 import { Calendar as CalendarIcon, CheckCircle2, Copy, Edit2, Factory, Plus, Search, Trash2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
+import { AppModal } from "../ui/app-modal";
 
 interface CreateFeedOrderModalProps {
     open: boolean;
@@ -222,23 +223,16 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
 
         const formattedItems: any[] = [];
         for (const item of items) {
-            const activeFeeds = item.feeds.filter(f => f.type.trim() !== "" || (Number(f.quantity) || 0) > 0);
+            const activeFeeds = item.feeds.filter(f => (Number(f.quantity) || 0) > 0);
 
             if (activeFeeds.length === 0) {
-                toast.error(`Please add at least one feed type for ${item.farmerName}.`);
+                toast.error(`Please add at least one feed quantity for ${item.farmerName}.`);
                 return;
             }
 
-            for (const feed of item.feeds) {
-                const qty = Number(feed.quantity) || 0;
-                const type = feed.type.trim();
-
-                if (type === "" && qty > 0) {
-                    toast.error(`Please enter a feed type for ${item.farmerName}.`);
-                    return;
-                }
-                if (type !== "" && qty <= 0) {
-                    toast.error(`Please enter a quantity for ${type} at ${item.farmerName}.`);
+            for (const feed of activeFeeds) {
+                if (feed.type.trim() === "") {
+                    toast.error(`Please enter a feed type for the entered quantity at ${item.farmerName}.`);
                     return;
                 }
             }
@@ -276,7 +270,7 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
 
     if (isSearchOpen) {
         return (
-            <Modal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setIsSearchOpen(false)}>
+            <AppModal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setIsSearchOpen(false)}>
 
                 <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
                     <View className="px-4 py-4 border-b border-border/50 flex-row gap-2 items-center">
@@ -329,12 +323,12 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                         />
                     )}
                 </View>
-            </Modal>
+            </AppModal>
         );
     }
 
     return (
-        <Modal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => !isSubmitting && onOpenChange(false)}>
+        <AppModal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => !isSubmitting && onOpenChange(false)}>
 
             <View className="flex-1 bg-background" style={{ paddingBottom: insets.bottom }}>
                 {/* Header */}
@@ -504,6 +498,6 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                     </Button>
                 </View>
             </View>
-        </Modal>
+        </AppModal>
     );
 }

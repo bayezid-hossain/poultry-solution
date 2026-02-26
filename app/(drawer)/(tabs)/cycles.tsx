@@ -1,4 +1,5 @@
 import { AddMortalityModal } from "@/components/cycles/add-mortality-modal";
+import { BulkImportModal } from "@/components/cycles/bulk-import-modal";
 import { CorrectAgeModal } from "@/components/cycles/correct-age-modal";
 import { CorrectDocModal } from "@/components/cycles/correct-doc-modal";
 import { CorrectMortalityModal } from "@/components/cycles/correct-mortality-modal";
@@ -39,6 +40,7 @@ export default function CyclesScreen() {
     const [actionsExpanded, setActionsExpanded] = useState(false);
     const [isCreateCycleOpen, setIsCreateCycleOpen] = useState(false);
     const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
+    const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
     // Card Actions Modals
     const [isSellOpen, setIsSellOpen] = useState(false);
@@ -229,7 +231,7 @@ export default function CyclesScreen() {
                 {actionsExpanded && (
                     <View className="mb-3 gap-3">
                         <View className="flex-row items-center gap-2">
-                            <Button variant="outline" size="sm" className="h-10 border-border/50 bg-card rounded-xl px-4 flex-row gap-2" onPress={() => Alert.alert("Not Implemented", "Bulk import is not available on mobile yet.")}>
+                            <Button variant="outline" size="sm" className="h-10 border-border/50 bg-card rounded-xl px-4 flex-row gap-2" onPress={() => setIsBulkImportOpen(true)}>
                                 <Icon as={Sparkles} size={16} className="text-yellow-500" />
                                 <Text className="text-foreground font-bold">Import</Text>
                             </Button>
@@ -459,6 +461,16 @@ export default function CyclesScreen() {
             }
 
             {/* Global Modals */}
+            <BulkImportModal
+                open={isBulkImportOpen}
+                onOpenChange={setIsBulkImportOpen}
+                orgId={membership?.orgId ?? ""}
+                onSuccess={() => {
+                    activeQuery.refetch();
+                    historyQuery.refetch();
+                }}
+            />
+
             <CreateCycleModal
                 open={isCreateCycleOpen}
                 onOpenChange={setIsCreateCycleOpen}

@@ -178,7 +178,10 @@ function RootLayoutInner() {
       </AuthGuard>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <PortalHost />
-      <Toaster position="bottom-center" offset={40} />
+      {/* TopOverlay ensures toasts render above Modals, especially on iOS */}
+      <TopOverlay style={Platform.OS === 'ios' ? undefined : { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'box-none' }}>
+        <Toaster position="bottom-center" offset={40} />
+      </TopOverlay>
     </NavigationThemeProvider>
   );
 }

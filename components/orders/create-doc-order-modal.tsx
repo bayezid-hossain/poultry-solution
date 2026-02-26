@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Switch, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
+import { AppModal } from "../ui/app-modal";
 
 interface CreateDocOrderModalProps {
     open: boolean;
@@ -211,7 +212,7 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
             return;
         }
 
-        const defaultBirdType = birdTypes?.[0]?.name || "Broiler";
+        const defaultBirdType = birdTypes?.[birdTypes.length - 1]?.name || "Broiler";
 
         setItems(prev => [
             ...prev,
@@ -386,7 +387,8 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
 
     return (
         <>
-            <Modal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => !isSubmitting && onOpenChange(false)}>
+            <AppModal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => !isSubmitting && onOpenChange(false)}>
+
 
                 <View className="flex-1 bg-background" style={{ paddingBottom: insets.bottom }}>
                     {/* Header */}
@@ -564,7 +566,7 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                         </Button>
                     </View>
                 </View>
-            </Modal>
+            </AppModal>
 
             <Modal
                 transparent
