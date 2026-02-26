@@ -1,4 +1,5 @@
 import { AddMortalityModal } from "@/components/cycles/add-mortality-modal";
+import { AnalysisContent } from "@/components/cycles/analysis-content";
 import { CorrectAgeModal } from "@/components/cycles/correct-age-modal";
 import { CorrectDocModal } from "@/components/cycles/correct-doc-modal";
 import { CorrectMortalityModal } from "@/components/cycles/correct-mortality-modal";
@@ -9,6 +10,7 @@ import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
 import { SalesHistoryList } from "@/components/cycles/sales-history-list";
 import { SellModal } from "@/components/cycles/sell-modal";
 import { ProAccessModal } from "@/components/pro-access-modal";
+import { ProBlocker } from "@/components/pro-blocker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
@@ -302,7 +304,11 @@ export default function CycleDetailsScreen() {
                         {openSection === 'insights' && (
                             <View className="p-4 border-t border-border/20">
                                 {renderSection === 'insights' ? (
-                                    <Text className="text-muted-foreground italic text-center text-sm py-4">Insights currently unavailable.</Text>
+                                    membership?.isPro ? (
+                                        <AnalysisContent cycle={cycle as any} history={(response.history || []).filter((h: any) => h.id !== cycle.id) as any} />
+                                    ) : (
+                                        <ProBlocker feature="Analysis Insights" description="Automated insights and historical benchmarking are Pro features. Upgrade to gain actionable intelligence." />
+                                    )
                                 ) : (
                                     <View className="py-20 items-center justify-center">
                                         <BirdyLoader size={48} color="#10b981" />
