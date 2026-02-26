@@ -4,7 +4,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Trash2 } from "lucide-react-native";
 import { Modal, View } from "react-native";
-import { toast, Toaster } from "sonner-native";
+import { toast } from "sonner-native";
 
 interface DeleteFeedOrderModalProps {
     open: boolean;
@@ -62,7 +62,6 @@ export function DeleteFeedOrderModal({ open, onOpenChange, feedOrderId, onSucces
                     </View>
                 </View>
             </View>
-            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

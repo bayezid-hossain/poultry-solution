@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { CheckCircle2, Truck } from "lucide-react-native";
 import { useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, View } from "react-native";
-import { toast, Toaster } from "sonner-native";
+import { toast } from "sonner-native";
 
 interface ConfirmFeedOrderModalProps {
     open: boolean;
@@ -31,9 +31,13 @@ export function ConfirmFeedOrderModal({ open, onOpenChange, feedOrderId, onSucce
     });
 
     const handleConfirm = () => {
+        if (!driverName.trim()) {
+            toast.error("Please enter the Driver's Name.");
+            return;
+        }
         confirmMutation.mutate({
             id: feedOrderId,
-            driverName: driverName.trim() || undefined
+            driverName: driverName.trim()
         });
     };
 
@@ -56,7 +60,7 @@ export function ConfirmFeedOrderModal({ open, onOpenChange, feedOrderId, onSucce
                         </Text>
 
                         <View className="mb-6 gap-2">
-                            <Text className="text-sm font-semibold">Driver Name <Text className="text-muted-foreground font-normal">(Optional)</Text></Text>
+                            <Text className="text-sm font-semibold">Driver Name</Text>
                             <View className="relative">
                                 <View className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-5 h-5 justify-center items-center">
                                     <Icon as={Truck} size={16} className="text-muted-foreground" />
@@ -92,7 +96,6 @@ export function ConfirmFeedOrderModal({ open, onOpenChange, feedOrderId, onSucce
                     </ScrollView>
                 </View>
             </KeyboardAvoidingView>
-            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

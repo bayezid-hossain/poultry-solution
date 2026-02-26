@@ -10,7 +10,7 @@ import { Calendar as CalendarIcon, CheckCircle2, Copy, MapPin, Plus, Search, Sho
 import { useEffect, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { toast, Toaster } from "sonner-native";
+import { toast } from "sonner-native";
 
 interface CreateSaleOrderModalProps {
     open: boolean;
@@ -215,29 +215,49 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
     };
 
     const handleSubmit = () => {
-        const validItems = items.flatMap(item =>
-            item.batches
-                .filter(b => (Number(b.totalDoc) || 0) > 0 || (Number(b.totalWeight) || 0) > 0)
-                .map(batch => ({
-                    farmerId: item.farmerId,
-                    totalWeight: Number(batch.totalWeight) || 0,
-                    totalDoc: Number(batch.totalDoc) || 0,
-                    avgWeight: batch.avgWeight ? Number(batch.avgWeight) : undefined,
-                    age: Number(batch.age) || 0,
-                }))
-        );
-
-        const hasValidBatches = validItems.length > 0;
-
-        if (!hasValidBatches) {
-            toast.error("Please add at least one farmer with weight or DOC count.");
+        if (!branchName.trim()) {
+            toast.error("Please enter a Branch Name.");
             return;
         }
+
+        if (items.length === 0) {
+            toast.error("Please add at least one farmer.");
+            return;
+        }
+
+        // Validate that EVERY field in EVERY batch is filled
+        for (const item of items) {
+            if (item.batches.length === 0) {
+                toast.error(`Please add at least one sale batch for ${item.farmerName}.`);
+                return;
+            }
+            for (const batch of item.batches) {
+                const doc = Number(batch.totalDoc) || 0;
+                const weight = Number(batch.totalWeight) || 0;
+                const avg = Number(batch.avgWeight) || 0;
+                const age = Number(batch.age) || 0;
+
+                if (doc <= 0 || weight <= 0 || avg <= 0 || age <= 0) {
+                    toast.error(`All fields (Avg Weight, DOC, Total Weight, Age) are required for ${item.farmerName}.`);
+                    return;
+                }
+            }
+        }
+
+        const validItems = items.flatMap(item =>
+            item.batches.map(batch => ({
+                farmerId: item.farmerId,
+                totalWeight: Number(batch.totalWeight),
+                totalDoc: Number(batch.totalDoc),
+                avgWeight: Number(batch.avgWeight),
+                age: Number(batch.age),
+            }))
+        );
 
         createMutation.mutate({
             orgId,
             orderDate,
-            branchName: branchName.trim() || undefined,
+            branchName: branchName.trim(),
             items: validItems
         });
     };
@@ -298,7 +318,6 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
                         />
                     )}
                 </View>
-                <Toaster position="bottom-center" offset={40} />
             </Modal>
         );
     }
@@ -348,7 +367,7 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
                                 )}
                             </View>
                             <View className="flex-1 gap-2">
-                                <Text className="text-sm font-semibold">Branch (Optional)</Text>
+                                <Text className="text-sm font-semibold">Branch Name</Text>
                                 <View className="h-12 bg-muted/50 rounded-lg flex-row items-center px-4 border border-border/50">
                                     <Icon as={MapPin} size={18} className="text-muted-foreground mr-2" />
                                     <Input
@@ -487,7 +506,6 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
                     </Button>
                 </View>
             </View>
-            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }

@@ -13,7 +13,8 @@ import { trpc } from '@/lib/trpc';
 import { useFocusEffect } from 'expo-router';
 import { Activity } from 'lucide-react-native';
 import { useCallback, useRef, useState } from 'react';
-import { BackHandler, Pressable, RefreshControl, ScrollView, ToastAndroid, View } from 'react-native';
+import { BackHandler, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { toast } from 'sonner-native';
 
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
@@ -33,7 +34,7 @@ export default function HomeScreen() {
 
         if (currentCount.current === 0) {
           currentCount.current = 1;
-          ToastAndroid.show("Swipe again or press back to exit", ToastAndroid.SHORT);
+          toast("Swipe again or press back to exit");
           return true; // Prevent default back (which usually does nothing at root)
         } else if (currentCount.current === 1) {
           BackHandler.exitApp();

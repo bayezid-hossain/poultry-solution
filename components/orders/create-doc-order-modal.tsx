@@ -10,7 +10,7 @@ import { Bird, Calendar as CalendarIcon, CheckCircle2, ChevronDown, Copy, Edit2,
 import { useEffect, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Switch, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { toast, Toaster } from "sonner-native";
+import { toast } from "sonner-native";
 
 interface CreateDocOrderModalProps {
     open: boolean;
@@ -273,43 +273,53 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
     };
 
     const handleCreate = () => {
+        if (!branchName.trim()) {
+            toast.error("Please enter a Branch Name.");
+            return;
+        }
+
         if (items.length === 0) {
             toast.error("Please add at least one farmer to the order.");
             return;
         }
 
         const formattedItems: any[] = [];
-        items.forEach(item => {
-            item.batches.forEach(batch => {
+        for (const item of items) {
+            if (item.batches.length === 0) {
+                toast.error(`Please add at least one DOC batch for ${item.farmerName}.`);
+                return;
+            }
+            for (const batch of item.batches) {
                 const docCount = Number(batch.docCount) || 0;
-                if (docCount > 0) {
-                    formattedItems.push({
-                        farmerId: item.farmerId,
-                        birdType: batch.birdType || "Broiler",
-                        docCount: docCount,
-                        isContract: batch.isContract
-                    });
+                if (docCount <= 0) {
+                    toast.error(`Please enter a valid DOC count for ${item.farmerName}.`);
+                    return;
                 }
-            });
-        });
-
-        if (formattedItems.length === 0) {
-            toast.error("Please enter at least one valid DOC count.");
-            return;
+                if (!batch.birdType) {
+                    toast.error(`Please select a bird type for ${item.farmerName}.`);
+                    return;
+                }
+                formattedItems.push({
+                    farmerId: item.farmerId,
+                    birdType: batch.birdType,
+                    docCount: docCount,
+                    isContract: batch.isContract
+                });
+            }
         }
 
         if (initialData) {
             updateMutation.mutate({
                 id: initialData.id,
                 orderDate,
-                branchName: branchName.trim() || undefined,
+                branchName: branchName.trim(),
                 items: formattedItems
             });
         } else {
             createMutation.mutate({
                 orgId,
                 orderDate,
-                branchName: branchName.trim() || undefined,
+                branchName: branchName.trim(),
                 items: formattedItems
             });
         }
@@ -370,7 +380,6 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                         />
                     )}
                 </View>
-                <Toaster position="bottom-center" offset={40} />
             </Modal>
         );
     }
@@ -423,7 +432,7 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                                     )}
                                 </View>
                                 <View className="flex-1 gap-2">
-                                    <Text className="text-sm font-semibold">Branch (Optional)</Text>
+                                    <Text className="text-sm font-semibold">Branch Name</Text>
                                     <View className="h-12 bg-muted/50 rounded-lg flex-row items-center px-4 border border-border/50">
                                         <Icon as={MapPin} size={18} className="text-muted-foreground mr-2" />
                                         <Input
@@ -556,7 +565,6 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                     </View>
                 </View>
             </Modal>
-            <Toaster position="bottom-center" offset={40} />
 
             <Modal
                 transparent

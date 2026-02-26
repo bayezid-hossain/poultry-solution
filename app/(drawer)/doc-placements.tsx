@@ -113,7 +113,8 @@ export default function DocPlacementsScreen() {
 
                 {isLoading ? (
                     <View className="items-center justify-center py-10">
-                        <BirdyLoader size={48} /> <Text className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+                        <BirdyLoader size={48} />
+                        <Text className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">
                             Crunching Monthly DOC data...
                         </Text>
                     </View>
@@ -187,9 +188,11 @@ export default function DocPlacementsScreen() {
                                                     <View>
                                                         <Pressable
                                                             className="active:opacity-70"
-                                                            onPress={() => router.push({ pathname: "/farmer/[id]", params: { id: f.farmerId } } as any)}
+
                                                         >
-                                                            <Text className="font-black text-sm uppercase tracking-tight text-foreground active:text-primary" numberOfLines={1}>{f.farmerName}</Text>
+                                                            <Text onPress={() => {
+                                                                router.push(`/farmer/${f.farmerId}`)
+                                                            }} className="font-black text-sm uppercase tracking-tight text-foreground active:text-primary" numberOfLines={1}>{f.farmerName}</Text>
                                                         </Pressable>
                                                         <Text className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase mt-0.5">
                                                             {f.cycles?.length ?? 0} {f.cycles?.length === 1 ? 'BATCH' : 'BATCHES'}

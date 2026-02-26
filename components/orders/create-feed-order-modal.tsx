@@ -10,7 +10,7 @@ import { Calendar as CalendarIcon, CheckCircle2, Copy, Edit2, Factory, Plus, Sea
 import { useEffect, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { toast, Toaster } from "sonner-native";
+import { toast } from "sonner-native";
 
 interface CreateFeedOrderModalProps {
     open: boolean;
@@ -215,24 +215,45 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
     };
 
     const handleCreate = () => {
-        // Validation: at least one farmer, and at least one valid feed entry total
         if (items.length === 0) {
             toast.error("Please add at least one farmer to the order.");
             return;
         }
 
-        const formattedItems = items.map(item => ({
-            farmerId: item.farmerId,
-            feeds: item.feeds
-                .filter(f => f.type.trim() !== "" && (Number(f.quantity) || 0) > 0)
-                .map(feed => ({
-                    type: feed.type,
+        const formattedItems: any[] = [];
+        for (const item of items) {
+            const activeFeeds = item.feeds.filter(f => f.type.trim() !== "" || (Number(f.quantity) || 0) > 0);
+
+            if (activeFeeds.length === 0) {
+                toast.error(`Please add at least one feed type for ${item.farmerName}.`);
+                return;
+            }
+
+            for (const feed of item.feeds) {
+                const qty = Number(feed.quantity) || 0;
+                const type = feed.type.trim();
+
+                if (type === "" && qty > 0) {
+                    toast.error(`Please enter a feed type for ${item.farmerName}.`);
+                    return;
+                }
+                if (type !== "" && qty <= 0) {
+                    toast.error(`Please enter a quantity for ${type} at ${item.farmerName}.`);
+                    return;
+                }
+            }
+
+            formattedItems.push({
+                farmerId: item.farmerId,
+                feeds: activeFeeds.map(feed => ({
+                    type: feed.type.trim(),
                     quantity: Number(feed.quantity)
                 }))
-        })).filter(item => item.feeds.length > 0);
+            });
+        }
 
         if (formattedItems.length === 0) {
-            toast.error("Please enter at least one valid feed quantity for the selected farmers.");
+            toast.error("Please enter at least one valid feed quantity.");
             return;
         }
 
@@ -308,7 +329,6 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                         />
                     )}
                 </View>
-                <Toaster position="bottom-center" offset={40} />
             </Modal>
         );
     }
@@ -484,7 +504,6 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                     </Button>
                 </View>
             </View>
-            <Toaster position="bottom-center" offset={40} />
         </Modal>
     );
 }
