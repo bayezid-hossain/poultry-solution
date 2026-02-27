@@ -1,7 +1,6 @@
 /// <reference types="nativewind/types" />
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ProBlocker } from "@/components/pro-blocker";
-import { ExportPreviewDialog } from "@/components/reports/ExportPreviewDialog";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,12 +8,11 @@ import { Icon } from "@/components/ui/icon";
 import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
-import { generateExcel, generatePDF, openFile, shareFile } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect } from "expo-router";
-import { ChevronDown, FileText, Table } from "lucide-react-native";
+import { ChevronDown } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, View } from "react-native";
+import { Modal, Pressable, ScrollView, View } from "react-native";
 
 const MONTHS_SHORT = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
@@ -26,10 +24,6 @@ export default function PerformanceScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
-
-    // Preview States
-    const [previewVisible, setPreviewVisible] = useState(false);
-    const [previewData, setPreviewData] = useState<{ uri: string, type: 'pdf' | 'excel', title: string } | null>(null);
 
     if (!membership?.isPro) {
         return <ProBlocker feature="Performance Reports" description="Access advanced flock performance metrics, FCR, and EPI analytics." />;
@@ -77,126 +71,6 @@ export default function PerformanceScreen() {
 
     const fcrLabel = data ? getFCRLabel(data.averageFCR) : null;
 
-    const exportPdf = async () => {
-        if (!data) return;
-        const reportTitle = `Performance_Report_${year}`;
-        const html = `
-            <div class="section-title">Summary Performance Overview - ${year}</div>
-            <div class="kpi-container">
-                <div class="kpi-card">
-                    <div class="kpi-value">${fmtNum(data.totalChicksIn)}</div>
-                    <div class="kpi-label">Total DOC Placed</div>
-                    <div class="kpi-note">Total birds started in ${year}</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-value">${fmtNum(data.totalChicksSold)}</div>
-                    <div class="kpi-label">Total Sold</div>
-                    <div class="kpi-note">${soldPercent}% of total placed</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-value">${fmtDec(data.averageFCR)}</div>
-                    <div class="kpi-label">Average FCR</div>
-                    <div class="kpi-note">${fcrLabel?.label || ''}</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-value">${fmtDec(data.averageEPI, 0)}</div>
-                    <div class="kpi-label">Average EPI</div>
-                    <div class="kpi-note">${fmtPct(data.averageSurvivalRate)} survival rate</div>
-                </div>
-            </div>
-
-            <div class="section-title">Monthly Performance Breakdown</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Month</th>
-                        <th>Chicks In</th>
-                        <th>Sold</th>
-                        <th>Age (d)</th>
-                        <th>Weight (kg)</th>
-                        <th>Feed (kg)</th>
-                        <th>SR%</th>
-                        <th>EPI</th>
-                        <th>FCR</th>
-                        <th>Price</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${data.monthlyData.map((m: any, idx: number) => `
-                        <tr>
-                            <td>${MONTHS_SHORT[idx]}</td>
-                            <td>${m.chicksIn}</td>
-                            <td>${m.chicksSold}</td>
-                            <td>${m.averageAge > 0 ? Math.round(m.averageAge) : '-'}</td>
-                            <td>${m.totalBirdWeight > 0 ? Math.round(m.totalBirdWeight) : '-'}</td>
-                            <td>${m.feedConsumption > 0 ? Math.round(m.feedConsumption) : '-'}</td>
-                            <td>${m.survivalRate > 0 ? (m.survivalRate).toFixed(1) + '%' : '-'}</td>
-                            <td>${m.epi > 0 ? Math.round(m.epi) : '-'}</td>
-                            <td>${m.fcr > 0 ? m.fcr.toFixed(2) : '-'}</td>
-                            <td>${m.averagePrice > 0 ? m.averagePrice.toFixed(2) : '-'}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-
-            <div class="footer">
-                <p><b>FCR (Feed Conversion Ratio)</b> = Total Feed Consumed / Total Weight Gain</p>
-                <p><b>EPI (European Production Index)</b> = (Survival % × Body Weight) / (Age × FCR) × 10</p>
-            </div>
-        `;
-        try {
-            const uri = await generatePDF({ title: reportTitle, htmlContent: html });
-            setPreviewData({ uri, type: 'pdf', title: reportTitle });
-            setPreviewVisible(true);
-        }
-        catch (e) { Alert.alert("Export Failed", "Error generating PDF."); }
-    };
-
-    const exportExcel = async () => {
-        if (!data) return;
-        const reportTitle = `Performance_Report_${year}`;
-
-        const summaryData = [
-            { Metric: "Total DOC Placed", Value: data.totalChicksIn },
-            { Metric: "Total Sold", Value: data.totalChicksSold },
-            { Metric: "Average FCR", Value: data.averageFCR.toFixed(2) },
-            { Metric: "Average EPI", Value: data.averageEPI.toFixed(0) },
-            { Metric: "Average Survival Rate", Value: (data.averageSurvivalRate).toFixed(1) + "%" }
-        ];
-
-        const rawData = data.monthlyData.map((m: any, idx: number) => ({
-            Month: MONTHS_SHORT[idx],
-            "Chicks In": m.chicksIn,
-            Sold: m.chicksSold,
-            "Avg Age (days)": m.averageAge > 0 ? Math.round(m.averageAge) : 0,
-            "Total Weight (kg)": m.totalBirdWeight,
-            "Feed (kg)": m.feedConsumption,
-            "Survival %": m.survivalRate > 0 ? (m.survivalRate).toFixed(1) : 0,
-            EPI: m.epi > 0 ? Math.round(m.epi) : 0,
-            FCR: m.fcr > 0 ? Number(m.fcr.toFixed(3)) : 0,
-            "Avg Price": m.averagePrice.toFixed(2)
-        }));
-
-        try {
-            const uri = await generateExcel({
-                title: reportTitle,
-                summaryData,
-                rawHeaders: ["Month", "Chicks In", "Sold", "Avg Age (days)", "Total Weight (kg)", "Feed (kg)", "Survival %", "EPI", "FCR", "Avg Price"],
-                rawDataTable: rawData,
-                definitions: [
-                    { Metric: "Avg. Selling Price", Calculation: "Total Revenue / Total Weight" },
-                    { Metric: "Farmer Effective Rate", Calculation: "max(Base Rate, Base Rate + Summation of Adjustments)" },
-                    { Metric: "Summation of Adjustments", Calculation: "Σ [(Sale Price - Base Rate) * (0.5 if surplus else 1.0) * Weight] / Total Weight" },
-                    { Metric: "FCR", Calculation: "(Total Feed Bags * 50) / Total Weight kg" },
-                    { Metric: "EPI", Calculation: "(Survival% * Avg Weight) / (FCR * Average Age) * 100" },
-                    { Metric: "Profit", Calculation: "(Weight * Effective Rate) - (Feed Cost + DOC Cost)" }
-                ]
-            });
-            setPreviewData({ uri, type: 'excel', title: reportTitle });
-            setPreviewVisible(true);
-        } catch (e) { Alert.alert("Export Failed", "Error generating Excel."); }
-    };
-
     return (
         <View className="flex-1 bg-background">
             <ScreenHeader title="Performance" />
@@ -223,15 +97,6 @@ export default function PerformanceScreen() {
                     {isManagement && (
                         <OfficerSelector orgId={membership?.orgId ?? ""} />
                     )}
-                    <View className="flex-1" />
-                    <View className="flex-row gap-2">
-                        <Pressable onPress={exportExcel} className="w-10 h-10 rounded-xl bg-emerald-500/10 items-center justify-center border border-emerald-500/20 active:bg-emerald-500/20">
-                            <Icon as={Table} size={18} className="text-emerald-600" />
-                        </Pressable>
-                        <Pressable onPress={exportPdf} className="w-10 h-10 rounded-xl bg-destructive/10 items-center justify-center border border-destructive/20 active:bg-destructive/20">
-                            <Icon as={FileText} size={18} className="text-destructive" />
-                        </Pressable>
-                    </View>
                 </View>
 
                 {isLoading ? (
@@ -439,16 +304,6 @@ export default function PerformanceScreen() {
                     </View>
                 </Pressable>
             </Modal>
-            {previewData && (
-                <ExportPreviewDialog
-                    visible={previewVisible}
-                    onClose={() => setPreviewVisible(false)}
-                    title={previewData.title}
-                    type={previewData.type}
-                    onView={() => openFile(previewData.uri, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
-                    onShare={() => shareFile(previewData.uri, previewData.title, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', previewData.type === 'pdf' ? 'com.adobe.pdf' : 'com.microsoft.excel.xlsx')}
-                />
-            )}
         </View>
     );
 }

@@ -1,6 +1,5 @@
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ProBlocker } from "@/components/pro-blocker";
-import { ExportPreviewDialog } from "@/components/reports/ExportPreviewDialog";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,12 +7,11 @@ import { Icon } from "@/components/ui/icon";
 import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
-import { generateExcel, generatePDF, openFile, shareFile } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
 import { router, useFocusEffect } from "expo-router";
-import { ChevronDown, FileText, Table } from "lucide-react-native";
+import { ChevronDown } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, View } from "react-native";
+import { Modal, Pressable, ScrollView, View } from "react-native";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
@@ -24,10 +22,6 @@ export default function ProductionScreen() {
     const [year, setYear] = useState(now.getFullYear());
     const [monthPickerOpen, setMonthPickerOpen] = useState(false);
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
-
-    // Preview States
-    const [previewVisible, setPreviewVisible] = useState(false);
-    const [previewData, setPreviewData] = useState<{ uri: string, type: 'pdf' | 'excel', title: string } | null>(null);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
@@ -74,108 +68,6 @@ export default function ProductionScreen() {
         return `${prefix}BDT ${Math.abs(v).toLocaleString()}`;
     };
 
-    const exportPdf = async () => {
-        if (!data || data.length === 0) return;
-        const reportTitle = `Production_Report_${MONTHS[month]}_${year}`;
-        const html = `
-            <div class="section-title">Monthly Production Record - ${MONTHS[month]} ${year}</div>
-            <div class="kpi-container">
-                <div class="kpi-card">
-                    <div class="kpi-value">${totalDoc.toLocaleString()}</div>
-                    <div class="kpi-label">Total DOC Placed</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-value">${avgSurvival.toFixed(1)}%</div>
-                    <div class="kpi-label">Average Survival</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-value">${avgFCR.toFixed(2)}</div>
-                    <div class="kpi-label">Average FCR</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-value">${avgEPI.toFixed(2)}</div>
-                    <div class="kpi-label">Average EPI</div>
-                </div>
-            </div>
-
-            <div class="section-title">Farmer Wise Production Breakdown</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Farmer</th>
-                        <th>DOC</th>
-                        <th>Survival %</th>
-                        <th>Avg Wt (kg)</th>
-                        <th>FCR</th>
-                        <th>EPI</th>
-                        <th>Age</th>
-                        <th>Profit</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${farmers.map((f: any) => `
-                        <tr>
-                            <td>${f.farmerName}</td>
-                            <td>${f.doc}</td>
-                            <td>${f.survivalRate.toFixed(1)}%</td>
-                            <td>${f.averageWeight.toFixed(3)}</td>
-                            <td>${f.fcr.toFixed(2)}</td>
-                            <td>${f.epi.toFixed(2)}</td>
-                            <td>${f.age > 0 ? f.age.toFixed(1) : '-'}</td>
-                            <td>৳${f.profit.toLocaleString()}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
-        try {
-            const uri = await generatePDF({ title: reportTitle, htmlContent: html });
-            setPreviewData({ uri, type: 'pdf', title: reportTitle });
-            setPreviewVisible(true);
-        }
-        catch (e) { Alert.alert("Export Error", "Failed to generate PDF"); }
-    };
-
-    const exportExcel = async () => {
-        if (!data || data.length === 0) return;
-        const reportTitle = `Production_Report_${MONTHS[month]}_${year}`;
-
-        const summaryData = [
-            { Metric: "Total DOC Placed", Value: totalDoc },
-            { Metric: "Average Survival Rate", Value: avgSurvival.toFixed(1) + "%" },
-            { Metric: "Average FCR", Value: avgFCR.toFixed(2) },
-            { Metric: "Average EPI", Value: avgEPI.toFixed(2) },
-            { Metric: "Total Net Profit", Value: `BDT ${totalProfit.toLocaleString()}` }
-        ];
-
-        const rawData = farmers.map((f: any) => ({
-            Farmer: f.farmerName,
-            DOC: f.doc,
-            "Survival %": f.survivalRate.toFixed(2),
-            "Avg Weight (kg)": f.averageWeight.toFixed(3),
-            FCR: f.fcr.toFixed(3),
-            EPI: f.epi.toFixed(2),
-            "Age (days)": f.age > 0 ? f.age.toFixed(1) : 0,
-            Profit: f.profit
-        }));
-
-        try {
-            const uri = await generateExcel({
-                title: reportTitle,
-                summaryData,
-                rawHeaders: ["Farmer", "DOC", "Survival %", "Avg Weight (kg)", "FCR", "EPI", "Age (days)", "Profit"],
-                rawDataTable: rawData,
-                mergePrimaryColumn: true,
-                definitions: [
-                    { Metric: "FCR", Calculation: "Feed Consumed / Body Weight" },
-                    { Metric: "EPI", Calculation: "(SurvivalRate * BodyWeight) / (Age * FCR) * 10" }
-                ]
-            });
-            setPreviewData({ uri, type: 'excel', title: reportTitle });
-            setPreviewVisible(true);
-        } catch (e) { Alert.alert("Export Error", "Failed to generate Excel"); }
-    };
-
     if (!membership?.isPro) {
         return <ProBlocker feature="Monthly Production" description="Gain insights into monthly production records and historical performance." />;
     }
@@ -212,15 +104,6 @@ export default function ProductionScreen() {
                     {isManagement && (
                         <OfficerSelector orgId={membership?.orgId ?? ""} />
                     )}
-                    <View className="flex-1" />
-                    <View className="flex-row gap-2">
-                        <Pressable onPress={exportExcel} className="w-10 h-10 rounded-xl bg-emerald-500/10 items-center justify-center border border-emerald-500/20 active:bg-emerald-500/20">
-                            <Icon as={Table} size={18} className="text-emerald-600" />
-                        </Pressable>
-                        <Pressable onPress={exportPdf} className="w-10 h-10 rounded-xl bg-destructive/10 items-center justify-center border border-destructive/20 active:bg-destructive/20">
-                            <Icon as={FileText} size={18} className="text-destructive" />
-                        </Pressable>
-                    </View>
                 </View>
 
                 {isLoading ? (
@@ -400,17 +283,6 @@ export default function ProductionScreen() {
                     </View>
                 </Pressable>
             </Modal>
-
-            {previewData && (
-                <ExportPreviewDialog
-                    visible={previewVisible}
-                    onClose={() => setPreviewVisible(false)}
-                    title={previewData.title}
-                    type={previewData.type}
-                    onView={() => openFile(previewData.uri, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
-                    onShare={() => shareFile(previewData.uri, previewData.title, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', previewData.type === 'pdf' ? 'com.adobe.pdf' : 'com.microsoft.excel.xlsx')}
-                />
-            )}
         </View>
     );
 }

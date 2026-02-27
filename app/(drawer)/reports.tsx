@@ -1,4 +1,5 @@
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
+import { ProBlocker } from "@/components/pro-blocker";
 import { ExportPreviewDialog } from "@/components/reports/ExportPreviewDialog";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,10 @@ export default function ReportsScreen() {
         }
     };
 
+    if (!membership?.isPro) {
+        return <ProBlocker feature="Download Reports" description="Unlock comprehensive analytical reports and data exports across your farm operations." />;
+    }
+
     const handleActiveStock = (type: 'pdf' | 'excel') => {
         handleExport(`Active_Stock_${new Date().toLocaleDateString()}`, type, async () => {
             const data = await utils.officer.cycles.listActive.fetch({ orgId: membership?.orgId ?? "", pageSize: 500 });
@@ -114,38 +119,19 @@ export default function ReportsScreen() {
                 endYear
             });
 
-            // rawData is per-month arrays of FarmerProductionRecord[]. Aggregate into monthly totals.
-            const data = rawData.map((monthEntry: any) => {
-                // monthEntry = { month, year, monthName, 0: farmer1, 1: farmer2, ... }
-                // Extract farmer records (numeric keys)
-                const farmers: any[] = [];
+            // rawData is per-month arrays of FarmerProductionRecord[]. Flatten into a list of records.
+            const data: any[] = [];
+            rawData.forEach((monthEntry: any) => {
                 for (const key of Object.keys(monthEntry)) {
-                    if (!isNaN(Number(key))) farmers.push(monthEntry[key]);
+                    if (!isNaN(Number(key))) {
+                        data.push({
+                            ...monthEntry[key],
+                            monthName: monthEntry.monthName,
+                            year: monthEntry.year,
+                            monthKey: `${monthEntry.year}-${monthEntry.monthName}`
+                        });
+                    }
                 }
-
-                const totalDoc = farmers.reduce((sum, f) => sum + (f.doc || 0), 0);
-                const totalProfit = farmers.reduce((sum, f) => sum + (f.profit || 0), 0);
-                const farmerCount = farmers.length;
-                const avgSurvival = farmerCount > 0 ? farmers.reduce((sum, f) => sum + (f.survivalRate || 0), 0) / farmerCount : 0;
-                const avgFcr = farmerCount > 0 ? farmers.reduce((sum, f) => sum + (f.fcr || 0), 0) / farmerCount : 0;
-                const avgEpi = farmerCount > 0 ? farmers.reduce((sum, f) => sum + (f.epi || 0), 0) / farmerCount : 0;
-                const totalWeight = farmers.reduce((sum, f) => sum + ((f.averageWeight || 0) * (f.doc || 0) * (f.survivalRate || 0) / 100), 0);
-                const chicksSold = farmers.reduce((sum, f) => sum + Math.round((f.doc || 0) * (f.survivalRate || 0) / 100), 0);
-                const mortality = totalDoc - chicksSold;
-                const totalFeed = avgFcr > 0 && totalWeight > 0 ? (avgFcr * totalWeight) / 50 : 0;
-
-                return {
-                    monthName: monthEntry.monthName,
-                    year: monthEntry.year,
-                    chicksIn: totalDoc,
-                    chicksSold,
-                    mortality,
-                    survivalRate: avgSurvival,
-                    totalBirdWeight: totalWeight,
-                    feedConsumption: totalFeed,
-                    fcr: avgFcr,
-                    epi: avgEpi,
-                };
             });
 
             return type === 'pdf' ? exportRangeProductionPDF(data, "Monthly Production Efficiency") : exportRangeProductionExcel(data, "Monthly Production Efficiency");

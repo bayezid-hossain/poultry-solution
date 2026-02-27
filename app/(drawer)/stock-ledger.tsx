@@ -1,7 +1,6 @@
 /// <reference types="nativewind/types" />
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ProBlocker } from "@/components/pro-blocker";
-import { ExportPreviewDialog } from "@/components/reports/ExportPreviewDialog";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,13 +8,12 @@ import { Icon } from "@/components/ui/icon";
 import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
-import { generateExcel, generatePDF, openFile, shareFile } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { Link, router } from "expo-router";
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, ChevronDown, ChevronUp, ClipboardList, FileText, Package, RotateCcw, Search, Table, User, Wheat } from "lucide-react-native";
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, ChevronDown, ChevronUp, ClipboardList, Package, RotateCcw, Search, User, Wheat } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, TextInput, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, TextInput, View } from "react-native";
 
 export default function StockLedgerScreen() {
     const [tab, setTab] = useState<"stock" | "imports">("stock");
@@ -25,15 +23,6 @@ export default function StockLedgerScreen() {
 
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
-
-    // Preview States
-    const [previewVisible, setPreviewVisible] = useState(false);
-    const [previewData, setPreviewData] = useState<{ uri: string, type: 'pdf' | 'excel', title: string } | null>(null);
-
-    const showPreview = (uri: string, type: 'pdf' | 'excel', title: string) => {
-        setPreviewData({ uri, type, title });
-        setPreviewVisible(true);
-    };
 
     useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
@@ -91,7 +80,6 @@ export default function StockLedgerScreen() {
                     officerId={isManagement ? (selectedOfficerId || undefined) : undefined}
                     orgId={membership?.orgId ?? ""}
                     searchQuery={debouncedSearch}
-                    onExportGenerated={showPreview}
                 />
             ) : (
                 <ImportHistoryTab
@@ -99,18 +87,6 @@ export default function StockLedgerScreen() {
                     officerId={isManagement ? (selectedOfficerId || undefined) : undefined}
                     orgId={membership?.orgId ?? ""}
                     searchQuery={debouncedSearch}
-                    onExportGenerated={showPreview}
-                />
-            )}
-
-            {previewData && (
-                <ExportPreviewDialog
-                    visible={previewVisible}
-                    onClose={() => setPreviewVisible(false)}
-                    title={previewData.title}
-                    type={previewData.type}
-                    onView={() => openFile(previewData.uri, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
-                    onShare={() => shareFile(previewData.uri, previewData.title, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', previewData.type === 'pdf' ? 'com.adobe.pdf' : 'com.microsoft.excel.xlsx')}
                 />
             )}
         </View>
@@ -121,14 +97,12 @@ function StockTab({
     isManagement,
     officerId,
     orgId,
-    searchQuery,
-    onExportGenerated
+    searchQuery
 }: {
     isManagement: boolean;
     officerId?: string;
     orgId: string;
     searchQuery: string;
-    onExportGenerated: (uri: string, type: 'pdf' | 'excel', title: string) => void;
 }) {
     const officerQuery = trpc.officer.stock.getAllFarmersStock.useQuery(
         { limit: 100, cursor: 0, search: searchQuery },
@@ -160,72 +134,6 @@ function StockTab({
     const items = data?.items ?? [];
     const totalStock = items.reduce((acc: number, f: { mainStock: number | null; }) => acc + Number(f.mainStock ?? 0), 0);
 
-    const exportPdf = async () => {
-        if (!items || items.length === 0) return;
-        const reportTitle = "Current_Stock_Report";
-        const html = `
-            <h2>Current Stock Ledger</h2>
-            <div class="kpi-container">
-                <div class="kpi-card">
-                    <div class="kpi-value">${totalStock.toFixed(1)} bags</div>
-                    <div class="kpi-label">Total Feed Stock</div>
-                </div>
-            </div>
-            
-            <h3>Stock by Farmer</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Farmer</th>
-                        <th>Main Stock (Bags)</th>
-                        <th>Last Updated</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${items.map((f: any) => `
-                        <tr>
-                            <td>${f.name}</td>
-                            <td>${Number(f.mainStock).toFixed(1)}</td>
-                            <td>${f.updatedAt ? new Date(f.updatedAt).toLocaleDateString() : "-"}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
-        try {
-            const uri = await generatePDF({ title: reportTitle, htmlContent: html });
-            onExportGenerated(uri, 'pdf', reportTitle);
-        }
-        catch (e) { Alert.alert("Export Failed", "Error generating PDF."); }
-    };
-
-    const exportExcel = async () => {
-        if (!items || items.length === 0) return;
-        const reportTitle = "Current_Stock";
-
-        const summaryData = [
-            { Metric: "Total Feed Stock", Value: totalStock.toFixed(1) },
-            { Metric: "Total Farmers", Value: items.length },
-        ];
-
-        const rawData = items.map((f: any) => ({
-            Farmer: f.name,
-            "Main Stock (Bags)": Number(f.mainStock).toFixed(1),
-            "Last Updated": f.updatedAt ? new Date(f.updatedAt).toLocaleDateString() : "-"
-        }));
-
-        try {
-            const uri = await generateExcel({
-                title: reportTitle,
-                summaryData,
-                rawHeaders: ["Farmer", "Main Stock (Bags)", "Last Updated"],
-                rawDataTable: rawData,
-                mergePrimaryColumn: true
-            });
-            onExportGenerated(uri, 'excel', reportTitle);
-        } catch (e) { Alert.alert("Export Failed", "Error generating Excel."); }
-    };
-
     return (
         <>
             {refreshing && (
@@ -238,18 +146,6 @@ function StockTab({
                     <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
                 }
             >
-                {/* Export Actions Center */}
-                <View className="flex-row justify-end gap-2 mb-4">
-                    <Pressable onPress={exportExcel} className="flex-row items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-lg active:bg-emerald-500/20">
-                        <Icon as={Table} size={16} className="text-emerald-600" />
-                        <Text className="text-xs font-bold text-emerald-700">Export Excel</Text>
-                    </Pressable>
-                    <Pressable onPress={exportPdf} className="flex-row items-center gap-1.5 bg-destructive/10 border border-destructive/20 px-3 py-2 rounded-lg active:bg-destructive/20">
-                        <Icon as={FileText} size={16} className="text-destructive" />
-                        <Text className="text-xs font-bold text-destructive">Export PDF</Text>
-                    </Pressable>
-                </View>
-
                 {/* Total Summary */}
                 <Card className="mb-6 border-border/50 bg-primary/5">
                     <CardContent className="p-4 items-center">
@@ -426,14 +322,12 @@ function ImportHistoryTab({
     isManagement,
     officerId,
     orgId,
-    searchQuery,
-    onExportGenerated
+    searchQuery
 }: {
     isManagement: boolean;
     officerId?: string;
     orgId: string;
     searchQuery: string;
-    onExportGenerated: (uri: string, type: 'pdf' | 'excel', title: string) => void;
 }) {
     const officerQuery = trpc.officer.stock.getImportHistory.useQuery(
         { limit: 50, cursor: 0, search: searchQuery },
@@ -464,65 +358,6 @@ function ImportHistoryTab({
 
     const batches = data?.items ?? [];
 
-    const exportPdf = async () => {
-        if (!batches || batches.length === 0) return;
-        const reportTitle = "Bulk_Imports_Report";
-        const html = `
-            <h2>Bulk Import History</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Batch ID</th>
-                        <th>Date</th>
-                        <th>Driver</th>
-                        <th>Farmers Count</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${batches.map((b: any) => `
-                        <tr>
-                            <td>${b.batchId?.slice(0, 8)}</td>
-                            <td>${format(new Date(b.createdAt), "dd/MM/yyyy h:mm a")}</td>
-                            <td>${b.driverName || "-"}</td>
-                            <td>${b.count}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
-        try {
-            const uri = await generatePDF({ title: reportTitle, htmlContent: html });
-            onExportGenerated(uri, 'pdf', reportTitle);
-        }
-        catch (e) { Alert.alert("Export Failed", "Error generating PDF."); }
-    };
-
-    const exportExcel = async () => {
-        if (!batches || batches.length === 0) return;
-        const reportTitle = "Bulk_Imports";
-
-        const summaryData = [
-            { Metric: "Total Import Batches", Value: batches.length }
-        ];
-
-        const rawData = batches.map((b: any) => ({
-            "Batch ID": b.batchId,
-            Date: format(new Date(b.createdAt), "dd/MM/yyyy h:mm a"),
-            Driver: b.driverName || "-",
-            "Farmers Count": b.count
-        }));
-
-        try {
-            const uri = await generateExcel({
-                title: reportTitle,
-                summaryData,
-                rawHeaders: ["Batch ID", "Date", "Driver", "Farmers Count"],
-                rawDataTable: rawData
-            });
-            onExportGenerated(uri, 'excel', reportTitle);
-        } catch (e) { Alert.alert("Export Failed", "Error generating Excel."); }
-    };
-
     return (
         <>
             {refreshing && (
@@ -542,16 +377,6 @@ function ImportHistoryTab({
                         <Badge variant="outline" className="border-primary/30 h-6 px-2.5">
                             <Text className="text-[10px] text-primary font-bold">{batches.length}</Text>
                         </Badge>
-                    </View>
-                    <View className="flex-row gap-2">
-                        <Pressable onPress={exportExcel} className="flex-row items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-lg active:bg-emerald-500/20">
-                            <Icon as={Table} size={16} className="text-emerald-600" />
-                            <Text className="text-xs font-bold text-emerald-700">Excel</Text>
-                        </Pressable>
-                        <Pressable onPress={exportPdf} className="flex-row items-center gap-1.5 bg-destructive/10 border border-destructive/20 px-3 py-2 rounded-lg active:bg-destructive/20">
-                            <Icon as={FileText} size={16} className="text-destructive" />
-                            <Text className="text-xs font-bold text-destructive">PDF</Text>
-                        </Pressable>
                     </View>
                 </View>
 

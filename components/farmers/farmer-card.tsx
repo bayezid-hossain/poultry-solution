@@ -26,6 +26,7 @@ interface FarmerCardProps {
         totalConsumed?: number;
         activeBirdsCount: number;
         createdAt?: string | Date;
+        problematicFeed?: string | number | null;
     };
     activeConsumption?: number;
     onRestock?: () => void;
@@ -183,13 +184,20 @@ export function FarmerCard({
                             <Text className="text-primary-foreground/60 text-[9px] font-black uppercase tracking-widest text-right">
                                 Total
                             </Text>
-                            <View className="flex-row items-baseline justify-end gap-1">
-                                <Text className="text-xl font-black text-primary-foreground">
-                                    {mainStock.toFixed(1)}
-                                </Text>
-                                <Text className="text-[10px] text-primary-foreground/40 font-bold lowercase">
-                                    b
-                                </Text>
+                            <View className="flex-row justify-between gap-1">
+
+                                <View className="flex flex-row items-baseline">
+                                    <Text className="text-xl font-black gap-x-1 text-primary-foreground">{mainStock.toFixed(1)}</Text>
+                                    <Text className="text-[10px] ml-[2px] text-primary-foreground/40 font-bold lowercase">
+                                        b
+                                    </Text>
+                                </View>
+
+                                {Number(farmer.problematicFeed) > 0 && (
+                                    <Badge variant="destructive" className=" px-1 bg-red-500 mr-1 border-0 rounded-sm">
+                                        <Text className="text-[10px] font-black text-white">PF - {Number(farmer.problematicFeed)}</Text>
+                                    </Badge>
+                                )}
                             </View>
                         </View>
                     </View>

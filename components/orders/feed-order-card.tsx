@@ -37,27 +37,33 @@ export function FeedOrderCard({
 
         const farmerMap = new Map<string, any[]>();
         order.items?.forEach((item: any) => {
-            if (!farmerMap.has(item.farmerId)) {
-                farmerMap.set(item.farmerId, []);
+            const groupKey = item.groupId || item.farmerId;
+            if (!farmerMap.has(groupKey)) {
+                farmerMap.set(groupKey, []);
             }
-            farmerMap.get(item.farmerId)?.push(item);
+            farmerMap.get(groupKey)?.push(item);
         });
 
         let farmCounter = 1;
         const totalByType: Record<string, number> = {};
         let grandTotal = 0;
 
-        farmerMap.forEach((items, farmerId) => {
-            const farmer = items[0].farmer;
+        farmerMap.forEach((items, groupKey) => {
+            const firstItem = items[0];
+            const farmer = firstItem.farmer;
             const activeItems = items.filter(i => i.quantity > 0);
             if (activeItems.length === 0) return;
 
             text += `Farm No ${farmCounter.toString().padStart(2, '0')}\n`;
             text += `${farmer.name}\n`;
-            if (farmer.location) text += `Location: ${farmer.location}\n`;
-            if (farmer.mobile) text += `Phone: ${farmer.mobile}\n`;
 
-            activeItems.forEach(item => {
+            const location = firstItem.locationOverride ?? farmer.location;
+            const mobile = firstItem.mobileOverride ?? farmer.mobile;
+
+            if (location) text += `Location: ${location}\n`;
+            if (mobile) text += `Phone: ${mobile}\n`;
+
+            activeItems.sort((a, b) => a.feedType.localeCompare(b.feedType)).forEach(item => {
                 text += `${item.feedType}: ${item.quantity} Bags\n`;
                 totalByType[item.feedType] = (totalByType[item.feedType] || 0) + item.quantity;
                 grandTotal += item.quantity;
@@ -68,9 +74,11 @@ export function FeedOrderCard({
         });
 
         text += `Total:\n`;
-        Object.entries(totalByType).forEach(([type, qty]) => {
-            text += `${type}: ${qty} Bags\n`;
-        });
+        Object.entries(totalByType)
+            .sort(([typeA], [typeB]) => typeA.localeCompare(typeB))
+            .forEach(([type, qty]) => {
+                text += `${type}: ${qty} Bags\n`;
+            });
 
         text += `\nGrand Total: ${grandTotal} Bags`;
         return text;

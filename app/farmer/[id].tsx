@@ -10,6 +10,7 @@ import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
 import { SellModal } from "@/components/cycles/sell-modal";
 import { DeleteFarmerModal } from "@/components/farmers/delete-farmer-modal";
 import { EditFarmerModal } from "@/components/farmers/edit-farmer-modal";
+import { ProblematicFeedModal } from "@/components/farmers/problematic-feed-modal";
 import { RestockModal } from "@/components/farmers/restock-modal";
 import { SecurityMoneyModal } from "@/components/farmers/security-money-modal";
 import { StartCycleModal } from "@/components/farmers/start-cycle-modal";
@@ -25,7 +26,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { Activity, Archive, ArrowLeft, ArrowRightLeft, Bird, ChevronDown, ChevronUp, History, Link, MoreVertical, Package, Pencil, Plus, Scale, ShoppingCart, Trash2, Wrench } from "lucide-react-native";
+import { Activity, AlertCircle, Archive, ArrowLeft, ArrowRightLeft, Bird, ChevronDown, ChevronUp, History, Link, MoreVertical, Package, Pencil, Plus, Scale, ShoppingCart, Trash2, Wrench } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
@@ -37,6 +38,7 @@ export default function FarmerDetailScreen() {
     const [isRestockOpen, setIsRestockOpen] = useState(false);
     const [isCorrectionOpen, setIsCorrectionOpen] = useState(false);
     const [isSecurityOpen, setIsSecurityOpen] = useState(false);
+    const [isProblematicOpen, setIsProblematicOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isStartCycleOpen, setIsStartCycleOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -365,6 +367,24 @@ export default function FarmerDetailScreen() {
                     </CardContent>
                 </Card>
 
+                {/* PROBLEMATIC FEED Card */}
+                <Card className="mb-8 border-destructive/20 bg-destructive/5 overflow-hidden">
+                    <CardContent className="p-5">
+                        <View className="flex-row items-center gap-2 mb-3">
+                            <Icon as={AlertCircle} size={14} className="text-destructive" />
+                            <Text className="text-xs font-bold text-destructive uppercase tracking-wider">Problematic Feed</Text>
+                        </View>
+                        <Text className="text-2xl font-black text-foreground mb-6">{Number(farmer.problematicFeed ?? 0).toLocaleString()} <Text className="text-base text-muted-foreground">bags / value</Text></Text>
+
+                        <View className="flex-row gap-3">
+                            <Button variant="outline" className="flex-1 bg-destructive/10 border-destructive/20 flex-row gap-2 h-10" onPress={() => setIsProblematicOpen(true)}>
+                                <Icon as={Pencil} size={14} className="text-destructive" />
+                                <Text className="font-bold text-destructive text-sm">Update Record</Text>
+                            </Button>
+                        </View>
+                    </CardContent>
+                </Card>
+
                 {/* Accordions */}
                 <View className="mb-8 mt-4">
                     {/* ACTIVE CYCLES */}
@@ -589,6 +609,14 @@ export default function FarmerDetailScreen() {
             <SecurityMoneyModal
                 open={isSecurityOpen}
                 onOpenChange={setIsSecurityOpen}
+                farmer={farmer} onSuccess={() => {
+                    refetchAll(); utils.officer.stock.getAllFarmersStock.invalidate();
+                    utils.management.stock.getAllFarmersStock.invalidate();
+                }}
+            />
+            <ProblematicFeedModal
+                open={isProblematicOpen}
+                onOpenChange={setIsProblematicOpen}
                 farmer={farmer} onSuccess={() => {
                     refetchAll(); utils.officer.stock.getAllFarmersStock.invalidate();
                     utils.management.stock.getAllFarmersStock.invalidate();

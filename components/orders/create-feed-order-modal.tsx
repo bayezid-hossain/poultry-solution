@@ -55,20 +55,21 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                 setOrderDate(new Date(initialData.orderDate));
                 setDeliveryDate(new Date(initialData.deliveryDate));
 
-                // Group flat items from DB by farmerId
+                // Group flat items from DB by farmerId or groupId
                 const grouped: Record<string, FeedItem> = {};
                 (initialData.items as any[]).forEach(item => {
-                    if (!grouped[item.farmerId]) {
-                        grouped[item.farmerId] = {
-                            id: generateId(),
+                    const groupKey = item.groupId || item.farmerId;
+                    if (!grouped[groupKey]) {
+                        grouped[groupKey] = {
+                            id: groupKey,
                             farmerId: item.farmerId,
                             farmerName: item.farmer?.name || "Unknown",
-                            location: item.farmer?.location,
-                            mobile: item.farmer?.mobile,
+                            location: item.locationOverride ?? item.farmer?.location,
+                            mobile: item.mobileOverride ?? item.farmer?.mobile,
                             feeds: []
                         };
                     }
-                    grouped[item.farmerId].feeds.push({
+                    grouped[groupKey].feeds.push({
                         type: item.feedType,
                         quantity: item.quantity.toString()
                     });
@@ -147,7 +148,7 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
             if (item.location) text += `Location: ${item.location}\n`;
             if (item.mobile) text += `Phone: ${item.mobile}\n`;
 
-            activeFeeds.forEach(feed => {
+            activeFeeds.sort((a, b) => a.type.localeCompare(b.type)).forEach(feed => {
                 const qty = Number(feed.quantity) || 0;
                 text += `${feed.type}: ${qty} Bags\n`;
                 totalByType[feed.type] = (totalByType[feed.type] || 0) + qty;
@@ -159,9 +160,11 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
         });
 
         text += `Total:\n`;
-        Object.entries(totalByType).forEach(([type, qty]) => {
-            text += `${type}: ${qty} Bags\n`;
-        });
+        Object.entries(totalByType)
+            .sort(([typeA], [typeB]) => typeA.localeCompare(typeB))
+            .forEach(([type, qty]) => {
+                text += `${type}: ${qty} Bags\n`;
+            });
 
         text += `\nGrand Total: ${grandTotal} Bags`;
 
@@ -193,6 +196,33 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
             const newFeeds = [...item.feeds];
             newFeeds[index] = { ...newFeeds[index], [field]: value };
             return { ...item, feeds: newFeeds };
+        }));
+    };
+
+    const handleDuplicateFarmer = (itemId: string) => {
+        setItems(prev => {
+            const itemToDuplicate = prev.find(i => i.id === itemId);
+            if (!itemToDuplicate) return prev;
+
+            const duplicatedItem = {
+                ...itemToDuplicate,
+                id: generateId(),
+                feeds: itemToDuplicate.feeds.map(f => ({ ...f }))
+            };
+
+            const index = prev.findIndex(i => i.id === itemId);
+            return [
+                ...prev.slice(0, index + 1),
+                duplicatedItem,
+                ...prev.slice(index + 1)
+            ];
+        });
+    };
+
+    const handleUpdateFarmerInfo = (itemId: string, field: 'location' | 'mobile', value: string) => {
+        setItems(prev => prev.map(item => {
+            if (item.id !== itemId) return item;
+            return { ...item, [field]: value };
         }));
     };
 
@@ -238,7 +268,10 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
             }
 
             formattedItems.push({
+                id: item.id,
                 farmerId: item.farmerId,
+                locationOverride: item.location,
+                mobileOverride: item.mobile,
                 feeds: activeFeeds.map(feed => ({
                     type: feed.type.trim(),
                     quantity: Number(feed.quantity)
@@ -416,9 +449,33 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                                         <View key={item.id} className="bg-card border border-border/50 rounded-2xl overflow-hidden p-4">
                                             <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-border/50">
                                                 <Text className="font-bold text-lg text-primary">{item.farmerName}</Text>
-                                                <Pressable onPress={() => handleToggleFarmer({ id: item.farmerId })} className="p-2">
-                                                    <Icon as={Trash2} size={18} className="text-destructive" />
-                                                </Pressable>
+                                                <View className="flex-row items-center gap-2">
+
+                                                    <Pressable onPress={() => setItems(prev => prev.filter(i => i.id !== item.id))} className="p-2">
+                                                        <Icon as={Trash2} size={18} className="text-destructive" />
+                                                    </Pressable>
+                                                </View>
+                                            </View>
+
+                                            <View className="flex-row gap-2 mb-3">
+                                                <View className="flex-1">
+                                                    <Text className="text-xs text-muted-foreground mb-1 ml-1">Location (Optional)</Text>
+                                                    <Input
+                                                        placeholder="Add location..."
+                                                        value={item.location || ""}
+                                                        onChangeText={(val) => handleUpdateFarmerInfo(item.id, 'location', val)}
+                                                        className="h-10 bg-background"
+                                                    />
+                                                </View>
+                                                <View className="flex-1">
+                                                    <Text className="text-xs text-muted-foreground mb-1 ml-1">Mobile (Optional)</Text>
+                                                    <Input
+                                                        placeholder="Add mobile..."
+                                                        value={item.mobile || ""}
+                                                        onChangeText={(val) => handleUpdateFarmerInfo(item.id, 'mobile', val)}
+                                                        className="h-10 bg-background"
+                                                    />
+                                                </View>
                                             </View>
 
                                             <View className="gap-3">
@@ -452,15 +509,21 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                                                     </View>
                                                 ))}
 
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="mt-2 border-dashed border-border"
-                                                    onPress={() => handleAddFeedRow(item.id)}
-                                                >
-                                                    <Icon as={Plus} size={14} className="mr-2 text-muted-foreground" />
-                                                    <Text className="text-muted-foreground">Add Feed Row</Text>
-                                                </Button>
+                                                <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-dashed border-foreground/20">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="px-0 h-8"
+                                                        onPress={() => handleAddFeedRow(item.id)}
+                                                    >
+                                                        <Icon as={Plus} size={16} className="mr-1 text-primary" />
+                                                        <Text className="text-primary font-medium tracking-tight">Add Feed Row</Text>
+                                                    </Button>
+                                                    <Pressable onPress={() => handleDuplicateFarmer(item.id)} className="p-2 flex-row items-center gap-1.5 active:opacity-50">
+                                                        <Icon as={Copy} size={16} className="text-muted-foreground" />
+                                                        <Text className="text-foreground font-medium tracking-tight">Duplicate</Text>
+                                                    </Pressable>
+                                                </View>
                                             </View>
                                         </View>
                                     ))}

@@ -1,6 +1,5 @@
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ProBlocker } from "@/components/pro-blocker";
-import { ExportPreviewDialog } from "@/components/reports/ExportPreviewDialog";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,12 +8,11 @@ import { Icon } from "@/components/ui/icon";
 import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
-import { generateExcel, generatePDF, openFile, shareFile } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
-import { ChevronDown, ChevronRight, FileText, Filter, Table } from "lucide-react-native";
+import { ChevronDown, ChevronRight, FileText, Filter } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, View } from "react-native";
+import { Modal, Pressable, ScrollView, View } from "react-native";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
@@ -34,10 +32,6 @@ export default function DocPlacementsScreen() {
     const [monthPickerOpen, setMonthPickerOpen] = useState(false);
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
     const [expandedFarmers, setExpandedFarmers] = useState<Record<string, boolean>>({});
-
-    // Preview States
-    const [previewVisible, setPreviewVisible] = useState(false);
-    const [previewData, setPreviewData] = useState<{ uri: string, type: 'pdf' | 'excel', title: string } | null>(null);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
@@ -71,91 +65,6 @@ export default function DocPlacementsScreen() {
 
     const YEARS = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
 
-    const exportPdf = async () => {
-        if (!data) return;
-        const reportTitle = `DOC_Placement_${MONTHS[month - 1]}_${year}`;
-        const html = `
-            <div class="section-title">Summary Overview</div>
-            <div class="kpi-container">
-                <div class="kpi-card">
-                    <div class="kpi-value">${(data.summary?.totalDoc ?? 0).toLocaleString()}</div>
-                    <div class="kpi-label">Total DOC Placed</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-value">${data.summary?.farmerCount ?? 0}</div>
-                    <div class="kpi-label">Total Farmers</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-value">${data.summary?.cycleCount ?? 0}</div>
-                    <div class="kpi-label">Total Batches</div>
-                </div>
-            </div>
-
-            <div class="section-title">Detailed Placement Breakdown</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Farmer</th>
-                        <th>Batch #</th>
-                        <th>Date</th>
-                        <th>DOC</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${(data.farmers || []).flatMap((f: any) =>
-            f.cycles.map((c: any, i: number) => `
-                        <tr>
-                            <td>${f.farmerName}</td>
-                            <td>${i + 1}</td>
-                            <td>${formatDate(c.date)}</td>
-                            <td>${c.doc.toLocaleString()}</td>
-                            <td>${c.status === 'archived' || c.status === 'completed' ? 'Archived' : 'Active'}</td>
-                        </tr>
-                    `)).join('')}
-                </tbody>
-            </table>
-        `;
-        try {
-            const uri = await generatePDF({ title: reportTitle, htmlContent: html });
-            setPreviewData({ uri, type: 'pdf', title: reportTitle });
-            setPreviewVisible(true);
-        }
-        catch (e) { Alert.alert("Export Error", "Failed to generate PDF"); }
-    };
-
-    const exportExcel = async () => {
-        if (!data) return;
-        const reportTitle = `DOC_Placement_${MONTHS[month - 1]}_${year}`;
-        const summaryData = [
-            { Metric: "Total DOC Placed", Value: data.summary?.totalDoc ?? 0 },
-            { Metric: "Total Farmers", Value: data.summary?.farmerCount ?? 0 },
-            { Metric: "Total Batches", Value: data.summary?.cycleCount ?? 0 }
-        ];
-
-        const rawData = (data.farmers || []).flatMap((f: any) =>
-            f.cycles.map((c: any, i: number) => ({
-                Farmer: f.farmerName,
-                "Batch #": i + 1,
-                Date: formatDate(c.date),
-                DOC: c.doc,
-                Status: c.status === 'archived' || c.status === 'completed' ? 'Archived' : 'Active'
-            }))
-        );
-
-        try {
-            const uri = await generateExcel({
-                title: reportTitle,
-                summaryData,
-                rawHeaders: ["Farmer", "Batch #", "Date", "DOC", "Status"],
-                rawDataTable: rawData,
-                mergePrimaryColumn: true
-            });
-            setPreviewData({ uri, type: 'excel', title: reportTitle });
-            setPreviewVisible(true);
-        } catch (e) { Alert.alert("Export Error", "Failed to generate Excel"); }
-    };
-
     return (
         <View className="flex-1 bg-background">
             <ScreenHeader title="DOC Placements" />
@@ -167,14 +76,6 @@ export default function DocPlacementsScreen() {
                         <Text className="text-sm text-muted-foreground opacity-70">
                             Month-wise breakdown of Day Old Chick placements.
                         </Text>
-                    </View>
-                    <View className="flex-row gap-2">
-                        <Pressable onPress={exportExcel} className="w-10 h-10 rounded-xl bg-emerald-500/10 items-center justify-center border border-emerald-500/20 active:bg-emerald-500/20">
-                            <Icon as={Table} size={18} className="text-emerald-600" />
-                        </Pressable>
-                        <Pressable onPress={exportPdf} className="w-10 h-10 rounded-xl bg-destructive/10 items-center justify-center border border-destructive/20 active:bg-destructive/20">
-                            <Icon as={FileText} size={18} className="text-destructive" />
-                        </Pressable>
                     </View>
                 </View>
 
@@ -416,17 +317,6 @@ export default function DocPlacementsScreen() {
                     </View>
                 </Pressable>
             </Modal>
-
-            {previewData && (
-                <ExportPreviewDialog
-                    visible={previewVisible}
-                    onClose={() => setPreviewVisible(false)}
-                    title={previewData.title}
-                    type={previewData.type}
-                    onView={() => openFile(previewData.uri, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
-                    onShare={() => shareFile(previewData.uri, previewData.title, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', previewData.type === 'pdf' ? 'com.adobe.pdf' : 'com.microsoft.excel.xlsx')}
-                />
-            )}
         </View>
     );
 }

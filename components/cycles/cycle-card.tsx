@@ -23,6 +23,8 @@ interface CycleCardProps {
         createdAt?: string | Date | null;
         endDate?: string | Date | null;
         farmerId?: string;
+        farmerMainStock?: number | null;
+        farmerProblematicFeed?: number | null;
     };
     onPress?: () => void;
     onAction?: (action: CycleAction, cycle: any) => void;
@@ -50,6 +52,8 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
     const soldValue = Number(cycle.birdsSold || 0);
     const liveBirdsValue = Math.max(0, docValue - mortalityValue - soldValue);
     const feed = Number(cycle.intake ?? 0);
+    const mainStock = Number(cycle.farmerMainStock ?? 0);
+    const problematicFeed = Number(cycle.farmerProblematicFeed ?? 0);
     const isActive = cycle.status === 'active';
 
     const cycleName = cycle.farmerName || cycle.name;
@@ -164,6 +168,23 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                             <Text className="text-[13px] font-bold text-amber-600 dark:text-amber-500 leading-none">{feed.toFixed(1)}</Text>
                         </View>
                     </View>
+                    {isActive && (
+                        <View className="flex-1 w-full justify-center text-center rounded-lg bg-primary/10 border border-primary/20 ml-1 relative">
+
+                            <Text className="text-[9px] text-foreground font-bold uppercase tracking-tight text-center ">Main Stock</Text>
+                            <View className="flex-row items-center gap-1 justify-center">
+                                <Icon as={Wheat} size={12} className="text-primary" />
+                                <Text className="text-[13px] font-bold text-primary leading-none">{mainStock.toFixed(1)}</Text>
+                            </View>
+                            {problematicFeed > 0 && (
+                                <View className="mt-1 items-center">
+                                    <View className="bg-red-500 flex-row items-center px-1.5  rounded shadow-sm shadow-red-500/50">
+                                        <Text className="text-[10px] text-white font-black tracking-tight text-center">PF - {problematicFeed}</Text>
+                                    </View>
+                                </View>
+                            )}
+                        </View>
+                    )}
 
                     {/* 4. Deaths */}
                     <View className="flex-1 justify-center items-end pl-1 border-l border-border/20 ml-1.5">

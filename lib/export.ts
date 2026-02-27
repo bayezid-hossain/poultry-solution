@@ -166,7 +166,7 @@ export interface ExcelExportOptions {
     title: string;
     summaryData: any[];
     rawDataTable?: any[];
-    groupedDataTable?: { sectionHeader: string, data: any[] }[];
+    groupedDataTable?: { sectionHeader: string, data: any[], footer?: string }[];
     rawHeaders: string[];
     definitions?: any[];
     mergePrimaryColumn?: boolean;
@@ -329,7 +329,7 @@ export async function generateExcel({ title, summaryData, rawDataTable, groupedD
 
                 // Group Section Header
                 const groupHeaderRow = new Array(maxCols).fill("");
-                groupHeaderRow[tableStartCol] = { v: `[ ${group.sectionHeader} ]`, s: sectionHeaderStyle };
+                groupHeaderRow[L_PAD] = { v: `[ ${group.sectionHeader} ]`, s: sectionHeaderStyle };
                 aoa.push(groupHeaderRow);
                 aoa.push(new Array(maxCols).fill("")); // small spacer
 
@@ -369,6 +369,13 @@ export async function generateExcel({ title, summaryData, rawDataTable, groupedD
                     }
                     aoa.push(dataRow);
                 });
+
+                if (group.footer) {
+                    const footerRow = new Array(maxCols).fill("");
+                    // Add at L_PAD so it gets picked up by the merge logic at the bottom
+                    footerRow[L_PAD] = { v: `[ ${group.footer} ]`, s: sectionHeaderStyle };
+                    aoa.push(footerRow);
+                }
             });
         } else if (rawDataTable && rawDataTable.length > 0) {
             const headerRow = new Array(maxCols).fill("");
@@ -572,17 +579,17 @@ export async function exportActiveStockExcel(activeCycles: any[], title: string)
 
     const rawDataTable: any[] = [];
     const extraMerges: any[] = [];
-    let currentRowOffset = 13; // Account for: title(1), mgmt(1), date(1), blank(1), sum_label(1), blank(1), sum_rows(2), blank(1), blanks(3), detail_label(1) = 13 rows
+    let startRowOffset = 15; // Details section starts at index 15
 
     Object.entries(groups).forEach(([farmerName, cycles]) => {
-        const startRow = currentRowOffset + 3 + rawDataTable.length; // +3 for Detailed Record label + blank row + header row
+        const startRow = startRowOffset + rawDataTable.length;
         cycles.forEach((c, idx) => {
             rawDataTable.push({
                 "Farmer": idx === 0 ? farmerName : "",
                 "DOC": c.doc,
                 "Age": c.age,
                 "Main Stock (bags)": Number(c.farmerMainStock).toFixed(2),
-                "Last Updated": new Date(c.updatedAt).toLocaleDateString()
+                "Last Updated": new Date(c.mainStockUpdatedAt || c.farmerUpdatedAt || c.updatedAt).toLocaleDateString()
             });
         });
 
@@ -654,7 +661,7 @@ export async function exportActiveStockPDF(activeCycles: any[], title: string) {
                         <td style="border: 1px solid #e5e7eb;">${c.doc}</td>
                         <td style="border: 1px solid #e5e7eb;">${c.age}</td>
                         <td style="border: 1px solid #e5e7eb;">${Number(c.farmerMainStock).toFixed(2)}</td>
-                        <td style="border: 1px solid #e5e7eb;">${new Date(c.updatedAt).toLocaleDateString()}</td>
+                        <td style="border: 1px solid #e5e7eb;">${new Date(c.mainStockUpdatedAt || c.farmerUpdatedAt || c.updatedAt).toLocaleDateString()}</td>
                     </tr>
                 `).join('')}
             `).join('')}
@@ -711,15 +718,21 @@ export async function exportRangeDocPlacementsExcel(data: any, title: string) {
     // Flatten all cycles with farmer name and parse dates
     const allCycles: any[] = [];
     (data.farmers || []).forEach((f: any) => {
-        f.cycles.forEach((c: any, i: number) => {
+        const sortedCycles = [...f.cycles].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const monthBatchCount: Record<string, number> = {};
+        sortedCycles.forEach((c: any) => {
             const d = new Date(c.date);
+            const monthKey = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+            if (!monthBatchCount[monthKey]) monthBatchCount[monthKey] = 0;
+            monthBatchCount[monthKey]++;
+
             allCycles.push({
                 farmerName: f.farmerName,
-                batchNum: i + 1,
+                batchNum: monthBatchCount[monthKey],
                 date: d,
                 doc: c.doc,
                 status: c.status,
-                monthKey: `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`,
+                monthKey,
                 monthLabel: d.toLocaleString('default', { month: 'long', year: 'numeric' })
             });
         });
@@ -777,15 +790,21 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string) {
     // Flatten all cycles with farmer context
     const allCycles: any[] = [];
     (farmers || []).forEach((f: any) => {
-        f.cycles.forEach((c: any, i: number) => {
+        const sortedCycles = [...f.cycles].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const monthBatchCount: Record<string, number> = {};
+        sortedCycles.forEach((c: any) => {
             const d = new Date(c.date);
+            const monthKey = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+            if (!monthBatchCount[monthKey]) monthBatchCount[monthKey] = 0;
+            monthBatchCount[monthKey]++;
+
             allCycles.push({
                 farmerName: f.farmerName,
-                batchNum: i + 1,
+                batchNum: monthBatchCount[monthKey],
                 date: d,
                 doc: c.doc,
                 status: c.status,
-                monthKey: `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`,
+                monthKey,
                 monthLabel: d.toLocaleString('default', { month: 'long', year: 'numeric' })
             });
         });
@@ -853,32 +872,52 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string) {
  * Generates an Excel report for monthly production records within a range
  */
 export async function exportRangeProductionExcel(records: any[], title: string) {
-    const rawHeaders = ["Month/Year", "Chicks In", "Mortality", "Survival %", "Sold", "Weight (kg)", "Avg Weight", "Feed (bags)", "FCR", "EPI"];
-    const rawDataTable = records.map(r => ({
-        "Month/Year": `${r.monthName} ${r.year}`,
-        "Chicks In": r.chicksIn,
-        "Mortality": r.mortality,
-        "Survival %": (r.survivalRate || 0).toFixed(1) + "%",
-        "Sold": r.chicksSold,
-        "Weight (kg)": (r.totalBirdWeight || 0).toFixed(2),
-        "Avg Weight": r.chicksSold > 0 ? (r.totalBirdWeight / r.chicksSold).toFixed(3) : "0.000",
-        "Feed (bags)": (r.feedConsumption || 0).toFixed(2),
-        "FCR": (r.fcr || 0).toFixed(3),
-        "EPI": (r.epi || 0).toFixed(1)
-    }));
+    const rawHeaders = ["Farmer", "DOC", "Surv. %", "Avg Wt (kg)", "FCR", "EPI", "Age", "Net Profit"];
+
+    // Group by month
+    const monthGroups: Record<string, any[]> = {};
+    records.forEach(r => {
+        const key = r.monthKey;
+        if (!monthGroups[key]) monthGroups[key] = [];
+        monthGroups[key].push(r);
+    });
+
+    const groupedDataTable: any[] = [];
+    Object.entries(monthGroups).forEach(([key, groupRecords]) => {
+        const monthTotalDoc = groupRecords.reduce((s, c) => s + c.doc, 0);
+        const sectionHeader = `${groupRecords[0].monthName} ${groupRecords[0].year} — ${groupRecords.length} batches, ${monthTotalDoc.toLocaleString()} DOC`;
+
+        const monthProfit = groupRecords.reduce((sum, r) => sum + r.profit, 0);
+        const monthAvgFcr = groupRecords.length > 0 ? (groupRecords.reduce((sum, r) => sum + r.fcr, 0) / groupRecords.length).toFixed(2) : "0.00";
+        const monthAvgEpi = groupRecords.length > 0 ? (groupRecords.reduce((sum, r) => sum + r.epi, 0) / groupRecords.length).toFixed(2) : "0.00";
+        const footer = `${groupRecords[0].monthName} Averages: EPI ${monthAvgEpi} | FCR ${monthAvgFcr} | Total Profit: ৳${monthProfit.toLocaleString()}`;
+
+        const data = groupRecords.map(r => ({
+            "Farmer": r.farmerName,
+            "DOC": r.doc,
+            "Surv. %": (r.survivalRate || 0).toFixed(1) + "%",
+            "Avg Wt (kg)": (r.averageWeight || 0).toFixed(3),
+            "FCR": (r.fcr || 0).toFixed(2),
+            "EPI": (r.epi || 0).toFixed(2),
+            "Age": (r.age || 0).toFixed(1),
+            "Net Profit": r.profit
+        }));
+        groupedDataTable.push({ sectionHeader, data, footer });
+    });
 
     const summaryData = [
-        { Metric: "Total In", Value: records.reduce((sum, r) => sum + r.chicksIn, 0) },
-        { Metric: "Total Out", Value: records.reduce((sum, r) => sum + r.chicksSold, 0) },
-        { Metric: "Total Feed", Value: records.reduce((sum, r) => sum + r.feedConsumption, 0).toFixed(1) },
-        { Metric: "Avg FCR", Value: (records.reduce((sum, r) => sum + r.fcr, 0) / (records.length || 1)).toFixed(3) }
+        { Metric: "Total DOC In", Value: records.reduce((sum, r) => sum + r.doc, 0) },
+        { Metric: "Average FCR", Value: records.length > 0 ? (records.reduce((sum, r) => sum + r.fcr, 0) / records.length).toFixed(3) : "0.000" },
+        { Metric: "Average EPI", Value: records.length > 0 ? (records.reduce((sum, r) => sum + r.epi, 0) / records.length).toFixed(2) : "0.00" },
+        { Metric: "Net Profit", Value: "৳" + records.reduce((sum, r) => sum + r.profit, 0).toLocaleString() }
     ];
 
     return await generateExcel({
         title,
         summaryData,
         rawHeaders,
-        rawDataTable
+        groupedDataTable,
+        mergePrimaryColumn: true
     });
 }
 
@@ -887,54 +926,81 @@ export async function exportRangeProductionExcel(records: any[], title: string) 
  * Each month shown as separate section with header
  */
 export async function exportRangeProductionPDF(records: any[], title: string) {
-    const totalIn = records.reduce((sum, r) => sum + r.chicksIn, 0);
-    const totalOut = records.reduce((sum, r) => sum + r.chicksSold, 0);
-    const totalFeed = records.reduce((sum, r) => sum + r.feedConsumption, 0);
+    const totalIn = records.reduce((sum, r) => sum + r.doc, 0);
     const avgFCR = records.length > 0 ? (records.reduce((sum, r) => sum + r.fcr, 0) / records.length) : 0;
+    const avgEPI = records.length > 0 ? (records.reduce((sum, r) => sum + r.epi, 0) / records.length) : 0;
+    const totalProfit = records.reduce((sum, r) => sum + r.profit, 0);
+
+    // Group by month
+    const monthGroups: Record<string, any[]> = {};
+    records.forEach(r => {
+        const key = r.monthKey;
+        if (!monthGroups[key]) monthGroups[key] = [];
+        monthGroups[key].push(r);
+    });
 
     // Build per-month sections
-    const monthSections = records.map(r => `
-        <div class="section-title">${r.monthName} ${r.year} — ${r.chicksIn.toLocaleString()} in, ${r.chicksSold.toLocaleString()} sold, FCR: ${(r.fcr || 0).toFixed(2)}</div>
-        <table>
+    const monthSections = Object.values(monthGroups).map(groupRecords => {
+        const monthTotalDoc = groupRecords.reduce((s, c) => s + c.doc, 0);
+        const monthProfit = groupRecords.reduce((sum, r) => sum + r.profit, 0);
+        const monthAvgFcr = groupRecords.length > 0 ? (groupRecords.reduce((sum, r) => sum + r.fcr, 0) / groupRecords.length).toFixed(2) : "0.00";
+        const monthAvgEpi = groupRecords.length > 0 ? (groupRecords.reduce((sum, r) => sum + r.epi, 0) / groupRecords.length).toFixed(2) : "0.00";
+
+        return `
+        <table style="margin-bottom: 20px;">
             <thead>
                 <tr>
-                    <th>Chicks In</th><th>Mortality</th><th>Survival %</th><th>Sold</th><th>Weight (kg)</th>
-                    <th>Avg Weight</th><th>Feed (bags)</th><th>FCR</th><th>EPI</th>
+                    <th colspan="8" style="background-color: #f9fafb; color: #374151; font-size: 13px; font-weight: 900; letter-spacing: 0.05em; padding: 12px; border-bottom: 2px solid #10b981; text-align: center;">
+                        ${groupRecords[0].monthName.toUpperCase()} ${groupRecords[0].year} — ${groupRecords.length} BATCHES, ${monthTotalDoc.toLocaleString()} DOC
+                    </th>
+                </tr>
+                <tr>
+                    <th>Farmer</th><th>DOC</th><th>Surv. %</th>
+                    <th>Avg Wt (kg)</th><th>FCR</th><th>EPI</th><th>Age</th><th>Net Profit</th>
                 </tr>
             </thead>
             <tbody>
+                ${groupRecords.map(r => `
                 <tr>
-                    <td>${r.chicksIn}</td>
-                    <td>${r.mortality || 0}</td>
+                    <td style="font-weight: bold;">${r.farmerName}</td>
+                    <td>${r.doc.toLocaleString()}</td>
                     <td>${(r.survivalRate || 0).toFixed(1)}%</td>
-                    <td>${r.chicksSold}</td>
-                    <td>${(r.totalBirdWeight || 0).toFixed(2)}</td>
-                    <td>${r.chicksSold > 0 ? (r.totalBirdWeight / r.chicksSold).toFixed(3) : '0.000'}</td>
-                    <td>${(r.feedConsumption || 0).toFixed(2)}</td>
-                    <td>${(r.fcr || 0).toFixed(3)}</td>
-                    <td>${(r.epi || 0).toFixed(1)}</td>
+                    <td>${(r.averageWeight || 0).toFixed(3)}</td>
+                    <td style="font-family: monospace;">${(r.fcr || 0).toFixed(2)}</td>
+                    <td style="font-family: monospace;">${(r.epi || 0).toFixed(2)}</td>
+                    <td>${(r.age || 0).toFixed(1)}</td>
+                    <td style="color: ${r.profit >= 0 ? '#16a34a' : '#dc2626'}; white-space: nowrap;">৳${r.profit.toLocaleString()}</td>
+                </tr>
+                `).join('')}
+                <tr>
+                    <td colspan="8" style="text-align: center; font-weight: 800; background-color: #f3f4f6; color: #1f2937; padding: 12px; letter-spacing: 0.05em; font-size: 11px; border-top: 2px solid #e5e7eb;">
+                        ${groupRecords[0].monthName.toUpperCase()} AVERAGES: <span style="color: #10b981; margin: 0 8px;">EPI ${monthAvgEpi}</span> &bull; <span style="color: #10b981; margin: 0 8px;">FCR ${monthAvgFcr}</span> &bull; <span style="color: ${monthProfit >= 0 ? '#10b981' : '#dc2626'}; margin-left: 8px;">PROFIT: ৳${monthProfit.toLocaleString()}</span>
+                    </td>
                 </tr>
             </tbody>
         </table>
-    `).join('');
+        `;
+    }).join('');
 
     const htmlContent = `
         <div class="kpi-container">
             <div class="kpi-card">
                 <div class="kpi-value">${totalIn.toLocaleString()}</div>
-                <div class="kpi-label">Total Chicks In</div>
+                <div class="kpi-label">Total DOC In</div>
             </div>
-            <div class="kpi-card">
-                <div class="kpi-value">${totalOut.toLocaleString()}</div>
-                <div class="kpi-label">Total Sold</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-value">${totalFeed.toFixed(1)}</div>
-                <div class="kpi-label">Total Feed (bags)</div>
-            </div>
+            
             <div class="kpi-card">
                 <div class="kpi-value">${avgFCR.toFixed(3)}</div>
                 <div class="kpi-label">Average FCR</div>
+            </div>
+            
+            <div class="kpi-card">
+                <div class="kpi-value">${avgEPI.toFixed(2)}</div>
+                <div class="kpi-label">Average EPI</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value" style="color: ${totalProfit >= 0 ? '#16a34a' : '#dc2626'}">৳${totalProfit.toLocaleString()}</div>
+                <div class="kpi-label">Net Profit</div>
             </div>
         </div>
         ${monthSections}
@@ -972,7 +1038,7 @@ export async function exportYearlyPerformanceExcel(data: any, title: string) {
         { Metric: "Total Sold", Value: (data.totalChicksSold || 0) },
         { Metric: "Average FCR", Value: (data.averageFCR || 0).toFixed(2) },
         { Metric: "Average EPI", Value: (data.averageEPI || 0).toFixed(0) },
-        { Metric: "Average Survival Rate", Value: (data.averageSurvivalRate * 100).toFixed(1) + "%" }
+        { Metric: "Average Survival Rate", Value: (data.averageSurvivalRate).toFixed(1) + "%" }
     ];
 
     return await generateExcel({
