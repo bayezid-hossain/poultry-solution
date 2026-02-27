@@ -214,6 +214,17 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                     >
                         {farmer.name}
                     </Text>
+                    {(farmer as any).mainStockUpdatedAt && (() => {
+                        try {
+                            let raw = String((farmer as any).mainStockUpdatedAt).trim().replace(' ', 'T');
+                            if (/[+-]\d{2}$/.test(raw)) raw += ':00';
+                            return (
+                                <Text className="text-[9px] text-muted-foreground font-medium mt-0.5">
+                                    Updated: {format(new Date(raw), "dd/MM/yyyy")}
+                                </Text>
+                            );
+                        } catch { return null; }
+                    })()}
                 </Pressable>
                 <Pressable
                     className="flex-row items-center gap-2 p-3 active:bg-muted/30 border-l border-border/10"

@@ -165,11 +165,12 @@ export default function SettingsScreen() {
                 <Button
                     variant="destructive"
                     onPress={handleSignOut}
-                    className="h-14 rounded-2xl flex-row items-center justify-center gap-3 "
+                    className="h-14 rounded-2xl flex-row items-center justify-center gap-3"
+                    style={{ backgroundColor: '#ef4444' }}
                 >
-                    <Icon as={LogOut} size={18} className="text-destructive-foreground" />
-                    <Text className="text-destructive-foreground font-bold tracking-widest uppercase">
-                        Sign Out Account
+                    <Icon as={LogOut} size={18} className="text-white" />
+                    <Text className="text-white font-bold tracking-widest uppercase">
+                        Sign Out
                     </Text>
                 </Button>
 

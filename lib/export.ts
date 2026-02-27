@@ -6,6 +6,24 @@ import * as Sharing from 'expo-sharing';
 import { Alert, Platform } from 'react-native';
 import XLSX from 'xlsx-js-style';
 
+/** Format a date as dd/MM/yyyy in local timezone */
+function formatLocalDate(dateInput: string | Date | null | undefined): string {
+    if (!dateInput) return '-';
+    // Normalize PostgreSQL timestamptz format: "2026-02-27 18:50:52.745+00" → ISO 8601
+    let input: string | Date = dateInput;
+    if (typeof input === 'string') {
+        input = input.trim().replace(' ', 'T');
+        // Ensure timezone offset has colon: "+00" → "+00:00"
+        if (/[+-]\d{2}$/.test(input)) input += ':00';
+    }
+    const d = new Date(input);
+    if (isNaN(d.getTime())) return '-';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
 export interface PDFExportOptions {
     title: string;
     subtitle?: string;
@@ -589,7 +607,7 @@ export async function exportActiveStockExcel(activeCycles: any[], title: string)
                 "DOC": c.doc,
                 "Age": c.age,
                 "Main Stock (bags)": Number(c.farmerMainStock).toFixed(2),
-                "Last Updated": new Date(c.mainStockUpdatedAt || c.farmerUpdatedAt || c.updatedAt).toLocaleDateString()
+                "Last Updated": formatLocalDate(c.mainStockUpdatedAt || c.farmerUpdatedAt || c.updatedAt)
             });
         });
 
@@ -661,7 +679,7 @@ export async function exportActiveStockPDF(activeCycles: any[], title: string) {
                         <td style="border: 1px solid #e5e7eb;">${c.doc}</td>
                         <td style="border: 1px solid #e5e7eb;">${c.age}</td>
                         <td style="border: 1px solid #e5e7eb;">${Number(c.farmerMainStock).toFixed(2)}</td>
-                        <td style="border: 1px solid #e5e7eb;">${new Date(c.mainStockUpdatedAt || c.farmerUpdatedAt || c.updatedAt).toLocaleDateString()}</td>
+                        <td style="border: 1px solid #e5e7eb;">${formatLocalDate(c.mainStockUpdatedAt || c.farmerUpdatedAt || c.updatedAt)}</td>
                     </tr>
                 `).join('')}
             `).join('')}
@@ -748,6 +766,11 @@ export async function exportRangeDocPlacementsExcel(data: any, title: string) {
         monthGroups[c.monthKey].push(c);
     });
 
+    // Sort within each month: by farmer name first, then by date
+    Object.values(monthGroups).forEach(group => {
+        group.sort((a, b) => a.farmerName.localeCompare(b.farmerName) || a.date.getTime() - b.date.getTime());
+    });
+
     // Build grouped data table
     const groupedDataTable: any[] = [];
     Object.entries(monthGroups).forEach(([, cycles]) => {
@@ -757,7 +780,7 @@ export async function exportRangeDocPlacementsExcel(data: any, title: string) {
         const data = cycles.map(c => ({
             "Farmer": c.farmerName,
             "Batch #": c.batchNum,
-            "Date": c.date.toLocaleDateString(),
+            "Date": formatLocalDate(c.date),
             "DOC": c.doc,
             "Status": c.status === 'archived' || c.status === 'completed' ? 'Archived' : 'Active'
         }));
@@ -818,6 +841,11 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string) {
         monthGroups[c.monthKey].push(c);
     });
 
+    // Sort within each month: by farmer name first, then by date
+    Object.values(monthGroups).forEach(group => {
+        group.sort((a, b) => a.farmerName.localeCompare(b.farmerName) || a.date.getTime() - b.date.getTime());
+    });
+
     // Build month sections
     const monthSections = Object.values(monthGroups).map(cycles => {
         const monthDoc = cycles.reduce((s, c) => s + c.doc, 0);
@@ -838,7 +866,7 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string) {
                         <tr>
                             <td style="font-weight: bold;">${c.farmerName}</td>
                             <td>${c.batchNum}</td>
-                            <td>${c.date.toLocaleDateString()}</td>
+                            <td>${formatLocalDate(c.date)}</td>
                             <td style="font-weight: bold;">${c.doc.toLocaleString()}</td>
                             <td>${c.status === 'archived' || c.status === 'completed' ? 'Archived' : 'Active'}</td>
                         </tr>
@@ -1166,13 +1194,14 @@ export async function exportYearlyPerformancePDF(data: any, title: string) {
  * Generates an Excel report for all farmers and their current main stock
  */
 export async function exportAllFarmerStockExcel(farmers: any[], title: string) {
-    const rawHeaders = ["Farmer Name", "Location", "Mobile", "Main Stock (bags)", "Active Cycles"];
+    const rawHeaders = ["Farmer Name", "Location", "Mobile", "Main Stock (bags)", "Active Cycles", "Last Updated"];
     const rawDataTable = farmers.map(f => ({
         "Farmer Name": f.name || '---',
         "Location": f.location || '---',
         "Mobile": f.mobile || '---',
         "Main Stock (bags)": Number(f.mainStock || 0).toFixed(2),
-        "Active Cycles": f.activeCyclesCount || 0
+        "Active Cycles": f.activeCyclesCount || 0,
+        "Last Updated": formatLocalDate(f.mainStockUpdatedAt || f.updatedAt)
     }));
 
     const summaryData = [
@@ -1216,6 +1245,7 @@ export async function exportAllFarmerStockPDF(farmers: any[], title: string) {
                     <th>Mobile</th>
                     <th>Stock (bags)</th>
                     <th>Active Cycles</th>
+                    <th>Last Updated</th>
                 </tr>
             </thead>
             <tbody>
@@ -1226,6 +1256,7 @@ export async function exportAllFarmerStockPDF(farmers: any[], title: string) {
                         <td>${f.mobile || '---'}</td>
                         <td style="font-weight: bold;">${Number(f.mainStock || 0).toFixed(2)}</td>
                         <td>${f.activeCyclesCount || 0}</td>
+                        <td>${formatLocalDate(f.mainStockUpdatedAt || f.updatedAt)}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -1289,7 +1320,7 @@ export async function exportSalesLedgerExcel(sales: any[], title: string) {
 
         return {
             Farmer: s.farmerName || s.cycle?.farmer?.name || s.history?.farmer?.name || "-",
-            Date: new Date(s.saleDate || s.createdAt).toLocaleDateString(),
+            Date: formatLocalDate(s.saleDate || s.createdAt),
             Age: showWeighted ? `${ctx.age} (Weighted)` : (s.saleAge ?? ctx?.age ?? "N/A"),
             "Birds Sold": s.birdsSold,
             "Total Weight (kg)": Number(s.totalWeight).toFixed(2),
@@ -1399,7 +1430,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string) {
 
         return `
             <tr>
-                <td>${new Date(s.saleDate || s.createdAt).toLocaleDateString()}</td>
+                <td>${formatLocalDate(s.saleDate || s.createdAt)}</td>
                 <td><b>${s.farmerName || s.cycle?.farmer?.name || s.history?.farmer?.name || "-"}</b></td>
                 <td>${showWeighted ? `<b>${ctx.age}</b>` : (s.saleAge ?? ctx?.age ?? "N/A")} d</td>
                 <td>${s.birdsSold}</td>
