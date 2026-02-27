@@ -1,5 +1,6 @@
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ProBlocker } from "@/components/pro-blocker";
+import { ExportPreviewDialog } from "@/components/reports/ExportPreviewDialog";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { Icon } from "@/components/ui/icon";
 import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
-import { exportToExcel, exportToPDF } from "@/lib/export";
+import { generateExcel, generatePDF, openFile, shareFile } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
 import { router, useFocusEffect } from "expo-router";
 import { ChevronDown, FileText, Table } from "lucide-react-native";
@@ -23,6 +24,11 @@ export default function ProductionScreen() {
     const [year, setYear] = useState(now.getFullYear());
     const [monthPickerOpen, setMonthPickerOpen] = useState(false);
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
+
+    // Preview States
+    const [previewVisible, setPreviewVisible] = useState(false);
+    const [previewData, setPreviewData] = useState<{ uri: string, type: 'pdf' | 'excel', title: string } | null>(null);
+
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
@@ -70,6 +76,7 @@ export default function ProductionScreen() {
 
     const exportPdf = async () => {
         if (!data || data.length === 0) return;
+        const reportTitle = `Production_Report_${MONTHS[month]}_${year}`;
         const html = `
             <div class="section-title">Monthly Production Record - ${MONTHS[month]} ${year}</div>
             <div class="kpi-container">
@@ -121,12 +128,17 @@ export default function ProductionScreen() {
                 </tbody>
             </table>
         `;
-        try { await exportToPDF({ title: `Production_Report_${MONTHS[month]}_${year}`, htmlContent: html }); }
+        try {
+            const uri = await generatePDF({ title: reportTitle, htmlContent: html });
+            setPreviewData({ uri, type: 'pdf', title: reportTitle });
+            setPreviewVisible(true);
+        }
         catch (e) { Alert.alert("Export Error", "Failed to generate PDF"); }
     };
 
     const exportExcel = async () => {
         if (!data || data.length === 0) return;
+        const reportTitle = `Production_Report_${MONTHS[month]}_${year}`;
 
         const summaryData = [
             { Metric: "Total DOC Placed", Value: totalDoc },
@@ -148,16 +160,19 @@ export default function ProductionScreen() {
         }));
 
         try {
-            await exportToExcel({
-                title: `Production_Report_${MONTHS[month]}_${year}`,
+            const uri = await generateExcel({
+                title: reportTitle,
                 summaryData,
                 rawHeaders: ["Farmer", "DOC", "Survival %", "Avg Weight (kg)", "FCR", "EPI", "Age (days)", "Profit"],
                 rawDataTable: rawData,
+                mergePrimaryColumn: true,
                 definitions: [
                     { Metric: "FCR", Calculation: "Feed Consumed / Body Weight" },
                     { Metric: "EPI", Calculation: "(SurvivalRate * BodyWeight) / (Age * FCR) * 10" }
                 ]
             });
+            setPreviewData({ uri, type: 'excel', title: reportTitle });
+            setPreviewVisible(true);
         } catch (e) { Alert.alert("Export Error", "Failed to generate Excel"); }
     };
 
@@ -385,6 +400,17 @@ export default function ProductionScreen() {
                     </View>
                 </Pressable>
             </Modal>
+
+            {previewData && (
+                <ExportPreviewDialog
+                    visible={previewVisible}
+                    onClose={() => setPreviewVisible(false)}
+                    title={previewData.title}
+                    type={previewData.type}
+                    onView={() => openFile(previewData.uri, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                    onShare={() => shareFile(previewData.uri, previewData.title, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', previewData.type === 'pdf' ? 'com.adobe.pdf' : 'com.microsoft.excel.xlsx')}
+                />
+            )}
         </View>
     );
 }

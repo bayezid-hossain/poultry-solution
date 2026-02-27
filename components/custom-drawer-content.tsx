@@ -4,7 +4,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
 import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
-import { BarChart3, Bird, ClipboardList, Crown, LayoutDashboard, Package, Settings, ShoppingBag, TrendingUp, Users, Wheat } from "lucide-react-native";
+import { BarChart3, Bird, ClipboardList, Crown, Download, LayoutDashboard, Package, Settings, ShoppingBag, TrendingUp, Users, Wheat } from "lucide-react-native";
 import { Image, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SubscriptionStatus } from "./subscription-status";
@@ -37,6 +37,7 @@ const officerReportItems: NavItem[] = [
     { label: "Monthly DOC Placements", icon: ClipboardList, route: "/(drawer)/doc-placements", isPro: true },
     { label: "Yearly Performance", icon: TrendingUp, route: "/(drawer)/performance", isPro: true },
     { label: "Monthly Production", icon: BarChart3, route: "/(drawer)/production", isPro: true },
+    { label: "Download Reports", icon: Download, route: "/(drawer)/reports", isPro: true },
 ];
 
 const managementCoreItems: NavItem[] = [
@@ -60,6 +61,7 @@ const managementReportItems: NavItem[] = [
     { label: "Monthly DOC Placements", icon: ClipboardList, route: "/(drawer)/doc-placements", isPro: true },
     { label: "Yearly Performance", icon: TrendingUp, route: "/(drawer)/performance", isPro: true },
     { label: "Monthly Production", icon: BarChart3, route: "/(drawer)/production", isPro: true },
+    { label: "Download Reports", icon: Download, route: "/(drawer)/reports", isPro: true },
 ];
 
 export function CustomDrawerContent(props: any) {

@@ -1,6 +1,7 @@
 /// <reference types="nativewind/types" />
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ProBlocker } from "@/components/pro-blocker";
+import { ExportPreviewDialog } from "@/components/reports/ExportPreviewDialog";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Icon } from "@/components/ui/icon";
 import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
-import { exportToExcel, exportToPDF } from "@/lib/export";
+import { generateExcel, generatePDF, openFile, shareFile } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { Link, router } from "expo-router";
@@ -24,6 +25,15 @@ export default function StockLedgerScreen() {
 
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+
+    // Preview States
+    const [previewVisible, setPreviewVisible] = useState(false);
+    const [previewData, setPreviewData] = useState<{ uri: string, type: 'pdf' | 'excel', title: string } | null>(null);
+
+    const showPreview = (uri: string, type: 'pdf' | 'excel', title: string) => {
+        setPreviewData({ uri, type, title });
+        setPreviewVisible(true);
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
@@ -76,15 +86,50 @@ export default function StockLedgerScreen() {
             </View>
 
             {tab === "stock" ? (
-                <StockTab isManagement={isManagement} officerId={isManagement ? (selectedOfficerId || undefined) : undefined} orgId={membership?.orgId ?? ""} searchQuery={debouncedSearch} />
+                <StockTab
+                    isManagement={isManagement}
+                    officerId={isManagement ? (selectedOfficerId || undefined) : undefined}
+                    orgId={membership?.orgId ?? ""}
+                    searchQuery={debouncedSearch}
+                    onExportGenerated={showPreview}
+                />
             ) : (
-                <ImportHistoryTab isManagement={isManagement} officerId={isManagement ? (selectedOfficerId || undefined) : undefined} orgId={membership?.orgId ?? ""} searchQuery={debouncedSearch} />
+                <ImportHistoryTab
+                    isManagement={isManagement}
+                    officerId={isManagement ? (selectedOfficerId || undefined) : undefined}
+                    orgId={membership?.orgId ?? ""}
+                    searchQuery={debouncedSearch}
+                    onExportGenerated={showPreview}
+                />
+            )}
+
+            {previewData && (
+                <ExportPreviewDialog
+                    visible={previewVisible}
+                    onClose={() => setPreviewVisible(false)}
+                    title={previewData.title}
+                    type={previewData.type}
+                    onView={() => openFile(previewData.uri, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                    onShare={() => shareFile(previewData.uri, previewData.title, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', previewData.type === 'pdf' ? 'com.adobe.pdf' : 'com.microsoft.excel.xlsx')}
+                />
             )}
         </View>
     );
 }
 
-function StockTab({ isManagement, officerId, orgId, searchQuery }: { isManagement: boolean; officerId?: string; orgId: string; searchQuery: string }) {
+function StockTab({
+    isManagement,
+    officerId,
+    orgId,
+    searchQuery,
+    onExportGenerated
+}: {
+    isManagement: boolean;
+    officerId?: string;
+    orgId: string;
+    searchQuery: string;
+    onExportGenerated: (uri: string, type: 'pdf' | 'excel', title: string) => void;
+}) {
     const officerQuery = trpc.officer.stock.getAllFarmersStock.useQuery(
         { limit: 100, cursor: 0, search: searchQuery },
         { enabled: !isManagement }
@@ -117,6 +162,7 @@ function StockTab({ isManagement, officerId, orgId, searchQuery }: { isManagemen
 
     const exportPdf = async () => {
         if (!items || items.length === 0) return;
+        const reportTitle = "Current_Stock_Report";
         const html = `
             <h2>Current Stock Ledger</h2>
             <div class="kpi-container">
@@ -146,12 +192,16 @@ function StockTab({ isManagement, officerId, orgId, searchQuery }: { isManagemen
                 </tbody>
             </table>
         `;
-        try { await exportToPDF({ title: "Current Stock", htmlContent: html }); }
+        try {
+            const uri = await generatePDF({ title: reportTitle, htmlContent: html });
+            onExportGenerated(uri, 'pdf', reportTitle);
+        }
         catch (e) { Alert.alert("Export Failed", "Error generating PDF."); }
     };
 
     const exportExcel = async () => {
         if (!items || items.length === 0) return;
+        const reportTitle = "Current_Stock";
 
         const summaryData = [
             { Metric: "Total Feed Stock", Value: totalStock.toFixed(1) },
@@ -165,12 +215,14 @@ function StockTab({ isManagement, officerId, orgId, searchQuery }: { isManagemen
         }));
 
         try {
-            await exportToExcel({
-                title: "Current_Stock",
+            const uri = await generateExcel({
+                title: reportTitle,
                 summaryData,
                 rawHeaders: ["Farmer", "Main Stock (Bags)", "Last Updated"],
-                rawDataTable: rawData
+                rawDataTable: rawData,
+                mergePrimaryColumn: true
             });
+            onExportGenerated(uri, 'excel', reportTitle);
         } catch (e) { Alert.alert("Export Failed", "Error generating Excel."); }
     };
 
@@ -370,7 +422,19 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
     );
 }
 
-function ImportHistoryTab({ isManagement, officerId, orgId, searchQuery }: { isManagement: boolean; officerId?: string; orgId: string; searchQuery: string }) {
+function ImportHistoryTab({
+    isManagement,
+    officerId,
+    orgId,
+    searchQuery,
+    onExportGenerated
+}: {
+    isManagement: boolean;
+    officerId?: string;
+    orgId: string;
+    searchQuery: string;
+    onExportGenerated: (uri: string, type: 'pdf' | 'excel', title: string) => void;
+}) {
     const officerQuery = trpc.officer.stock.getImportHistory.useQuery(
         { limit: 50, cursor: 0, search: searchQuery },
         { enabled: !isManagement }
@@ -402,6 +466,7 @@ function ImportHistoryTab({ isManagement, officerId, orgId, searchQuery }: { isM
 
     const exportPdf = async () => {
         if (!batches || batches.length === 0) return;
+        const reportTitle = "Bulk_Imports_Report";
         const html = `
             <h2>Bulk Import History</h2>
             <table>
@@ -425,12 +490,16 @@ function ImportHistoryTab({ isManagement, officerId, orgId, searchQuery }: { isM
                 </tbody>
             </table>
         `;
-        try { await exportToPDF({ title: "Bulk Imports", htmlContent: html }); }
+        try {
+            const uri = await generatePDF({ title: reportTitle, htmlContent: html });
+            onExportGenerated(uri, 'pdf', reportTitle);
+        }
         catch (e) { Alert.alert("Export Failed", "Error generating PDF."); }
     };
 
     const exportExcel = async () => {
         if (!batches || batches.length === 0) return;
+        const reportTitle = "Bulk_Imports";
 
         const summaryData = [
             { Metric: "Total Import Batches", Value: batches.length }
@@ -444,12 +513,13 @@ function ImportHistoryTab({ isManagement, officerId, orgId, searchQuery }: { isM
         }));
 
         try {
-            await exportToExcel({
-                title: "Bulk_Imports",
+            const uri = await generateExcel({
+                title: reportTitle,
                 summaryData,
                 rawHeaders: ["Batch ID", "Date", "Driver", "Farmers Count"],
                 rawDataTable: rawData
             });
+            onExportGenerated(uri, 'excel', reportTitle);
         } catch (e) { Alert.alert("Export Failed", "Error generating Excel."); }
     };
 

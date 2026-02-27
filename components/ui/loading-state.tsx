@@ -63,7 +63,7 @@ export const LoadingState = ({ title, description, className, fullPage = false }
     return (
         <View className={cn(
             "flex-1 items-center justify-center bg-background",
-            fullPage ? "absolute inset-0 z-50 bg-background/100 backdrop-blur-xl" : "min-h-[200px] w-full bg-transparent",
+            fullPage ? "absolute inset-0 z-50 bg-background/100 backdrop-blur-xl" : "min-h-[200px] w-full",
             className
         )}>
             <BirdyLoader size={48} color={"#10b981"} />

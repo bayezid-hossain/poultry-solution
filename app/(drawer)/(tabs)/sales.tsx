@@ -1,6 +1,7 @@
 import { CycleRowAccordion } from "@/components/cycles/cycle-row-accordion";
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ProBlocker } from "@/components/pro-blocker";
+import { ExportPreviewDialog } from "@/components/reports/ExportPreviewDialog";
 import { ScreenHeader } from "@/components/screen-header";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
-import { exportToExcel, exportToPDF } from "@/lib/export";
+import { generateExcel, generatePDF, openFile, shareFile } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
 import { ChevronDown, ChevronUp, FileText, Search, Table, User, X } from "lucide-react-native";
@@ -21,7 +22,10 @@ export default function SalesScreen() {
     const { selectedOfficerId } = useGlobalFilter();
     const [searchQuery, setSearchQuery] = useState("");
     const [refreshing, setRefreshing] = useState(false);
-    // console.log('[Tabs-SalesScreen] isManagement:', isManagement, 'orgId:', membership?.orgId, 'selectedOfficerId:', selectedOfficerId);
+
+    // Preview States
+    const [previewVisible, setPreviewVisible] = useState(false);
+    const [previewData, setPreviewData] = useState<{ uri: string, type: 'pdf' | 'excel', title: string } | null>(null);
 
     if (!membership?.isPro) {
         return <ProBlocker feature="Sales History" description="Access the complete sales ledger and profit margins." />;
@@ -106,105 +110,208 @@ export default function SalesScreen() {
 
     const exportPdf = async () => {
         if (!recentSales || recentSales.length === 0) return;
+        const reportTitle = "Sales_Ledger";
 
         let totalRevenue = 0;
         let totalBirds = 0;
         let totalWeight = 0;
+        let totalProfit = 0;
+
+        // Grouping to identify latest sale per cycle
+        const cycleSalesMap: Record<string, string[]> = {};
+        recentSales.forEach((s: any) => {
+            const key = s.cycleId || s.historyId || "unknown";
+            if (!cycleSalesMap[key]) cycleSalesMap[key] = [];
+            cycleSalesMap[key].push(s.id);
+        });
 
         recentSales.forEach((s: any) => {
-            totalRevenue += s.totalRevenue || 0;
+            const revenue = s.totalRevenue || (Number(s.totalWeight) * Number(s.pricePerKg)) || 0;
+            totalRevenue += revenue;
             totalBirds += s.birdsSold || 0;
             totalWeight += Number(s.totalWeight) || 0;
+            if (s.cycleContext?.isEnded && s.reports?.[0]?.id === s.selectedReportId) {
+                totalProfit += s.cycleContext.profit || 0;
+            }
         });
 
         const html = `
             <h2>Sales Ledger</h2>
             <div class="kpi-container">
                 <div class="kpi-card">
-                    <div class="kpi-value">৳${totalRevenue.toLocaleString()}</div>
+                    <div class="kpi-value">৳${(totalRevenue || 0).toLocaleString()}</div>
                     <div class="kpi-label">Total Revenue</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-value">${totalBirds.toLocaleString()}</div>
+                    <div class="kpi-value">${(totalBirds || 0).toLocaleString()}</div>
                     <div class="kpi-label">Total Birds Sold</div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-value">${totalWeight.toFixed(2)} kg</div>
                     <div class="kpi-label">Total Weight</div>
                 </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">৳${(totalProfit || 0).toLocaleString()}</div>
+                    <div class="kpi-label">Net Profit</div>
+                </div>
             </div>
             
-            <h3>Recent Sales</h3>
+            <h3>Detailed Sales Records</h3>
             <table>
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Farmer</th>
-                        <th>Cycle</th>
+                        <th>Farmer/Cycle</th>
+                        <th>Age (W)</th>
                         <th>Birds</th>
                         <th>Weight (kg)</th>
-                        <th>Avg Wt. (kg)</th>
                         <th>Revenue</th>
+                        <th>Cash/Dep/Med</th>
+                        <th>Feed (Bags)</th>
+                        <th>FCR/EPI</th>
+                        <th>Profit</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${recentSales.map((s: any) => `
+                    ${recentSales.map((s: any) => {
+            const ctx = s.cycleContext;
+            const isEnded = ctx?.isEnded;
+            const isLatest = cycleSalesMap[s.cycleId || s.historyId || "unknown"]?.[0] === s.id;
+            const showWeighted = isEnded && isLatest;
+
+            const feedConsumed = s.feedConsumed || s.reports?.[0]?.feedConsumed;
+            let feedTotal = 0;
+            try {
+                const parsed = typeof feedConsumed === 'string' ? JSON.parse(feedConsumed) : feedConsumed;
+                if (Array.isArray(parsed)) feedTotal = parsed.reduce((sum: number, f: any) => sum + (Number(f.bags) || 0), 0);
+            } catch (e) { }
+
+            return `
                         <tr>
                             <td>${new Date(s.saleDate || s.createdAt).toLocaleDateString()}</td>
-                            <td>${s.farmerName || s.cycle?.farmer?.name || s.history?.farmer?.name || "-"}</td>
-                            <td>${s.cycleName || "-"}</td>
+                            <td>
+                                <b>${s.farmerName || s.cycle?.farmer?.name || s.history?.farmer?.name || "-"}</b><br/>
+                               
+                            </td>
+                            <td>
+                                ${showWeighted ? `<b>${ctx.age}</b>` : (s.saleAge ?? ctx?.age ?? "N/A")} d
+                            </td>
                             <td>${s.birdsSold}</td>
                             <td>${Number(s.totalWeight).toFixed(2)}</td>
-                            <td>${Number(s.averageWeight).toFixed(2)}</td>
-                            <td>৳${s.totalRevenue.toLocaleString()}</td>
+                            <td>৳${(s.totalRevenue || (Number(s.totalWeight) * Number(s.pricePerKg)) || 0).toLocaleString()}</td>
+                            <td>
+                                <small>
+                                    C: ৳${(s.cashReceived || 0).toLocaleString()}<br/>
+                                    D: ৳${(s.depositReceived || 0).toLocaleString()}<br/>
+                                    M: ৳${(s.medicineCost || 0).toLocaleString()}
+                                </small>
+                            </td>
+                            <td>${feedTotal || "-"}</td>
+                            <td>
+                                ${showWeighted ? `${ctx?.fcr || "-"} / ${ctx?.epi || "-"}` : "-"}
+                            </td>
+                            <td style="color: ${showWeighted ? ((ctx?.profit || 0) >= 0 ? '#10b981' : '#ef4444') : 'inherit'}">
+                                ${showWeighted ? `৳${Math.round(ctx?.profit || 0).toLocaleString()}` : "-"}
+                            </td>
                         </tr>
-                    `).join('')}
+                    `}).join('')}
                 </tbody>
             </table>
         `;
 
-        try { await exportToPDF({ title: "Sales Ledger", htmlContent: html }); }
+        try {
+            const uri = await generatePDF({ title: reportTitle, htmlContent: html });
+            setPreviewData({ uri, type: 'pdf', title: reportTitle });
+            setPreviewVisible(true);
+        }
         catch (e) { Alert.alert("Export Failed", "Error generating PDF."); }
     };
 
     const exportExcel = async () => {
         if (!recentSales || recentSales.length === 0) return;
+        const reportTitle = "Sales_Ledger";
 
-        let totalRevenue = 0; let totalBirds = 0; let totalWeight = 0;
+        let totalRevenue = 0; let totalBirds = 0; let totalWeight = 0; let totalProfit = 0;
+
+        // Grouping to identify latest sale per cycle
+        const cycleSalesMap: Record<string, string[]> = {};
         recentSales.forEach((s: any) => {
-            totalRevenue += s.totalRevenue || 0;
+            const key = s.cycleId || s.historyId || "unknown";
+            if (!cycleSalesMap[key]) cycleSalesMap[key] = [];
+            cycleSalesMap[key].push(s.id);
+        });
+
+        recentSales.forEach((s: any) => {
+            const revenue = s.totalRevenue || (Number(s.totalWeight) * Number(s.pricePerKg)) || 0;
+            totalRevenue += revenue;
             totalBirds += s.birdsSold || 0;
             totalWeight += Number(s.totalWeight) || 0;
+            if (s.cycleContext?.isEnded && s.reports?.[0]?.id === s.selectedReportId) {
+                totalProfit += s.cycleContext.profit || 0;
+            }
         });
 
         const summaryData = [
-            { Metric: "Total Revenue", Value: `৳${totalRevenue}` },
-            { Metric: "Total Birds Sold", Value: totalBirds },
-            { Metric: "Total Weight (kg)", Value: totalWeight.toFixed(2) },
-            { Metric: "Avg Price/kg", Value: totalWeight > 0 ? `৳${(totalRevenue / totalWeight).toFixed(2)}` : "0" }
+            { Metric: "Total Revenue", Value: `৳${totalRevenue.toLocaleString()}` },
+            { Metric: "Birds Sold", Value: totalBirds.toLocaleString() },
+            { Metric: "Total Weight", Value: `${totalWeight.toFixed(2)} kg` },
+            { Metric: "Net Profit", Value: `৳${totalProfit.toLocaleString()}` }
         ];
 
-        const rawData = recentSales.map((s: any) => ({
-            Date: new Date(s.saleDate || s.createdAt).toLocaleDateString(),
-            Farmer: s.farmerName || s.cycle?.farmer?.name || s.history?.farmer?.name || "-",
-            Cycle: s.cycleName || "-",
-            "Birds Sold": s.birdsSold,
-            "Total Weight (kg)": Number(s.totalWeight).toFixed(2),
-            "Average Weight (kg)": Number(s.averageWeight).toFixed(2),
-            "Price/kg": `৳${s.pricePerKg}`,
-            Revenue: `৳${s.totalRevenue}`
-        }));
+        const rawData = recentSales.map((s: any) => {
+            const ctx = s.cycleContext;
+            const isEnded = ctx?.isEnded;
+            const isLatest = cycleSalesMap[s.cycleId || s.historyId || "unknown"]?.[0] === s.id;
+            const showWeighted = isEnded && isLatest;
+
+            const feedConsumed = s.feedConsumed || s.reports?.[0]?.feedConsumed;
+            let feedTotal = 0;
+            try {
+                const parsed = typeof feedConsumed === 'string' ? JSON.parse(feedConsumed) : feedConsumed;
+                if (Array.isArray(parsed)) feedTotal = parsed.reduce((sum: number, f: any) => sum + (Number(f.bags) || 0), 0);
+            } catch (e) { }
+
+            return {
+                Farmer: s.farmerName || s.cycle?.farmer?.name || s.history?.farmer?.name || "-",
+                Date: new Date(s.saleDate || s.createdAt).toLocaleDateString(),
+                Age: showWeighted ? `${ctx.age} (Weighted)` : (s.saleAge ?? ctx?.age ?? "N/A"),
+                "Birds Sold": s.birdsSold,
+                "Total Weight (kg)": Number(s.totalWeight).toFixed(2),
+                "Price/kg": `৳${s.pricePerKg}`,
+                Revenue: `৳${(s.totalRevenue || (Number(s.totalWeight) * Number(s.pricePerKg)) || 0).toLocaleString()}`,
+                Cash: `৳${(s.cashReceived || 0).toLocaleString()}`,
+                Deposit: `৳${(s.depositReceived || 0).toLocaleString()}`,
+                Medicine: `৳${(s.medicineCost || 0).toLocaleString()}`,
+                "Feed (Bags)": feedTotal || "-",
+                Mortality: showWeighted ? ctx.mortality : "-",
+                FCR: showWeighted ? ctx.fcr : "-",
+                EPI: showWeighted ? ctx.epi : "-",
+                Profit: showWeighted ? `৳${Math.round(ctx?.profit || 0).toLocaleString()}` : "-"
+            };
+        });
 
         try {
-            await exportToExcel({
-                title: "Sales_Ledger",
+            const uri = await generateExcel({
+                title: reportTitle,
                 summaryData,
-                rawHeaders: ["Date", "Farmer", "Cycle", "Birds Sold", "Total Weight (kg)", "Average Weight (kg)", "Price/kg", "Revenue"],
+                rawHeaders: [
+                    "Farmer", "Date", "Age", "Birds Sold", "Total Weight (kg)",
+                    "Price/kg", "Revenue", "Cash", "Deposit", "Medicine", "Feed (Bags)",
+                    "Mortality", "FCR", "EPI", "Profit"
+                ],
                 rawDataTable: rawData,
+                mergePrimaryColumn: true,
                 definitions: [
-                    { Metric: "Avg Price/kg", Calculation: "Total Revenue / Total Weight" }
+                    { Metric: "Avg. Selling Price", Calculation: "Total Revenue / Total Weight" },
+                    { Metric: "Farmer Effective Rate", Calculation: "max(Base Rate, Base Rate + Summation of Adjustments)" },
+                    { Metric: "Summation of Adjustments", Calculation: "Σ [(Sale Price - Base Rate) * (0.5 if surplus else 1.0) * Weight] / Total Weight" },
+                    { Metric: "FCR", Calculation: "(Total Feed Bags * 50) / Total Weight kg" },
+                    { Metric: "EPI", Calculation: "(Survival% * Avg Weight) / (FCR * Average Age) * 100" },
+                    { Metric: "Profit", Calculation: "(Weight * Effective Rate) - (Feed Cost + DOC Cost)" }
                 ]
             });
+            setPreviewData({ uri, type: 'excel', title: reportTitle });
+            setPreviewVisible(true);
         } catch (e) { Alert.alert("Export Failed", "Error generating Excel."); }
     };
 
@@ -288,6 +395,16 @@ export default function SalesScreen() {
                         )}
                     </ScrollView>
                 </>
+            )}
+            {previewData && (
+                <ExportPreviewDialog
+                    visible={previewVisible}
+                    onClose={() => setPreviewVisible(false)}
+                    title={previewData.title}
+                    type={previewData.type}
+                    onView={() => openFile(previewData.uri, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                    onShare={() => shareFile(previewData.uri, previewData.title, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', previewData.type === 'pdf' ? 'com.adobe.pdf' : 'com.microsoft.excel.xlsx')}
+                />
             )}
         </View>
     );

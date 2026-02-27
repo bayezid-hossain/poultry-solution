@@ -6,6 +6,7 @@ import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
 import { useRouter } from "expo-router";
 import {
@@ -14,6 +15,7 @@ import {
     Banknote,
     Bird,
     Box,
+    Calendar as CalendarIcon,
     Check,
     Settings,
     ShoppingCart,
@@ -144,6 +146,14 @@ export const SellModal = ({
     const [step, setStep] = useState<"form" | "preview">("form");
     const [previewData, setPreviewData] = useState<any>(null);
     const [isAgeModalOpen, setIsAgeModalOpen] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+
+    const onSaleDateChange = (event: any, selectedDate?: Date) => {
+        setShowDatePicker(Platform.OS === 'ios');
+        if (selectedDate) {
+            form.setValue('saleDate', format(selectedDate, 'yyyy-MM-dd'));
+        }
+    };
 
     const router = useRouter();
     const utils = trpc.useUtils();
@@ -476,22 +486,32 @@ export const SellModal = ({
                                         <Controller
                                             control={form.control}
                                             name="saleDate"
-                                            render={({ field: { onChange, value } }) => (
-                                                <Input
-                                                    ref={saleDateRef}
-                                                    value={value}
-                                                    onChangeText={onChange}
-                                                    placeholder="YYYY-MM-DD"
-                                                    className={`h-12 bg-muted/40 border-border/50 text-base ${hasError("saleDate") ? "border-destructive/50" : ""}`}
-                                                    returnKeyType="next"
-                                                    onSubmitEditing={() => farmerMobileRef.current?.focus()}
-                                                />
+                                            render={({ field: { value } }) => (
+                                                <Pressable
+                                                    onPress={() => setShowDatePicker(true)}
+                                                    className={`h-12 bg-muted/40 border border-border/50 rounded-md px-3 flex-row items-center justify-between active:bg-muted/50 ${hasError("saleDate") ? "border-destructive/50" : ""}`}
+                                                >
+                                                    <Text className="text-sm text-foreground">
+                                                        {value ? format(new Date(value), "PPP") : "Select date"}
+                                                    </Text>
+                                                    <Icon as={CalendarIcon} size={16} className="text-muted-foreground" />
+                                                </Pressable>
                                             )}
                                         />
+                                        {showDatePicker && (
+                                            <DateTimePicker
+                                                value={form.getValues('saleDate') ? new Date(form.getValues('saleDate')) : new Date()}
+                                                mode="date"
+                                                display="default"
+                                                onChange={onSaleDateChange}
+                                                maximumDate={new Date()}
+                                                minimumDate={startDate ? new Date(startDate) : undefined}
+                                            />
+                                        )}
                                         {hasError("saleDate") && <Text className="text-[10px] text-destructive ml-1 mt-1">{getError("saleDate")}</Text>}
                                     </View>
                                     <View className="flex-1">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Buyer Mobile</Text>
+                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Farmer Mobile</Text>
                                         <Controller
                                             control={form.control}
                                             name="farmerMobile"
@@ -554,7 +574,7 @@ export const SellModal = ({
                                 {/* Birds Sale Details */}
                                 <View className="flex-row gap-3 px-1 mt-2">
                                     <View className="flex-1">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">House</Text>
+                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">House Birds</Text>
                                         <View className="h-12 bg-muted/40 border border-border/50 rounded-xl items-center justify-center">
                                             <Text className="font-mono font-bold text-xl text-foreground">{birdsInHouse}</Text>
                                         </View>

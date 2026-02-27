@@ -12,15 +12,17 @@ import { SellModal } from "@/components/cycles/sell-modal";
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { CreateDocOrderModal } from "@/components/orders/create-doc-order-modal";
 import { ProAccessModal } from "@/components/pro-access-modal";
+import { ExportPreviewDialog } from "@/components/reports/ExportPreviewDialog";
 import { ScreenHeader } from "@/components/screen-header";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
+import { exportActiveStockExcel, exportActiveStockPDF, openFile, shareFile } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
 import { router } from "expo-router";
-import { Activity, Archive, Bird, ChevronDown, ChevronUp, History, LayoutGrid, List, Pencil, Plus, Search, ShoppingCart, Skull, Sparkles, Table2, X } from "lucide-react-native";
+import { Activity, Archive, Bird, ChevronDown, ChevronUp, FileText, History, LayoutGrid, List, Pencil, Plus, Search, ShoppingCart, Skull, Sparkles, Table, Table2, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Modal, Pressable, View } from "react-native";
 
@@ -54,6 +56,11 @@ export default function CyclesScreen() {
     const [isGroupMenuOpen, setIsGroupMenuOpen] = useState(false);
     const [groupMenuCycle, setGroupMenuCycle] = useState<any>(null);
     const [proModal, setProModal] = useState<{ open: boolean, feature: string }>({ open: false, feature: "" });
+
+    // Export State
+    const [previewVisible, setPreviewVisible] = useState(false);
+    const [previewData, setPreviewData] = useState<{ uri: string, type: 'pdf' | 'excel', title: string } | null>(null);
+    const [isExporting, setIsExporting] = useState<'pdf' | 'excel' | null>(null);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
@@ -140,6 +147,28 @@ export default function CyclesScreen() {
         if (archived) return { ...archived, type: 'history' };
         return null;
     })();
+
+    const handleExportActiveStock = async (type: 'pdf' | 'excel') => {
+        if (!membership?.isPro) {
+            setProModal({ open: true, feature: "Stock Reports" });
+            return;
+        }
+
+        setIsExporting(type);
+        try {
+            const title = "Active_Stock_Report";
+            const uri = type === 'pdf'
+                ? await exportActiveStockPDF(activeCycles, title)
+                : await exportActiveStockExcel(activeCycles, title);
+
+            setPreviewData({ uri, type, title });
+            setPreviewVisible(true);
+        } catch (error) {
+            Alert.alert("Export Failed", "Could not generate report. Please try again.");
+        } finally {
+            setIsExporting(null);
+        }
+    };
 
     // Filter active cycles by search
     const filteredActiveCycles = useMemo(() => {
@@ -268,6 +297,38 @@ export default function CyclesScreen() {
                                 <Text className="text-white font-black text-[10px] uppercase tracking-widest">Start</Text>
                             </Pressable>
                         </View>
+
+                        {activeTab === 'active' && activeCycles.length > 0 && (
+                            <>
+                                <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1 mt-1">Reports</Text>
+                                <View className="flex-row gap-3">
+                                    <Pressable
+                                        onPress={() => handleExportActiveStock('pdf')}
+                                        disabled={!!isExporting}
+                                        className="flex-1 bg-red-500/10 h-14 rounded-2xl items-center justify-center flex-row gap-2 border border-red-500/20 active:bg-red-500/20"
+                                    >
+                                        {isExporting === 'pdf' ? (
+                                            <BirdyLoader size={16} color="#ef4444" />
+                                        ) : (
+                                            <Icon as={FileText} size={18} className="text-red-500" />
+                                        )}
+                                        <Text className="text-red-500 font-black text-[10px] uppercase tracking-widest">PDF Report</Text>
+                                    </Pressable>
+                                    <Pressable
+                                        onPress={() => handleExportActiveStock('excel')}
+                                        disabled={!!isExporting}
+                                        className="flex-1 bg-emerald-500/10 h-14 rounded-2xl items-center justify-center flex-row gap-2 border border-emerald-500/20 active:bg-emerald-500/20"
+                                    >
+                                        {isExporting === 'excel' ? (
+                                            <BirdyLoader size={16} color="#10b981" />
+                                        ) : (
+                                            <Icon as={Table} size={18} className="text-emerald-500" />
+                                        )}
+                                        <Text className="text-emerald-500 font-black text-[10px] uppercase tracking-widest">Excel Sheet</Text>
+                                    </Pressable>
+                                </View>
+                            </>
+                        )}
 
                         <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1 mt-1">View Style</Text>
                         <View className="flex-row gap-2 p-1 bg-muted/50 rounded-xl">
@@ -516,6 +577,15 @@ export default function CyclesScreen() {
                 onSuccess={() => { /* maybe refetch some pending orders list. nothing needed yet. */ }}
             />
 
+            <ExportPreviewDialog
+                visible={previewVisible}
+                onClose={() => setPreviewVisible(false)}
+                title={previewData?.title || ""}
+                type={previewData?.type || "pdf"}
+                onView={() => previewData && openFile(previewData.uri, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                onShare={() => previewData && shareFile(previewData.uri, previewData.title, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', previewData.type === 'pdf' ? 'com.adobe.pdf' : 'org.openxmlformats.spreadsheetml.sheet')}
+            />
+
             {/* Group View Actions Modal */}
             <Modal
                 transparent
@@ -580,14 +650,3 @@ export default function CyclesScreen() {
 
 
 
-function formatDate(dateStr: string | Date | null | undefined): string {
-    if (!dateStr) return '';
-    try {
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return '';
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return `${months[d.getMonth()]} ${d.getDate()}`;
-    } catch {
-        return '';
-    }
-}

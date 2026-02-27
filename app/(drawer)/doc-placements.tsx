@@ -1,5 +1,6 @@
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ProBlocker } from "@/components/pro-blocker";
+import { ExportPreviewDialog } from "@/components/reports/ExportPreviewDialog";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Icon } from "@/components/ui/icon";
 import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
-import { exportToExcel, exportToPDF } from "@/lib/export";
+import { generateExcel, generatePDF, openFile, shareFile } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect, useRouter } from "expo-router";
 import { ChevronDown, ChevronRight, FileText, Filter, Table } from "lucide-react-native";
@@ -33,6 +34,11 @@ export default function DocPlacementsScreen() {
     const [monthPickerOpen, setMonthPickerOpen] = useState(false);
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
     const [expandedFarmers, setExpandedFarmers] = useState<Record<string, boolean>>({});
+
+    // Preview States
+    const [previewVisible, setPreviewVisible] = useState(false);
+    const [previewData, setPreviewData] = useState<{ uri: string, type: 'pdf' | 'excel', title: string } | null>(null);
+
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
@@ -67,6 +73,7 @@ export default function DocPlacementsScreen() {
 
     const exportPdf = async () => {
         if (!data) return;
+        const reportTitle = `DOC_Placement_${MONTHS[month - 1]}_${year}`;
         const html = `
             <div class="section-title">Summary Overview</div>
             <div class="kpi-container">
@@ -109,12 +116,17 @@ export default function DocPlacementsScreen() {
                 </tbody>
             </table>
         `;
-        try { await exportToPDF({ title: `DOC Placement ${MONTHS[month - 1]}, ${year}`, htmlContent: html }); }
+        try {
+            const uri = await generatePDF({ title: reportTitle, htmlContent: html });
+            setPreviewData({ uri, type: 'pdf', title: reportTitle });
+            setPreviewVisible(true);
+        }
         catch (e) { Alert.alert("Export Error", "Failed to generate PDF"); }
     };
 
     const exportExcel = async () => {
         if (!data) return;
+        const reportTitle = `DOC_Placement_${MONTHS[month - 1]}_${year}`;
         const summaryData = [
             { Metric: "Total DOC Placed", Value: data.summary?.totalDoc ?? 0 },
             { Metric: "Total Farmers", Value: data.summary?.farmerCount ?? 0 },
@@ -132,12 +144,15 @@ export default function DocPlacementsScreen() {
         );
 
         try {
-            await exportToExcel({
-                title: `DOC_Placement_${MONTHS[month - 1]}_${year}`,
+            const uri = await generateExcel({
+                title: reportTitle,
                 summaryData,
                 rawHeaders: ["Farmer", "Batch #", "Date", "DOC", "Status"],
-                rawDataTable: rawData
+                rawDataTable: rawData,
+                mergePrimaryColumn: true
             });
+            setPreviewData({ uri, type: 'excel', title: reportTitle });
+            setPreviewVisible(true);
         } catch (e) { Alert.alert("Export Error", "Failed to generate Excel"); }
     };
 
@@ -401,6 +416,17 @@ export default function DocPlacementsScreen() {
                     </View>
                 </Pressable>
             </Modal>
+
+            {previewData && (
+                <ExportPreviewDialog
+                    visible={previewVisible}
+                    onClose={() => setPreviewVisible(false)}
+                    title={previewData.title}
+                    type={previewData.type}
+                    onView={() => openFile(previewData.uri, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                    onShare={() => shareFile(previewData.uri, previewData.title, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', previewData.type === 'pdf' ? 'com.adobe.pdf' : 'com.microsoft.excel.xlsx')}
+                />
+            )}
         </View>
     );
 }

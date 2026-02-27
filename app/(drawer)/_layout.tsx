@@ -65,6 +65,13 @@ export default function TabsDrawerLayout() {
             headerShown: false
           }}
         />
+        <Drawer.Screen
+          name="reports"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false
+          }}
+        />
 
       </Drawer>
     </View>
