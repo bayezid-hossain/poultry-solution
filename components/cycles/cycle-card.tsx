@@ -178,7 +178,7 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                             </View>
                             {problematicFeed > 0 && (
                                 <View className="mt-1 items-center">
-                                    <View className="bg-red-500 flex-row items-center px-1.5  rounded shadow-sm shadow-red-500/50">
+                                    <View className="bg-red-500 flex-row items-center px-1.5 rounded shadow-sm shadow-red-500/50">
                                         <Text className="text-[10px] text-white font-black tracking-tight text-center">PF - {problematicFeed}</Text>
                                     </View>
                                 </View>

@@ -368,13 +368,13 @@ export default function FarmerDetailScreen() {
                 </Card>
 
                 {/* PROBLEMATIC FEED Card */}
-                <Card className="mb-8 border-destructive/20 bg-destructive/5 overflow-hidden">
+                <Card className="mb-8 border-destructive/20 overflow-hidden">
                     <CardContent className="p-5">
                         <View className="flex-row items-center gap-2 mb-3">
                             <Icon as={AlertCircle} size={14} className="text-destructive" />
                             <Text className="text-xs font-bold text-destructive uppercase tracking-wider">Problematic Feed</Text>
                         </View>
-                        <Text className="text-2xl font-black text-foreground mb-6">{Number(farmer.problematicFeed ?? 0).toLocaleString()} <Text className="text-base text-muted-foreground">bags / value</Text></Text>
+                        <Text className="text-2xl font-black text-foreground mb-6">{Number(farmer.problematicFeed ?? 0).toLocaleString()} <Text className="text-base text-muted-foreground">bags</Text></Text>
 
                         <View className="flex-row gap-3">
                             <Button variant="outline" className="flex-1 bg-destructive/10 border-destructive/20 flex-row gap-2 h-10" onPress={() => setIsProblematicOpen(true)}>
