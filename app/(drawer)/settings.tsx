@@ -5,6 +5,7 @@ import { Icon } from "@/components/ui/icon";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
+import { useStorage } from "@/context/storage-context";
 import { useTheme } from "@/context/theme-context";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc";
@@ -12,7 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Briefcase, LogOut, Moon, Smartphone, Sun, User, UserCheck } from "lucide-react-native";
 import { useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Platform, Pressable, ScrollView, View } from "react-native";
 
 type ColorScheme = "light" | "dark" | "system";
 
@@ -20,6 +21,7 @@ export default function SettingsScreen() {
     const router = useRouter();
     const queryClient = useQueryClient();
     const { preference, setColorScheme } = useTheme();
+    const storage = useStorage();
     const { data: sessionData } = trpc.auth.getSession.useQuery();
     const { data: orgStatus } = trpc.auth.getMyMembership.useQuery();
 
@@ -138,6 +140,42 @@ export default function SettingsScreen() {
                         </View>
                     </Card>
                 </View>
+
+                {/* 4. Storage & Downloads (Android only for now) */}
+                {Platform.OS === "android" && (
+                    <View gap-3>
+                        <View className="flex-row items-center gap-2 px-1 mb-1">
+                            <Icon as={Smartphone} size={16} className="text-muted-foreground" />
+                            <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Storage & Downloads</Text>
+                        </View>
+                        <Card className="border-border/40 p-4">
+                            <View className="flex-row items-center justify-between mb-3">
+                                <View className="flex-1 mr-4">
+                                    <Text className="font-bold text-foreground">Download Folder</Text>
+                                    <Text variant="muted" className="text-[10px] font-medium leading-4 mt-1">
+                                        {storage.directoryUri ? "Reports will be saved to your selected directory automatically." : "Configure a fixed folder for all your generated reports."}
+                                    </Text>
+                                </View>
+                                <Button
+                                    variant={storage.directoryUri ? "outline" : "default"}
+                                    className="h-9 px-4 rounded-xl"
+                                    onPress={() => storage.directoryUri ? storage.resetDownloadFolder() : storage.setupDownloadFolder()}
+                                >
+                                    <Text className="text-[10px] font-bold uppercase tracking-wider">
+                                        {storage.directoryUri ? "Reset" : "Set Folder"}
+                                    </Text>
+                                </Button>
+                            </View>
+                            {storage.directoryUri && (
+                                <View className="bg-muted/50 p-3 rounded-xl border border-border/20">
+                                    <Text className="text-[9px] font-mono text-muted-foreground break-all" numberOfLines={2}>
+                                        {decodeURIComponent(storage.directoryUri)}
+                                    </Text>
+                                </View>
+                            )}
+                        </Card>
+                    </View>
+                )}
 
                 {/* 4. Support & About */}
                 <View gap-3>

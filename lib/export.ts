@@ -1,13 +1,14 @@
 import { File, Paths } from 'expo-file-system';
-import { getContentUriAsync, moveAsync } from 'expo-file-system/legacy';
+import { EncodingType, getContentUriAsync, moveAsync, readAsStringAsync, StorageAccessFramework, writeAsStringAsync } from 'expo-file-system/legacy';
 import * as IntentLauncher from 'expo-intent-launcher';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
+import { toast } from 'sonner-native';
 import XLSX from 'xlsx-js-style';
 
 /** Format a date as dd/MM/yyyy in local timezone */
-function formatLocalDate(dateInput: string | Date | null | undefined): string {
+export function formatLocalDate(dateInput: string | Date | null | undefined): string {
     if (!dateInput) return '-';
     // Normalize PostgreSQL timestamptz format: "2026-02-27 18:50:52.745+00" → ISO 8601
     let input: string | Date = dateInput;
@@ -590,7 +591,7 @@ export async function openFile(uri: string, mimeType: string) {
         }
     } catch (error) {
         console.error("Open File Error: ", error);
-        Alert.alert("Error", "Could not open file viewer. Please make sure you have a compatible app installed.");
+        toast.error("Could not open file viewer. Please make sure you have a compatible app installed.");
     }
 }
 
@@ -609,7 +610,7 @@ export async function shareFile(uri: string, title: string, mimeType: string, UT
         }
     } catch (error) {
         console.error("Share File Error: ", error);
-        Alert.alert("Error", "Failed to open sharing dialog.");
+        toast.error("Failed to open sharing dialog.");
     }
 }
 
@@ -1573,4 +1574,132 @@ export async function exportSalesLedgerPDF(sales: any[], title: string) {
     `;
 
     return await generatePDF({ title, htmlContent });
+}
+
+/**
+ * Downloads a file strictly to local device storage using StorageAccessFramework (Android) or Sharing (iOS)
+ */
+export async function downloadFileToDevice(uri: string, fileName: string, mimeType: string, preferredDirectoryUri?: string | null) {
+    if (Platform.OS === "android") {
+        try {
+            let targetDirectoryUri = preferredDirectoryUri;
+
+            if (!targetDirectoryUri) {
+                const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
+                if (!permissions.granted) {
+                    toast.error("Download Cancelled", {
+                        description: "Storage permission is required to save files to your device."
+                    });
+                    return;
+                }
+                targetDirectoryUri = permissions.directoryUri;
+            }
+
+            const documentUri = await StorageAccessFramework.createFileAsync(targetDirectoryUri, fileName, mimeType);
+            if (!documentUri) {
+                toast.error("Download Failed", {
+                    description: "Could not create file in the selected directory."
+                });
+                return;
+            }
+            const content = await readAsStringAsync(uri, { encoding: EncodingType.Base64 });
+            await writeAsStringAsync(documentUri, content, { encoding: EncodingType.Base64 });
+            toast.success("File Saved", {
+                description: "The report has been saved to your selected folder."
+            });
+        } catch (e) {
+            console.error("Error downloading file", e);
+            toast.error("Download Failed", {
+                description: "There was an error saving the file."
+            });
+        }
+    } else {
+        // iOS: use sharing with a UTI to trigger Save to Files
+        try {
+            await Sharing.shareAsync(uri, {
+                mimeType,
+                dialogTitle: `Download ${fileName}`,
+                UTI: mimeType === 'application/pdf' ? 'com.adobe.pdf' : 'com.microsoft.excel.xls'
+            });
+        } catch (e) {
+            console.error("Error sharing/saving file", e);
+            toast.error("There was an error saving the file.");
+        }
+    }
+}
+
+/**
+ * Generates an Excel report for Problematic Feeds
+ */
+export async function exportProblematicFeedsExcel(farmers: any[], title: string) {
+    const data = farmers.map(f => ({
+        "Farmer Name": f.name,
+        "Main Stock (bags)": f.mainStock,
+        "Problematic Feed (bags)": f.problematicFeed,
+        "Last Update Date": formatLocalDate(f.problematicFeedUpdatedAt)
+    }));
+
+    return generateExcel({
+        title,
+        summaryData: [
+            { Metric: "Total Problematic Farmers", Value: farmers.length.toString() },
+            { Metric: "Total Problematic Bags", Value: farmers.reduce((acc, f) => acc + Number(f.problematicFeed || 0), 0).toString() },
+        ],
+        rawHeaders: ["Farmer Name", "Main Stock (bags)", "Problematic Feed (bags)", "Last Update Date"],
+        rawDataTable: data,
+    });
+}
+
+/**
+ * Generates a PDF report for Problematic Feeds
+ */
+export async function exportProblematicFeedsPDF(farmers: any[], title: string) {
+    const totalBags = farmers.reduce((acc, f) => acc + Number(f.problematicFeed || 0), 0);
+
+    let rowsHtml = '';
+    farmers.forEach(f => {
+        const lastUpdate = formatLocalDate(f.problematicFeedUpdatedAt);
+        rowsHtml += `
+            <tr style="border-bottom: 1px solid #ddd;">
+                <td style="padding: 10px; font-weight: bold; color: #111827;">${f.name}</td>
+                <td style="padding: 10px; text-align: right; color: #4b5563;">${f.mainStock} bags</td>
+                <td style="padding: 10px; text-align: right; font-weight: bold; color: #dc2626;">${f.problematicFeed} bags</td>
+                <td style="padding: 10px; text-align: center; color: #6b7280;">${lastUpdate}</td>
+            </tr>
+        `;
+    });
+
+    const htmlContent = `
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+            <table style="width: 100%; text-align: center; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 10px; border-right: 1px solid #d1d5db;">
+                        <span style="display: block; font-size: 12px; color: #4b5563; text-transform: uppercase; margin-bottom: 4px;">Total Farmers</span>
+                        <span style="font-size: 20px; font-weight: bold; color: #111827;">${farmers.length}</span>
+                    </td>
+                    <td style="padding: 10px;">
+                        <span style="display: block; font-size: 12px; color: #4b5563; text-transform: uppercase; margin-bottom: 4px;">Total Problematic Bags</span>
+                        <span style="font-size: 20px; font-weight: bold; color: #dc2626;">${totalBags}</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <h3 style="color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 15px;">Problematic Feeds List</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
+            <thead>
+                <tr style="background-color: #f9fafb; border-bottom: 2px solid #ddd; text-align: left;">
+                    <th style="padding: 12px 10px; color: #374151; font-weight: 600;">Farmer Name</th>
+                    <th style="padding: 12px 10px; text-align: right; color: #374151; font-weight: 600;">Main Stock</th>
+                    <th style="padding: 12px 10px; text-align: right; color: #374151; font-weight: 600;">Problematic Feed</th>
+                    <th style="padding: 12px 10px; text-align: center; color: #374151; font-weight: 600;">Last Update Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsHtml}
+            </tbody>
+        </table>
+    `;
+
+    return generatePDF({ title, htmlContent });
 }

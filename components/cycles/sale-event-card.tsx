@@ -224,7 +224,14 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                     <View className="p-3 rounded-xl border bg-muted/40 border-border/50">
                         {/* Summary Header */}
                         <View className="flex-row justify-between items-center mb-2">
-                            <Text className="text-xs font-bold text-muted-foreground uppercase">Sale Summary</Text>
+                            <View className="flex-row items-center gap-2">
+                                <Text className="text-xs font-bold text-muted-foreground uppercase">Sale Summary</Text>
+                                {sale.cycleContext?.birdType && (
+                                    <View className="bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
+                                        <Text className="text-[9px] font-black text-primary uppercase">{sale.cycleContext.birdType}</Text>
+                                    </View>
+                                )}
+                            </View>
                             {isLatestVersion ? (
                                 <View className="flex-row items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/10">
                                     <Icon as={CheckCircle2} size={10} className="text-emerald-500" />

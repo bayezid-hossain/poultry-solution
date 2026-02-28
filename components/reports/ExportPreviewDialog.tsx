@@ -1,24 +1,26 @@
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { Eye, FileText, Share2, X } from 'lucide-react-native';
+import { Download, Eye, FileText, Share2, X } from 'lucide-react-native';
 import React from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { AppModal } from '../ui/app-modal';
 
 interface ExportPreviewDialogProps {
     visible: boolean;
     onClose: () => void;
     onView: () => void;
     onShare: () => void;
+    onDownload?: () => void;
     title: string;
     type: 'pdf' | 'excel';
 }
 
-export function ExportPreviewDialog({ visible, onClose, onView, onShare, title, type }: ExportPreviewDialogProps) {
+export function ExportPreviewDialog({ visible, onClose, onView, onShare, onDownload, title, type }: ExportPreviewDialogProps) {
     const isPdf = type === 'pdf';
 
     return (
-        <Modal
+        <AppModal
             visible={visible}
             transparent
             animationType="fade"
@@ -51,14 +53,27 @@ export function ExportPreviewDialog({ visible, onClose, onView, onShare, title, 
                             <Text className="text-sm font-bold text-primary-foreground" numberOfLines={1}>View Report</Text>
                         </Button>
 
-                        <Button
-                            onPress={onShare}
-                            variant="secondary"
-                            className="h-14 rounded-2xl flex-row items-center justify-center gap-3 border border-border/50"
-                        >
-                            <Icon as={Share2} size={18} className="text-foreground" />
-                            <Text className="text-sm font-bold text-foreground" numberOfLines={1}>Share / Export</Text>
-                        </Button>
+                        <View className="flex-row gap-3">
+                            <Button
+                                onPress={onShare}
+                                variant="secondary"
+                                className="flex-1 h-14 rounded-2xl flex-row items-center justify-center gap-2 border border-border/50"
+                            >
+                                <Icon as={Share2} size={18} className="text-foreground" />
+                                <Text className="text-xs font-bold text-foreground" numberOfLines={1}>Share</Text>
+                            </Button>
+
+                            {onDownload && (
+                                <Button
+                                    onPress={onDownload}
+                                    variant="outline"
+                                    className="flex-1 h-14 rounded-2xl flex-row items-center justify-center gap-2 border-primary/30"
+                                >
+                                    <Icon as={Download} size={18} className="text-primary" />
+                                    <Text className="text-xs font-bold text-primary" numberOfLines={1}>Save</Text>
+                                </Button>
+                            )}
+                        </View>
                     </View>
 
                     <Text className="text-[10px] text-center text-muted-foreground mt-6 opacity-50 font-medium italic">
@@ -66,6 +81,6 @@ export function ExportPreviewDialog({ visible, onClose, onView, onShare, title, 
                     </Text>
                 </View>
             </View>
-        </Modal>
+        </AppModal>
     );
 }

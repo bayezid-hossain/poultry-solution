@@ -10,6 +10,7 @@ import "react-native-reanimated";
 import "../global.css";
 
 import { Text } from "@/components/ui/text";
+import { StorageProvider } from "@/context/storage-context";
 import { ThemeProvider, useTheme } from "@/context/theme-context";
 import { authClient } from "@/lib/auth-client";
 import { Platform } from "react-native";
@@ -192,9 +193,11 @@ export default function RootLayout() {
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
-            <GlobalFilterProvider>
-              <RootLayoutInner />
-            </GlobalFilterProvider>
+            <StorageProvider>
+              <GlobalFilterProvider>
+                <RootLayoutInner />
+              </GlobalFilterProvider>
+            </StorageProvider>
           </ThemeProvider>
         </QueryClientProvider>
       </trpc.Provider>

@@ -17,7 +17,8 @@ import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
-import { ChevronDown, ChevronUp, List, Plus, Search, ShoppingCart, Sparkles, X } from "lucide-react-native";
+import { router } from "expo-router";
+import { ChevronDown, ChevronUp, Leaf, List, Plus, Search, ShoppingCart, Sparkles, X } from "lucide-react-native";
 import { useState } from "react";
 import { FlatList, Pressable, View } from "react-native";
 
@@ -131,21 +132,28 @@ export default function FarmersScreen() {
 
                             <Pressable
                                 onPress={() => handleProAction(() => setIsBulkImportOpen(true), "Bulk Import")}
-                                className="flex-1 bg-emerald-500/10 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-emerald-500/20 active:bg-emerald-500/20"
+                                className="flex-1 bg-emerald-500/10 h-10 rounded-2xl items-center justify-center flex-row gap-2 border border-emerald-500/20 active:bg-emerald-500/20"
                             >
                                 <Icon as={Sparkles} size={16} className="text-emerald-500" />
                                 <Text className="text-emerald-500 font-black text-[10px] uppercase tracking-widest">Import</Text>
                             </Pressable>
                             <Pressable
                                 onPress={() => handleProAction(() => setIsFeedOrderOpen(true), "Feed Orders")}
-                                className="flex-1 bg-muted/50 h-12 rounded-2xl items-center justify-center flex-row gap-2 border border-border active:bg-muted"
+                                className="flex-1 bg-muted/50 h-10 rounded-2xl items-center justify-center flex-row gap-2 border border-border active:bg-muted"
                             >
                                 <Icon as={ShoppingCart} size={16} className="text-muted-foreground" />
                                 <Text className="text-muted-foreground font-black text-[10px] uppercase tracking-widest">Order</Text>
                             </Pressable>
                             <Pressable
+                                onPress={() => router.push("/(drawer)/problematic-feeds")}
+                                className="flex-1 bg-destructive/10 h-10 rounded-2xl items-center justify-center flex-row gap-2 border border-destructive/20 active:bg-destructive/20"
+                            >
+                                <Icon as={Leaf} size={16} className="text-destructive" />
+                                <Text className="text-destructive font-black text-[10px] uppercase tracking-widest">Issues</Text>
+                            </Pressable>
+                            <Pressable
                                 onPress={() => setIsRegisterModalOpen(true)}
-                                className="flex-1 bg-primary h-12 rounded-2xl items-center justify-center flex-row gap-2 active:opacity-90"
+                                className="flex-1 bg-primary h-10 rounded-2xl items-center justify-center flex-row gap-2 active:opacity-90"
                             >
                                 <Icon as={Plus} size={16} className="text-white" />
                                 <Text className="text-white font-black text-[10px] uppercase tracking-widest">Register</Text>

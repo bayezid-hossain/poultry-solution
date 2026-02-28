@@ -8,11 +8,15 @@ import { Icon } from "@/components/ui/icon";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
+import { useStorage } from "@/context/storage-context";
 import {
+    downloadFileToDevice,
     exportActiveStockExcel,
     exportActiveStockPDF,
     exportAllFarmerStockExcel,
     exportAllFarmerStockPDF,
+    exportProblematicFeedsExcel,
+    exportProblematicFeedsPDF,
     exportRangeDocPlacementsExcel,
     exportRangeDocPlacementsPDF,
     exportRangeProductionExcel,
@@ -25,9 +29,10 @@ import {
     shareFile
 } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
-import { BarChart3, Bird, ClipboardList, FileText, ShoppingBag, Table, TrendingUp } from "lucide-react-native";
+import { AlertTriangle, BarChart3, Bird, ClipboardList, FileText, ShoppingBag, Table, TrendingUp } from "lucide-react-native";
 import { useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, View } from "react-native";
+import { Modal, Pressable, ScrollView, View } from "react-native";
+import { toast } from "sonner-native";
 
 const MONTHS = [
     "January", "February", "March", "April", "May", "June",
@@ -58,6 +63,7 @@ export default function ReportsScreen() {
 
     // TRPC Utils
     const utils = trpc.useUtils();
+    const { directoryUri } = useStorage();
 
     const handleExport = async (reportName: string, type: 'pdf' | 'excel', fetcher: () => Promise<string>) => {
         setIsExporting(true);
@@ -67,7 +73,7 @@ export default function ReportsScreen() {
             setPreviewVisible(true);
         } catch (e) {
             console.error(e);
-            Alert.alert("Export Error", "Failed to generate report.");
+            toast.error("Failed to generate report.");
         } finally {
             setIsExporting(false);
         }
@@ -88,6 +94,18 @@ export default function ReportsScreen() {
         handleExport(`All_Farmer_Stock_${new Date().toLocaleDateString()}`, type, async () => {
             const data = await utils.officer.farmers.getMany.fetch({ orgId: membership?.orgId ?? "", pageSize: 500 });
             return type === 'pdf' ? exportAllFarmerStockPDF(data.items, "All Farmer Stock") : exportAllFarmerStockExcel(data.items, "All Farmer Stock");
+        });
+    };
+
+    const handleProblematicFeeds = (type: 'pdf' | 'excel') => {
+        handleExport(`Problematic_Feeds_${new Date().toLocaleDateString()}`, type, async () => {
+            // Note: Uses different endpoint logic based on role
+            const orgId = membership?.orgId ?? "";
+            const data = await (isManagement
+                ? utils.management.farmers.getProblematicFeeds.fetch({ orgId })
+                : utils.officer.farmers.getProblematicFeeds.fetch({ orgId }));
+
+            return type === 'pdf' ? exportProblematicFeedsPDF(data, "Problematic Feeds") : exportProblematicFeedsExcel(data, "Problematic Feeds");
         });
     };
 
@@ -283,6 +301,14 @@ export default function ReportsScreen() {
                     () => handleAllFarmerStock('pdf')
                 )}
 
+                {renderReportCard(
+                    "Problematic Feeds",
+                    "List of active farmers who currently have a problematic feed balance greater than zero.",
+                    AlertTriangle,
+                    () => handleProblematicFeeds('excel'),
+                    () => handleProblematicFeeds('pdf')
+                )}
+
                 <Text className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-4 mb-4">💰 Sales Reports</Text>
 
                 {renderReportCard(
@@ -339,6 +365,7 @@ export default function ReportsScreen() {
                     type={previewData.type}
                     onView={() => openFile(previewData.uri, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
                     onShare={() => shareFile(previewData.uri, previewData.title, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                    onDownload={() => downloadFileToDevice(previewData.uri, previewData.title + (previewData.type === 'pdf' ? '.pdf' : '.xlsx'), previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', directoryUri)}
                 />
             )}
 
