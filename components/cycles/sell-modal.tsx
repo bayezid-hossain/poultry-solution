@@ -132,7 +132,6 @@ export const SellModal = ({
     const pricePerKgRef = useRef<TextInput>(null);
     const cashReceivedRef = useRef<TextInput>(null);
     const depositReceivedRef = useRef<TextInput>(null);
-    const medicineCostRef = useRef<TextInput>(null);
     const recoveryPriceRef = useRef<TextInput>(null);
     const feedPriceRef = useRef<TextInput>(null);
     const docPriceRef = useRef<TextInput>(null);
@@ -141,7 +140,7 @@ export const SellModal = ({
         { cycleId },
         { enabled: open }
     );
-    const lastSale = previousSales?.items?.[0];
+    const lastSale = previousSales?.[0];
 
     const [step, setStep] = useState<"form" | "preview">("form");
     const [previewData, setPreviewData] = useState<any>(null);
@@ -340,13 +339,16 @@ export const SellModal = ({
     const mainStock = farmer?.mainStock || 0;
 
     const handleFeedAdjustment = (index: number, newBags: number) => {
-        if (!lastSale) return;
-
         const currentType = (form.getValues(`feedConsumed.${index}.type`) || "").toUpperCase().trim();
         if (!currentType) return;
 
-        const baselineConsumed = (lastSale.feedConsumed ? (typeof lastSale.feedConsumed === 'string' ? JSON.parse(lastSale.feedConsumed) : lastSale.feedConsumed) : []) as { type: string; bags: number }[];
-        const baselineStock = (lastSale.feedStock ? (typeof lastSale.feedStock === 'string' ? JSON.parse(lastSale.feedStock) : lastSale.feedStock) : []) as { type: string; bags: number }[];
+        // Use previous sale's data as baseline, or fall back to defaults
+        const baselineConsumed = lastSale?.feedConsumed
+            ? (typeof lastSale.feedConsumed === 'string' ? JSON.parse(lastSale.feedConsumed) : lastSale.feedConsumed) as { type: string; bags: number }[]
+            : [{ type: "B1", bags: intake || 0 }, { type: "B2", bags: 0 }];
+        const baselineStock = lastSale?.feedStock
+            ? (typeof lastSale.feedStock === 'string' ? JSON.parse(lastSale.feedStock) : lastSale.feedStock) as { type: string; bags: number }[]
+            : [{ type: "B1", bags: 0 }, { type: "B2", bags: 0 }];
 
         // Find baseline consumption for this type
         const baseline = baselineConsumed.find(b => (b.type || "").toUpperCase().trim() === currentType);
@@ -600,21 +602,58 @@ export const SellModal = ({
                                     </View>
 
                                     <View className="flex-[1.5]">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">New Dead</Text>
+                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Total Mortality</Text>
                                         <Controller
                                             control={form.control}
                                             name="mortalityChange"
-                                            render={({ field: { onChange, value } }) => (
-                                                <Input
-                                                    ref={mortalityChangeRef}
-                                                    value={value?.toString() || ""}
-                                                    onChangeText={(t) => onChange(parseInt(t, 10) || 0)}
-                                                    keyboardType="number-pad"
-                                                    className={`h-12 bg-muted/40 border-border/50 font-mono text-xl text-center text-destructive ${hasError("mortalityChange") ? "border-destructive/50" : ""}`}
-                                                    returnKeyType="next"
-                                                    onSubmitEditing={() => totalWeightRef.current?.focus()}
-                                                />
-                                            )}
+                                            render={({ field: { onChange, value } }) => {
+                                                const currentTotal = mortality + (value || 0);
+                                                const [localText, setLocalText] = useState(currentTotal.toString());
+
+                                                // Sync local text when form value changes externally
+                                                useEffect(() => {
+                                                    const total = mortality + (value || 0);
+                                                    setLocalText(total.toString());
+                                                }, [mortality]);
+
+                                                return (
+                                                    <View>
+                                                        <Input
+                                                            ref={mortalityChangeRef}
+                                                            value={localText}
+                                                            onChangeText={(t) => {
+                                                                setLocalText(t);
+                                                                if (t === "") {
+                                                                    // Allow empty, treat as 0 delta temporarily
+                                                                    return;
+                                                                }
+                                                                const newTotal = parseInt(t, 10);
+                                                                if (!isNaN(newTotal)) {
+                                                                    const delta = newTotal - mortality;
+                                                                    onChange(delta);
+                                                                }
+                                                            }}
+                                                            onBlur={() => {
+                                                                // On blur, if empty, reset to current mortality
+                                                                if (localText === "") {
+                                                                    setLocalText(mortality.toString());
+                                                                    onChange(0);
+                                                                }
+                                                            }}
+                                                            keyboardType="number-pad"
+                                                            placeholder={`Current: ${mortality}`}
+                                                            className={`h-12 bg-muted/40 border-border/50 font-mono text-xl text-center ${hasError("mortalityChange") ? "border-destructive/50" : ""}`}
+                                                            returnKeyType="next"
+                                                            onSubmitEditing={() => totalWeightRef.current?.focus()}
+                                                        />
+                                                        {value !== 0 && (
+                                                            <Text className={`text-[10px] font-medium mt-1 ml-1 ${value > 0 ? "text-destructive" : "text-amber-600"}`}>
+                                                                {value > 0 ? `+${value} new deaths` : `${localText == "" ? -mortality : value} correction`}
+                                                            </Text>
+                                                        )}
+                                                    </View>
+                                                );
+                                            }}
                                         />
                                     </View>
                                 </View>
@@ -716,31 +755,13 @@ export const SellModal = ({
                                                     keyboardType="number-pad"
                                                     className="h-12 bg-muted/40 border-border/50 font-mono text-lg"
                                                     returnKeyType="next"
-                                                    onSubmitEditing={() => medicineCostRef.current?.focus()}
                                                 />
                                             )}
                                         />
                                     </View>
                                 </View>
 
-                                {/* Medicine */}
-                                <View className="px-1">
-                                    <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Medicine Cost (৳)</Text>
-                                    <Controller
-                                        control={form.control}
-                                        name="medicineCost"
-                                        render={({ field: { onChange, value } }) => (
-                                            <Input
-                                                ref={medicineCostRef}
-                                                value={value?.toString() || ""}
-                                                onChangeText={(t) => onChange(parseFloat(t) || 0)}
-                                                keyboardType="number-pad"
-                                                className="h-12 bg-muted/40 border-border/50 font-mono text-lg"
-                                                returnKeyType="next"
-                                            />
-                                        )}
-                                    />
-                                </View>
+
                             </View>
 
                             <View className="h-[1px] bg-border/50" />
