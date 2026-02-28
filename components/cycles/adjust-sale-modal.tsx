@@ -11,6 +11,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView, T
 import { toast, Toaster } from "sonner-native";
 import { z } from "zod";
 import { ConfirmModal } from "./confirm-modal";
+import { EditSaleAgeModal } from "./edit-sale-age-modal";
 import { SaleDetailsContent } from "./sale-details-content";
 import { FarmerInfoHeader, FeedFieldArray, SaleMetricsBar } from "./sale-form-sections";
 // import { Alert } from "../ui/alert";
@@ -52,6 +53,7 @@ const adjustSaleSchema = z.object({
     recoveryPrice: z.coerce.number().positive().optional(),
     feedPricePerBag: z.coerce.number().positive().optional(),
     docPricePerBird: z.coerce.number().positive().optional(),
+    saleAge: z.coerce.number().int().positive().optional(),
 });
 
 type FormValues = z.infer<typeof adjustSaleSchema>;
@@ -69,6 +71,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
     const [step, setStep] = useState<"form" | "preview">("form");
     const [previewData, setPreviewData] = useState<any | null>(null);
     const [showConfirm, setShowConfirm] = useState(false);
+    const [showEditAge, setShowEditAge] = useState(false);
     const defaultValues: FormValues = {
         birdsSold: latestReport ? latestReport.birdsSold : saleEvent.birdsSold,
         totalMortality: latestReport
@@ -99,6 +102,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         recoveryPrice: typeof saleEvent.cycleContext?.recoveryPrice === 'number' ? saleEvent.cycleContext.recoveryPrice : undefined,
         feedPricePerBag: typeof saleEvent.cycleContext?.feedPriceUsed === 'number' ? saleEvent.cycleContext.feedPriceUsed : undefined,
         docPricePerBird: typeof saleEvent.cycleContext?.docPriceUsed === 'number' ? saleEvent.cycleContext.docPriceUsed : undefined,
+        saleAge: latestReport?.age ?? saleEvent.age ?? undefined,
     };
 
     const form = useForm<FormValues>({
@@ -248,6 +252,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
             recoveryPrice: values.recoveryPrice,
             feedPricePerBag: values.feedPricePerBag,
             docPricePerBird: values.docPricePerBird,
+            saleAge: values.saleAge,
         });
     };
 
@@ -272,6 +277,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
             recoveryPrice: values.recoveryPrice,
             feedPricePerBag: values.feedPricePerBag,
             docPricePerBird: values.docPricePerBird,
+            saleAge: values.saleAge,
         });
     };
 
@@ -387,7 +393,9 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                 farmerLocation={saleEvent.location}
                                 farmerMobile={form.getValues("farmerMobile")}
                                 cycleAge={saleEvent.cycleContext?.age || 0}
+                                saleAge={form.watch("saleAge") || saleEvent.age || 0}
                                 colorScheme="orange"
+                                onEditAgePress={() => setShowEditAge(true)}
                             />
 
                             <View className="space-y-4 gap-y-2">
@@ -687,6 +695,13 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                     setShowConfirm(false);
                     form.handleSubmit((values: any) => onSubmit(values as FormValues))();
                 }}
+            />
+
+            <EditSaleAgeModal
+                currentAge={form.watch("saleAge") || saleEvent.age || 0}
+                open={showEditAge}
+                onOpenChange={setShowEditAge}
+                onSave={(newAge) => form.setValue("saleAge", newAge, { shouldValidate: true })}
             />
         </Modal>
     );

@@ -194,7 +194,7 @@ export function FarmerCard({
                         </View>
 
                         {/* Total */}
-                        <View className="flex-1 bg-primary p-2.5 rounded-xl h-20 justify-between shadow-sm shadow-primary/20">
+                        <View className="flex-1 bg-primary/80 p-2.5 rounded-xl h-20 justify-between shadow-sm shadow-primary/20">
                             <Text className="text-primary-foreground/60 text-[9px] font-black uppercase tracking-widest text-right">
                                 Total
                             </Text>

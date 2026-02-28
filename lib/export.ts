@@ -906,12 +906,54 @@ export async function exportRangeDocPlacementsExcel(data: any, title: string, re
         { Metric: "Total Batches", Value: data.summary?.cycleCount ?? 0 }
     ];
 
+    // Calculate extra merges for Farmer column (Index 2 in Excel)
+    const extraMerges: any[] = [];
+    let currentRow = 15; // Details start at row 15 (index 14) in buildExcelWorksheet for grouped data
+
+    Object.values(monthGroups).forEach((cycles, groupIdx) => {
+        // Section Header Row
+        currentRow++;
+        // Spacer Row
+        currentRow++;
+        // Table Header Row
+        currentRow++;
+
+        // Track farmer groups within the month
+        let i = 0;
+        while (i < cycles.length) {
+            const currentFarmer = cycles[i].farmerName;
+            let count = 0;
+            while (i + count < cycles.length && cycles[i + count].farmerName === currentFarmer) {
+                count++;
+            }
+
+            if (count > 1) {
+                extraMerges.push({
+                    s: { r: currentRow + i, c: 2 },
+                    e: { r: currentRow + i + count - 1, c: 2 }
+                });
+            }
+            i += count;
+        }
+
+        currentRow += cycles.length;
+
+        // Footer Row if any (though not used here yet)
+        // if (group.footer) currentRow++;
+
+        // Spacer rows between month groups (added in buildExcelWorksheet)
+        if (groupIdx < Object.keys(monthGroups).length - 1) {
+            currentRow += 2;
+        }
+    });
+
     const options = {
         title,
         summaryData,
         rawHeaders,
         groupedDataTable,
-        mergePrimaryColumn: true
+        mergePrimaryColumn: false, // Use extraMerges instead for better control
+        extraMerges
     };
     if (returnOptions) return options;
     return await generateExcel(options);
@@ -963,6 +1005,33 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string, retu
     // Build month sections
     const monthSections = Object.values(monthGroups).map(cycles => {
         const monthDoc = cycles.reduce((s, c) => s + c.doc, 0);
+
+        // Group cycles by farmer for rowspan
+        const rows: string[] = [];
+        let i = 0;
+        while (i < cycles.length) {
+            const currentFarmer = cycles[i].farmerName;
+            let count = 0;
+            while (i + count < cycles.length && cycles[i + count].farmerName === currentFarmer) {
+                count++;
+            }
+
+            for (let j = 0; j < count; j++) {
+                const c = cycles[i + j];
+                const isFirst = j === 0;
+                rows.push(`
+                    <tr>
+                        ${isFirst ? `<td rowspan="${count}" style="font-weight: bold; vertical-align: middle;">${c.farmerName}</td>` : ''}
+                        <td>${c.batchNum}</td>
+                        <td>${formatLocalDate(c.date)}</td>
+                        <td style="font-weight: bold;">${c.doc.toLocaleString()}</td>
+                        <td>${c.status === 'archived' || c.status === 'completed' ? 'Archived' : 'Active'}</td>
+                    </tr>
+                `);
+            }
+            i += count;
+        }
+
         return `
             <div class="section-title">${cycles[0].monthLabel} — ${cycles.length} batches — ${monthDoc.toLocaleString()} DOC</div>
             <table>
@@ -976,15 +1045,7 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string, retu
                     </tr>
                 </thead>
                 <tbody>
-                    ${cycles.map(c => `
-                        <tr>
-                            <td style="font-weight: bold;">${c.farmerName}</td>
-                            <td>${c.batchNum}</td>
-                            <td>${formatLocalDate(c.date)}</td>
-                            <td style="font-weight: bold;">${c.doc.toLocaleString()}</td>
-                            <td>${c.status === 'archived' || c.status === 'completed' ? 'Archived' : 'Active'}</td>
-                        </tr>
-                    `).join('')}
+                    ${rows.join('')}
                 </tbody>
             </table>
         `;

@@ -13,6 +13,7 @@ interface FarmerInfoHeaderProps {
     farmerLocation?: string | null;
     farmerMobile?: string | null;
     cycleAge: number;
+    saleAge?: number;
     colorScheme?: "blue" | "orange";
     onEditAgePress?: () => void;
 }
@@ -22,6 +23,7 @@ export const FarmerInfoHeader = ({
     farmerLocation,
     farmerMobile,
     cycleAge,
+    saleAge,
     colorScheme = "blue",
     onEditAgePress,
 }: FarmerInfoHeaderProps) => {
@@ -53,11 +55,22 @@ export const FarmerInfoHeader = ({
             <View className="mt-4 flex-row items-center justify-center">
                 <Pressable
                     onPress={onEditAgePress}
-                    className="flex-row items-center gap-1.5 px-3 py-1.5 bg-background/50 rounded-full border border-border/20"
+                    className={`gap-x-4 flex-row items-center px-4 py-2 bg-background/50 rounded-xl border border-border/20 ${onEditAgePress ? 'active:opacity-70' : ''}`}
                 >
-                    <Icon as={CalendarIcon} size={14} className="text-muted-foreground" />
-                    <Text className="text-sm font-bold text-foreground">Age: {cycleAge} days</Text>
-                    {onEditAgePress && <Icon as={Pencil} size={12} className="text-muted-foreground ml-1" />}
+                    <Icon as={CalendarIcon} size={16} className="text-muted-foreground" />
+                    <View className="flex-col gap-0.5">
+                        {(cycleAge !== saleAge) && <Text className="text-sm font-bold text-foreground">
+                            Weighted Age: {cycleAge} days
+                        </Text>}
+                        {saleAge !== undefined && (
+                            <Text className="text-sm font-bold text-foreground">
+                                Sale Age: {saleAge} days
+                            </Text>
+                        )}
+                    </View>
+                    {onEditAgePress && (
+                        <Icon as={Pencil} size={14} className="text-muted-foreground" />
+                    )}
                 </Pressable>
             </View>
         </View>
