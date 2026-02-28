@@ -82,7 +82,7 @@ Location: ${sale.location || "N/A"}
 House bird : ${sale.houseBirds || 0}pcs
 Total Sold : ${birdsSold}pcs
 Total Mortality: ${totalMortality} pcs
-${(!isEnded || !isLatest) ? `\nRemaining Birds: ${(sale.cycleContext?.doc || 0) - totalMortality - (sale.cycleContext?.cumulativeBirdsSold || 0)} pcs` : ""}
+${(!isEnded || !isLatest) ? `\nRemaining Birds: ${sale.remainingBirds ?? 0} pcs` : ""}
 
 ${ageText}
 Weight: ${totalWeight} kg

@@ -65,7 +65,7 @@ export const SaleDetailsContent = ({
     // Extract cycle context for modals
     const ctx = sale.cycleContext;
     const hasEndedCycleData = isLatest && ctx && ctx.isEnded;
-
+    const isEnded = ctx?.isEnded;
     return (
         <View className="space-y-4">
             {/* FCR/EPI Row — tappable to open details */}
@@ -127,6 +127,10 @@ export const SaleDetailsContent = ({
                         <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Total DOC</Text>
                         <Text className="font-bold text-foreground">{sale.cycleContext?.doc || sale.houseBirds}</Text>
                     </View>
+                    {(!isLatest || !isEnded) && <View className="flex-row justify-between items-baseline">
+                        <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Remaining</Text>
+                        <Text className="font-bold text-blue-600 dark:text-blue-400">{sale.remainingBirds ?? "—"}</Text>
+                    </View>}
                     <View className="flex-row justify-between items-baseline">
                         <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Birds Sold</Text>
                         <Text className="font-bold text-foreground">{displayBirdsSold}</Text>
