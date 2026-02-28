@@ -234,6 +234,20 @@ export default function FarmerDetailScreen() {
     const activeConsumption = activeCycles.reduce((acc: number, c: any) => acc + (parseFloat(c.intake) || 0), 0);
     const availableStock = mainStock - activeConsumption;
 
+    const activeCyclesCount = activeCycles.length;
+    const lastCycleEndDate = farmer.lastCycleEndDate ? new Date(farmer.lastCycleEndDate) : null;
+
+    const idleDays =
+        activeCyclesCount === 0 && lastCycleEndDate
+            ? (() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const end = new Date(lastCycleEndDate);
+                end.setHours(0, 0, 0, 0);
+                return Math.max(0, Math.floor((today.getTime() - end.getTime()) / (1000 * 60 * 60 * 24)));
+            })()
+            : null;
+
     const selectedCycle = (() => {
         if (!selectedCycleId) return null;
         const active = activeCycles.find((c: any) => c.id === selectedCycleId);
@@ -274,6 +288,9 @@ export default function FarmerDetailScreen() {
                             <Text className="text-base text-muted-foreground">{farmer.location || "No location"}</Text>
                             {farmer.createdAt && (
                                 <Text className="text-sm font-bold text-primary mt-1">Joined {format(new Date(farmer.createdAt), "dd MMM yyyy")}</Text>
+                            )}
+                            {idleDays !== null && (
+                                <Text className="text-sm font-bold text-orange-500 mt-0.5">Idle for {idleDays} day{idleDays === 1 ? "" : "s"}</Text>
                             )}
                         </View>
                         <Pressable onPress={() => setIsEditOpen(true)} className="h-10 w-10 items-center justify-center rounded-xl bg-muted/30 border border-border/50">

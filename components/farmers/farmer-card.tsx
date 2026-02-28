@@ -27,6 +27,7 @@ interface FarmerCardProps {
         activeBirdsCount: number;
         createdAt?: string | Date;
         problematicFeed?: string | number | null;
+        lastCycleEndDate?: string | Date | null;
     };
     activeConsumption?: number;
     onRestock?: () => void;
@@ -57,39 +58,52 @@ export function FarmerCard({
         router.push(`/farmer/${farmer.id}` as any);
     };
 
+    const idleDays =
+        farmer.activeCyclesCount === 0 && farmer.lastCycleEndDate
+            ? (() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const end = new Date(farmer.lastCycleEndDate);
+                end.setHours(0, 0, 0, 0);
+                return Math.max(0, Math.floor((today.getTime() - end.getTime()) / (1000 * 60 * 60 * 24)));
+            })()
+            : null;
+
     return (
         <TouchableOpacity activeOpacity={0.9} onPress={handleNavigate}>
             <Card className="mb-2 overflow-hidden border-border/50 bg-card p-1">
                 <CardContent className="p-2">
                     {/* Header */}
                     <View className="flex-row justify-between items-center mb-2">
-                        <View className="flex-row items-center gap-2 flex-1">
-                            <Text
-                                className="font-black text-lg text-foreground uppercase tracking-tight flex-1"
-                                numberOfLines={2}
-                            >
-                                {farmer.name}
-                            </Text>
-
-                            {(!farmer.location || !farmer.mobile) && (
-                                <Pressable
-                                    onPress={() =>
-                                        Alert.alert(
-                                            "Missing Info",
-                                            "This farmer is missing location or mobile number."
-                                        )
-                                    }
-                                    className="p-1"
+                        <View className="flex-row items-center justify-between flex-1 pr-2">
+                            <View className="max-w-[48%]">
+                                <Text
+                                    className="font-black text-lg text-foreground uppercase tracking-tight"
+                                    numberOfLines={4}
                                 >
-                                    <Icon
-                                        as={AlertCircle}
-                                        size={16}
-                                        className="text-destructive"
-                                    />
-                                </Pressable>
-                            )}
+                                    {farmer.name}
+                                </Text>
+                            </View>
 
-                            <View className="flex-row items-center gap-2 ml-1">
+                            <View className="flex-row flex-wrap justify-center items-center gap-2 max-w-[50%]">
+                                {(!farmer.location || !farmer.mobile) && (
+                                    <Pressable
+                                        onPress={() =>
+                                            Alert.alert(
+                                                "Missing Info",
+                                                "This farmer is missing location or mobile number."
+                                            )
+                                        }
+                                        className="p-1"
+                                    >
+                                        <Icon
+                                            as={AlertCircle}
+                                            size={16}
+                                            className="text-destructive"
+                                        />
+                                    </Pressable>
+                                )}
+
                                 <Pressable
                                     onPress={(e) => {
                                         e.stopPropagation();
@@ -115,7 +129,7 @@ export function FarmerCard({
                                     className={`${farmer.activeCyclesCount > 0
                                         ? "bg-emerald-500/10 border-emerald-500/20"
                                         : "bg-muted/50 border-border"
-                                        } h-6 px-2 rounded-md`}
+                                        } h-6 px-2 rounded-md mb-1`}
                                 >
                                     <Text
                                         className={`${farmer.activeCyclesCount > 0
@@ -123,7 +137,7 @@ export function FarmerCard({
                                             : "text-muted-foreground"
                                             } text-[10px] font-bold uppercase`}
                                     >
-                                        {farmer.activeCyclesCount > 0 ? "Active" : "Idle"}
+                                        {farmer.activeCyclesCount > 0 ? "Active" : idleDays !== null ? `Idle · ${idleDays}d` : "Idle · New"}
                                     </Text>
                                 </Badge>
                             </View>

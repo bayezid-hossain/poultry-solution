@@ -235,11 +235,11 @@ export async function generateExcel({ title, summaryData, rawDataTable, groupedD
             right: { style: "thin", color: { rgb: "D1D5DB" } }
         };
         const centeredStyle = {
-            alignment: { horizontal: "center", vertical: "center" },
+            alignment: { horizontal: "center", vertical: "center", wrapText: true },
             border: cellBorder
         };
         const centeredStyleAlt = {
-            alignment: { horizontal: "center", vertical: "center" },
+            alignment: { horizontal: "center", vertical: "center", wrapText: true },
             fill: { fgColor: { rgb: "F9FAFB" } },
             border: cellBorder
         };
@@ -446,6 +446,10 @@ export async function generateExcel({ title, summaryData, rawDataTable, groupedD
             ...extraMerges
         ];
 
+        // Helper to check if a cell is already covered by an extraMerge
+        const isCoveredByExtraMerge = (row: number, col: number) =>
+            extraMerges.some((m: any) => row >= m.s.r && row <= m.e.r && col >= m.s.c && col <= m.e.c);
+
         // Detailed records merges
         for (let r = detailHeadersRowIndex; r <= detailDataEndRowIndex; r++) {
             if (mergePrimaryColumn) {
@@ -453,7 +457,9 @@ export async function generateExcel({ title, summaryData, rawDataTable, groupedD
             }
             if (dataColsEff > dataCols) {
                 const lastColIdx = tableStartCol + dataCols - 1;
-                merges.push({ s: { r: r, c: lastColIdx }, e: { r: r, c: lastColIdx + 1 } });
+                if (!isCoveredByExtraMerge(r, lastColIdx)) {
+                    merges.push({ s: { r: r, c: lastColIdx }, e: { r: r, c: lastColIdx + 1 } });
+                }
             }
         }
 
@@ -468,13 +474,29 @@ export async function generateExcel({ title, summaryData, rawDataTable, groupedD
 
         worksheet['!merges'] = merges;
 
-        const firstHeader = (rawHeaders[0] || "").toLowerCase();
-        const isFarmerCol = firstHeader.includes('farmer') || firstHeader === 'name';
-
+        const colMeta: { isTextWrapCol: boolean }[] = [];
         const wscols = [];
+
         for (let i = 0; i < maxCols; i++) {
             let defaultWidth = (i < L_PAD) ? 2 : 8;
-            if (i === tableStartCol && isFarmerCol) defaultWidth = 22; // Wider default for names
+
+            let headerName = "";
+            let isTextWrapCol = false;
+
+            if (i >= tableStartCol && i < tableStartCol + dataColsEff) {
+                if (mergePrimaryColumn) {
+                    if (i === tableStartCol) headerName = rawHeaders[0] || "";
+                    else if (i > tableStartCol + 1) headerName = rawHeaders[i - tableStartCol - 1] || "";
+                } else {
+                    headerName = rawHeaders[i - tableStartCol] || "";
+                }
+                const hLower = headerName.toLowerCase();
+                isTextWrapCol = hLower.includes('farmer') || hLower === 'name' || hLower.includes('location') || hLower.includes('address');
+            }
+
+            if (isTextWrapCol) defaultWidth = 22; // Wider default for rich text
+
+            colMeta[i] = { isTextWrapCol };
 
             let maxLen = defaultWidth;
             aoa.forEach((row, rowIndex) => {
@@ -484,11 +506,8 @@ export async function generateExcel({ title, summaryData, rawDataTable, groupedD
 
                     if (val && val !== 'undefined' && val.length > maxLen) {
                         // SKIP width contribution from horizontally merged cells
-                        // 1. Titles & Date Rows (First 3 rows) - Skip if it's the anchor col for a title
                         if (rowIndex < 3 && i >= L_PAD && i < L_PAD + gridWidth) return;
-                        // 2. Section Headers ([ TITLE ])
                         if (val.startsWith('[ ') && val.endsWith(' ]')) return;
-                        // 3. Summary labels/values (merged cells)
                         if (rowIndex >= 4 && rowIndex < detailHeadersRowIndex - 1) {
                             const merge = summaryMerges.find(m => m.s.r === rowIndex && i >= m.s.c && i <= m.e.c);
                             if (merge && i !== merge.s.c) return;
@@ -503,26 +522,39 @@ export async function generateExcel({ title, summaryData, rawDataTable, groupedD
                 }
             });
 
-            // Logic for column widths:
-            // Data columns (between L_PAD and R_PAD boundaries) should fit content + margin.
-            // Padding columns (A, B and last few) should stay extremely narrow.
             const isDataCol = i >= L_PAD && i < (L_PAD + gridWidth);
-            const wch = isDataCol ? Math.min(Math.max(maxLen + 2, defaultWidth), 100) : 2;
+            let wch = isDataCol ? Math.min(Math.max(maxLen + 2, defaultWidth), 100) : 2;
+
+            if (isDataCol && isTextWrapCol) {
+                wch = Math.min(wch, 28);
+            }
+
             wscols.push({ wch });
         }
         worksheet['!cols'] = wscols;
 
-        // Row heights: taller for detail data rows, header rows
         const wsrows: any[] = [];
         for (let r = 0; r < aoa.length; r++) {
             if (r === 0) {
-                wsrows.push({ hpt: 28 }); // Title row
+                wsrows.push({ hpt: 28 });
             } else if (r === detailHeadersRowIndex) {
-                wsrows.push({ hpt: 24 }); // Detail header row
+                wsrows.push({ hpt: 24 });
             } else if (r >= detailDataStartRowIndex && r <= detailDataEndRowIndex) {
-                wsrows.push({ hpt: 22 }); // Detail data rows - taller for readability
+                let maxRowHeight = 22;
+                for (let c = tableStartCol; c < tableStartCol + dataColsEff; c++) {
+                    if (colMeta[c]?.isTextWrapCol) {
+                        const cell = aoa[r]?.[c];
+                        const val = (cell && typeof cell === 'object' && 'v' in cell) ? String(cell.v) : String(cell);
+                        if (val && val !== 'undefined' && val.length > 22 && !val.startsWith('[ ')) {
+                            const lines = Math.ceil(val.length / 28);
+                            const neededHeight = lines > 1 ? (lines * 16 + 6) : 22;
+                            maxRowHeight = Math.max(maxRowHeight, neededHeight);
+                        }
+                    }
+                }
+                wsrows.push({ hpt: maxRowHeight });
             } else {
-                wsrows.push({}); // Default
+                wsrows.push({});
             }
         }
         worksheet['!rows'] = wsrows;
@@ -585,7 +617,7 @@ export async function shareFile(uri: string, title: string, mimeType: string, UT
  * Generates an Excel report for active stock/farmers
  */
 export async function exportActiveStockExcel(activeCycles: any[], title: string) {
-    const rawHeaders = ["Farmer", "DOC", "Age", "Main Stock (bags)", "Last Updated"];
+    const rawHeaders = ["Farmer", "DOC", "Age", "Main Stock (bags)", "Last Stock Updated"];
 
     // Grouping logic
     const groups: Record<string, any[]> = {};
@@ -601,20 +633,33 @@ export async function exportActiveStockExcel(activeCycles: any[], title: string)
 
     Object.entries(groups).forEach(([farmerName, cycles]) => {
         const startRow = startRowOffset + rawDataTable.length;
+        const mainStock = Number(cycles[0].farmerMainStock).toFixed(2);
+        const lastUpdated = formatLocalDate(cycles[0].mainStockUpdatedAt || cycles[0].farmerUpdatedAt || cycles[0].updatedAt);
         cycles.forEach((c, idx) => {
             rawDataTable.push({
                 "Farmer": idx === 0 ? farmerName : "",
                 "DOC": c.doc,
                 "Age": c.age,
-                "Main Stock (bags)": Number(c.farmerMainStock).toFixed(2),
-                "Last Updated": formatLocalDate(c.mainStockUpdatedAt || c.farmerUpdatedAt || c.updatedAt)
+                "Main Stock (bags)": idx === 0 ? mainStock : "",
+                "Last Stock Updated": idx === 0 ? lastUpdated : ""
             });
         });
 
         if (cycles.length > 1) {
+            // Merge Farmer name column (C)
             extraMerges.push({
                 s: { r: startRow, c: 2 }, // Column C (L_PAD=2)
                 e: { r: startRow + cycles.length - 1, c: 2 }
+            });
+            // Merge Main Stock column (F)
+            extraMerges.push({
+                s: { r: startRow, c: 5 },
+                e: { r: startRow + cycles.length - 1, c: 5 }
+            });
+            // Merge Last Stock Updated column (G) — span G+H to cover the padding column
+            extraMerges.push({
+                s: { r: startRow, c: 6 },
+                e: { r: startRow + cycles.length - 1, c: 7 }
             });
         }
     });
@@ -661,8 +706,8 @@ export async function exportActiveStockPDF(activeCycles: any[], title: string) {
                 <th style="width: 30%">Farmer</th>
                 <th>DOC</th>
                 <th>Age</th>
-                <th>Main Stock (b)</th>
-                <th>Last Updated</th>
+                <th>Main Stock (bags)</th>
+                <th>Last Stock Updated</th>
             </tr>
         </thead>
     `;
@@ -678,8 +723,14 @@ export async function exportActiveStockPDF(activeCycles: any[], title: string) {
         }
                         <td style="border: 1px solid #e5e7eb;">${c.doc}</td>
                         <td style="border: 1px solid #e5e7eb;">${c.age}</td>
-                        <td style="border: 1px solid #e5e7eb;">${Number(c.farmerMainStock).toFixed(2)}</td>
-                        <td style="border: 1px solid #e5e7eb;">${formatLocalDate(c.mainStockUpdatedAt || c.farmerUpdatedAt || c.updatedAt)}</td>
+                        ${idx === 0
+            ? `<td rowspan="${cycles.length}" style="vertical-align: middle; border: 1px solid #e5e7eb;">${Number(c.farmerMainStock).toFixed(2)}</td>`
+            : ''
+        }
+                        ${idx === 0
+            ? `<td rowspan="${cycles.length}" style="vertical-align: middle; border: 1px solid #e5e7eb;">${formatLocalDate(c.mainStockUpdatedAt || c.farmerUpdatedAt || c.updatedAt)}</td>`
+            : ''
+        }
                     </tr>
                 `).join('')}
             `).join('')}
@@ -775,7 +826,7 @@ export async function exportRangeDocPlacementsExcel(data: any, title: string) {
     const groupedDataTable: any[] = [];
     Object.entries(monthGroups).forEach(([, cycles]) => {
         const monthDoc = cycles.reduce((s, c) => s + c.doc, 0);
-        const sectionHeader = `${cycles[0].monthLabel} — ${cycles.length} batches, ${monthDoc.toLocaleString()} DOC`;
+        const sectionHeader = `${cycles[0].monthLabel} — ${cycles.length} batches — ${monthDoc.toLocaleString()} DOC`;
 
         const data = cycles.map(c => ({
             "Farmer": c.farmerName,
@@ -850,7 +901,7 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string) {
     const monthSections = Object.values(monthGroups).map(cycles => {
         const monthDoc = cycles.reduce((s, c) => s + c.doc, 0);
         return `
-            <div class="section-title">${cycles[0].monthLabel} — ${cycles.length} batches, ${monthDoc.toLocaleString()} DOC</div>
+            <div class="section-title">${cycles[0].monthLabel} — ${cycles.length} batches — ${monthDoc.toLocaleString()} DOC</div>
             <table>
                 <thead>
                     <tr>
@@ -913,7 +964,7 @@ export async function exportRangeProductionExcel(records: any[], title: string) 
     const groupedDataTable: any[] = [];
     Object.entries(monthGroups).forEach(([key, groupRecords]) => {
         const monthTotalDoc = groupRecords.reduce((s, c) => s + c.doc, 0);
-        const sectionHeader = `${groupRecords[0].monthName} ${groupRecords[0].year} — ${groupRecords.length} batches, ${monthTotalDoc.toLocaleString()} DOC`;
+        const sectionHeader = `${groupRecords[0].monthName} ${groupRecords[0].year} — ${groupRecords.length} batches — ${monthTotalDoc.toLocaleString()} DOC`;
 
         const monthProfit = groupRecords.reduce((sum, r) => sum + r.profit, 0);
         const monthAvgFcr = groupRecords.length > 0 ? (groupRecords.reduce((sum, r) => sum + r.fcr, 0) / groupRecords.length).toFixed(2) : "0.00";
@@ -979,7 +1030,7 @@ export async function exportRangeProductionPDF(records: any[], title: string) {
             <thead>
                 <tr>
                     <th colspan="8" style="background-color: #f9fafb; color: #374151; font-size: 13px; font-weight: 900; letter-spacing: 0.05em; padding: 12px; border-bottom: 2px solid #10b981; text-align: center;">
-                        ${groupRecords[0].monthName.toUpperCase()} ${groupRecords[0].year} — ${groupRecords.length} BATCHES, ${monthTotalDoc.toLocaleString()} DOC
+                        ${groupRecords[0].monthName.toUpperCase()} ${groupRecords[0].year} — ${groupRecords.length} BATCHES — ${monthTotalDoc.toLocaleString()} DOC
                     </th>
                 </tr>
                 <tr>
@@ -1194,15 +1245,29 @@ export async function exportYearlyPerformancePDF(data: any, title: string) {
  * Generates an Excel report for all farmers and their current main stock
  */
 export async function exportAllFarmerStockExcel(farmers: any[], title: string) {
-    const rawHeaders = ["Farmer Name", "Location", "Mobile", "Main Stock (bags)", "Active Cycles", "Last Updated"];
-    const rawDataTable = farmers.map(f => ({
-        "Farmer Name": f.name || '---',
-        "Location": f.location || '---',
-        "Mobile": f.mobile || '---',
-        "Main Stock (bags)": Number(f.mainStock || 0).toFixed(2),
-        "Active Cycles": f.activeCyclesCount || 0,
-        "Last Updated": formatLocalDate(f.mainStockUpdatedAt || f.updatedAt)
-    }));
+    const rawHeaders = ["Farmer Name", "Location", "Mobile", "Status", "Idle Days", "Main Stock (bags)", "Active Cycles", "Last Stock Updated"];
+    const rawDataTable = farmers.map(f => {
+        const idleDays = f.activeCyclesCount === 0 && f.lastCycleEndDate
+            ? (() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const end = new Date(f.lastCycleEndDate);
+                end.setHours(0, 0, 0, 0);
+                return Math.max(0, Math.floor((today.getTime() - end.getTime()) / (1000 * 60 * 60 * 24)));
+            })()
+            : null;
+
+        return {
+            "Farmer Name": f.name || '---',
+            "Location": f.location || '---',
+            "Mobile": f.mobile || '---',
+            "Status": f.activeCyclesCount > 0 ? "Active" : "Idle",
+            "Idle Days": idleDays !== null ? idleDays : (f.activeCyclesCount > 0 ? '---' : 'New Entry'),
+            "Main Stock (bags)": Number(f.mainStock || 0).toFixed(2),
+            "Active Cycles": f.activeCyclesCount || 0,
+            "Last Stock Updated": formatLocalDate(f.mainStockUpdatedAt || f.updatedAt)
+        };
+    });
 
     const summaryData = [
         { Metric: "Total Farmers", Value: farmers.length },
@@ -1243,22 +1308,40 @@ export async function exportAllFarmerStockPDF(farmers: any[], title: string) {
                     <th>Farmer Name</th>
                     <th>Location</th>
                     <th>Mobile</th>
+                    <th>Status</th>
+                    <th>Idle Days</th>
                     <th>Stock (bags)</th>
                     <th>Active Cycles</th>
-                    <th>Last Updated</th>
+                    <th>Last Stock Updated</th>
                 </tr>
             </thead>
             <tbody>
-                ${farmers.map(f => `
+                ${farmers.map(f => {
+        const idleDays = f.activeCyclesCount === 0 && f.lastCycleEndDate
+            ? (() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const end = new Date(f.lastCycleEndDate);
+                end.setHours(0, 0, 0, 0);
+                return Math.max(0, Math.floor((today.getTime() - end.getTime()) / (1000 * 60 * 60 * 24)));
+            })()
+            : null;
+        const statusText = f.activeCyclesCount > 0 ? "Active" : "Idle";
+        const idleDaysText = idleDays !== null ? idleDays : (f.activeCyclesCount > 0 ? '---' : 'New Entry');
+
+        return `
                     <tr>
                         <td style="text-align: left; font-weight: bold;">${f.name}</td>
                         <td>${f.location || '---'}</td>
                         <td>${f.mobile || '---'}</td>
+                        <td>${statusText}</td>
+                        <td>${idleDaysText}</td>
                         <td style="font-weight: bold;">${Number(f.mainStock || 0).toFixed(2)}</td>
                         <td>${f.activeCyclesCount || 0}</td>
                         <td>${formatLocalDate(f.mainStockUpdatedAt || f.updatedAt)}</td>
                     </tr>
-                `).join('')}
+                    `;
+    }).join('')}
             </tbody>
         </table>
     `;
@@ -1352,7 +1435,7 @@ export async function exportSalesLedgerExcel(sales: any[], title: string) {
     Object.values(monthGroups).forEach(group => {
         const monthRevenue = group.sales.reduce((sum, s) => sum + (s.totalRevenue || (Number(s.totalWeight) * Number(s.pricePerKg)) || 0), 0);
         const monthBirds = group.sales.reduce((sum, s) => sum + (s.birdsSold || 0), 0);
-        const sectionHeader = `${group.label} — ${group.sales.length} sales, ${monthBirds.toLocaleString()} birds, ৳${monthRevenue.toLocaleString()}`;
+        const sectionHeader = `${group.label} — ${group.sales.length} sales — ${monthBirds.toLocaleString()} birds — ৳${monthRevenue.toLocaleString()}`;
 
         const data = group.sales.map(s => buildSaleRow(s));
         groupedDataTable.push({ sectionHeader, data });
@@ -1451,7 +1534,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string) {
         const monthRevenue = group.sales.reduce((sum, s) => sum + (s.totalRevenue || (Number(s.totalWeight) * Number(s.pricePerKg)) || 0), 0);
         const monthBirds = group.sales.reduce((sum, s) => sum + (s.birdsSold || 0), 0);
         return `
-            <div class="section-title">${group.label} — ${group.sales.length} sales, ${monthBirds.toLocaleString()} birds, ৳${monthRevenue.toLocaleString()}</div>
+            <div class="section-title">${group.label} — ${group.sales.length} sales — ${monthBirds.toLocaleString()} birds — ৳${monthRevenue.toLocaleString()}</div>
             <table>
                 <thead>
                     <tr>
