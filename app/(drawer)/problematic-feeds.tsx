@@ -1,22 +1,31 @@
+import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ScreenHeader } from "@/components/screen-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
+import { useGlobalFilter } from "@/context/global-filter-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { formatLocalDate } from "@/lib/export";
 import { trpc } from "@/lib/trpc";
-import { Leaf } from "lucide-react-native";
+import { Leaf, User } from "lucide-react-native";
+import { useMemo } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, View } from "react-native";
 
 export default function ProblematicFeedsScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManager = membership?.activeMode === "MANAGEMENT";
     const orgId = membership?.orgId as string;
+    const { selectedOfficerId } = useGlobalFilter();
 
-    const managementQuery = trpc.management.farmers.getProblematicFeeds.useQuery({ orgId }, { enabled: !!orgId && isManager });
+    const managementQuery = trpc.management.farmers.getProblematicFeeds.useQuery({ orgId, officerId: selectedOfficerId || undefined }, { enabled: !!orgId && isManager });
     const officerQuery = trpc.officer.farmers.getProblematicFeeds.useQuery({ orgId }, { enabled: !!orgId && !isManager });
 
     const activeQuery = isManager ? managementQuery : officerQuery;
     const { data: problematicFeeds, isLoading, isError, refetch, isRefetching } = activeQuery;
+
+    const totalProblematicBags = useMemo(() => {
+        if (!problematicFeeds) return 0;
+        return problematicFeeds.reduce((acc: any, curr: any) => acc + (parseFloat(curr.problematicFeed as unknown as string) || 0), 0);
+    }, [problematicFeeds]);
 
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
@@ -24,6 +33,21 @@ export default function ProblematicFeedsScreen() {
     return (
         <View className="flex-1 bg-background">
             <ScreenHeader title="Problematic Feeds" />
+
+            <View className="px-4 mt-4">
+                <View className="flex-row justify-between items-center mb-4 bg-destructive/5 p-4 rounded-2xl border border-destructive/20">
+                    <View>
+                        <Text className="text-3xl font-black text-destructive">{totalProblematicBags} <Text className="text-lg">bags</Text></Text>
+                        <Text className="text-xs font-bold text-destructive/70 uppercase tracking-widest mt-1">Total Problematic Feed</Text>
+                    </View>
+                </View>
+
+                {isManager && (
+                    <View className="mb-4">
+                        <OfficerSelector orgId={membership?.orgId ?? ""} />
+                    </View>
+                )}
+            </View>
 
             <View className="flex-1">
                 {isLoading ? (
@@ -37,7 +61,7 @@ export default function ProblematicFeedsScreen() {
                     </View>
                 ) : problematicFeeds?.length === 0 ? (
                     <View className="flex-1 items-center justify-center p-12">
-                        <Leaf size={48} className="text-muted-foreground opacity-50 mb-4" />
+                        <Leaf size={48} className="text-primary opacity-50 mb-4" />
                         <Text className="text-xl font-semibold text-foreground mb-2 text-center">All Clear!</Text>
                         <Text className="text-muted-foreground text-center">No farmers currently have problematic feeds.</Text>
                     </View>
@@ -53,6 +77,14 @@ export default function ProblematicFeedsScreen() {
                                     <View className="flex-row justify-between items-start mb-2">
                                         <View className="flex-1 mr-2">
                                             <Text className="text-lg font-black text-foreground uppercase tracking-tight" numberOfLines={1}>{item.name}</Text>
+                                            {item.officerName && isManager && (
+                                                <View className="flex-row items-center mt-1">
+                                                    <User size={14} className="text-muted-foreground mr-1" />
+                                                    <Text className="text-xs text-muted-foreground font-black uppercase tracking-widest" numberOfLines={1}>
+                                                        {item.officerName}
+                                                    </Text>
+                                                </View>
+                                            )}
                                         </View>
                                         <View className="bg-destructive/10 px-3 py-1 rounded-full border border-destructive/20">
                                             <Text className="text-destructive font-bold text-xs">

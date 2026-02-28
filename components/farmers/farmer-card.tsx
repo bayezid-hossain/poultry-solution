@@ -9,6 +9,7 @@ import {
     Bird,
     RotateCcw,
     Trash2,
+    User,
     Wheat,
     Wrench,
 } from "lucide-react-native";
@@ -18,6 +19,7 @@ interface FarmerCardProps {
     farmer: {
         id: string;
         name: string;
+        officerName?: string | null;
         location?: string | null;
         mobile?: string | null;
         activeCyclesCount: number;
@@ -74,15 +76,23 @@ export function FarmerCard({
             <Card className="mb-2 overflow-hidden border-border/50 bg-card p-1">
                 <CardContent className="p-2">
                     {/* Header */}
-                    <View className="flex-row justify-between items-center mb-2">
-                        <View className="flex-row items-center justify-between flex-1 pr-2">
-                            <View className="max-w-[48%]">
+                    <View className="flex-row justify-between items-start mb-2">
+                        <View className="flex-row items-start justify-between flex-1 pr-2">
+                            <View className="max-w-[48%] mb-1">
                                 <Text
                                     className="font-black text-lg text-foreground uppercase tracking-tight"
                                     numberOfLines={4}
                                 >
                                     {farmer.name}
                                 </Text>
+                                {farmer.officerName && (
+                                    <View className="flex-row items-center mt-0.5">
+                                        <Icon as={User} size={10} className="text-muted-foreground mr-1" />
+                                        <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-widest" numberOfLines={1}>
+                                            {farmer.officerName}
+                                        </Text>
+                                    </View>
+                                )}
                             </View>
 
                             <View className="flex-row flex-wrap justify-center items-center gap-2 max-w-[50%]">

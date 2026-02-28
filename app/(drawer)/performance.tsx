@@ -10,7 +10,7 @@ import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
 import { useFocusEffect } from "expo-router";
-import { ChevronDown } from "lucide-react-native";
+import { ChevronDown, User } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 
@@ -85,7 +85,7 @@ export default function PerformanceScreen() {
                 </View>
 
                 {/* Year Dropdown + Officer Selector */}
-                <View className="flex-row items-center gap-3 mb-6">
+                <View className="flex-row items-center gap-3 mb-2">
                     <Pressable
                         onPress={() => setYearPickerOpen(true)}
                     >
@@ -94,10 +94,12 @@ export default function PerformanceScreen() {
                             <Icon as={ChevronDown} size={14} className="text-muted-foreground" />
                         </View>
                     </Pressable>
-                    {isManagement && (
-                        <OfficerSelector orgId={membership?.orgId ?? ""} />
-                    )}
                 </View>
+                {isManagement && (
+                    <View className="mb-4">
+                        <OfficerSelector orgId={membership?.orgId ?? ""} disableGlobal />
+                    </View>
+                )}
 
                 {isLoading ? (
                     <View className="items-center justify-center py-12">
@@ -267,6 +269,16 @@ export default function PerformanceScreen() {
                             </View>
                         </ScrollView>
                     </>
+                ) : isManagement && !selectedOfficerId ? (
+                    <View className="items-center justify-center py-20 bg-muted/10 border-2 border-dashed border-border/50 rounded-[2rem]">
+                        <View className="w-16 h-16 rounded-full bg-primary/10 items-center justify-center mb-4">
+                            <Icon as={User} size={32} className="text-primary" />
+                        </View>
+                        <Text className="text-lg font-black text-foreground uppercase tracking-tight">Select an Officer</Text>
+                        <Text className="text-xs text-muted-foreground mt-2 text-center max-w-[80%]">
+                            Please select an officer from the dropdown above to view their yearly performance.
+                        </Text>
+                    </View>
                 ) : (
                     <Card className="border-dashed border-border/50 bg-muted/10 h-32">
                         <CardContent className="flex-1 items-center justify-center">

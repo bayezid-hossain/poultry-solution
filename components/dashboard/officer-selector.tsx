@@ -2,22 +2,31 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
-import { Check, ChevronDown, User, Users } from "lucide-react-native";
+import { Check, CheckCircle2, ChevronDown, Globe, User, Users } from "lucide-react-native";
 import React, { useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 
-export const OfficerSelector = ({ orgId }: { orgId: string }) => {
+export interface OfficerSelectorProps {
+    orgId?: string;
+    onOfficerChange?: (officerId: string | null) => void;
+    disableGlobal?: boolean;
+}
+
+export function OfficerSelector({ orgId, onOfficerChange, disableGlobal = false }: OfficerSelectorProps) {
     const [isOpen, setIsOpen] = useState(false);
     const { selectedOfficerId, selectedOfficerName, setSelectedOfficer } = useGlobalFilter();
 
     const { data: officers } = trpc.management.officers.getAll.useQuery(
-        { orgId },
+        { orgId: orgId ?? "" },
         { enabled: !!orgId }
     );
 
     const handleSelect = (id: string | null, name: string) => {
         setSelectedOfficer(id, name);
         setIsOpen(false);
+        if (onOfficerChange) {
+            onOfficerChange(id);
+        }
     };
 
     return (
@@ -61,21 +70,27 @@ export const OfficerSelector = ({ orgId }: { orgId: string }) => {
 
                             <ScrollView className="max-h-80">
                                 {/* "All Officers" Option */}
-                                <Pressable
-                                    className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${!selectedOfficerId ? 'bg-primary/5' : ''}`}
-                                    onPress={() => handleSelect(null, "All Officers")}
-                                >
-                                    <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center mr-3">
-                                        <Icon as={Users} size={20} color="#16a34a" />
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className="text-base font-bold text-foreground">All Officers</Text>
-                                        <Text className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Combined View</Text>
-                                    </View>
-                                    {!selectedOfficerId && (
-                                        <Icon as={Check} size={20} color="#16a34a" />
-                                    )}
-                                </Pressable>
+                                {!disableGlobal && (
+                                    <Pressable
+                                        onPress={() => handleSelect(null, "All Officers")}
+                                        className={`p-4 border-b border-border/50 flex-row items-center justify-between ${!selectedOfficerId ? 'bg-primary/5' : ''
+                                            }`}
+                                    >
+                                        <View className="flex-row items-center gap-3">
+                                            <View className={`w-10 h-10 rounded-full items-center justify-center ${!selectedOfficerId ? 'bg-primary/20' : 'bg-muted/50'
+                                                }`}>
+                                                <Icon as={Globe} size={20} className={!selectedOfficerId ? 'text-primary' : 'text-muted-foreground'} />
+                                            </View>
+                                            <View>
+                                                <Text className="font-bold text-base text-foreground">All Officers</Text>
+                                                <Text className="text-xs text-muted-foreground">Global view across region</Text>
+                                            </View>
+                                        </View>
+                                        {!selectedOfficerId && (
+                                            <Icon as={CheckCircle2} size={20} className="text-primary" />
+                                        )}
+                                    </Pressable>
+                                )}
 
                                 {/* Individual Officers */}
                                 {officers?.map((officer: any) => (

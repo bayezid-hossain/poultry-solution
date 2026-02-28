@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { useRouter } from "expo-router";
-import { Bird, CalendarDays, CircleDashed, MoreHorizontal, Pencil, Power, RotateCcw, ShoppingCart, Skull, Trash2, Wheat, Wrench } from "lucide-react-native";
+import { Bird, CalendarDays, CircleDashed, MoreHorizontal, Pencil, Power, RotateCcw, ShoppingCart, Skull, Trash2, User, Wheat, Wrench } from "lucide-react-native";
 import { useState } from "react";
 import { Modal, Pressable, TouchableOpacity, View } from "react-native";
 
@@ -13,6 +13,7 @@ interface CycleCardProps {
         id: string;
         name: string;
         farmerName?: string;
+        officerName?: string | null;
         age: number;
         doc: number;
         mortality: number;
@@ -116,13 +117,21 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                             )}
                         </View>
 
-                        {!isActive && (
-                            <View className="flex-row items-center mt-0.5">
+                        <View className="flex-row items-center mt-0.5 gap-2">
+                            {cycle.officerName && (
+                                <View className="flex-row items-center">
+                                    <Icon as={User} size={10} className="text-muted-foreground mr-1" />
+                                    <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-widest" numberOfLines={1}>
+                                        {cycle.officerName}
+                                    </Text>
+                                </View>
+                            )}
+                            {!isActive && (
                                 <Text className="text-[10px] text-muted-foreground font-medium">
                                     {formatDate(createdAt)} {endDate ? `- ${formatDate(endDate)}` : ''}
                                 </Text>
-                            </View>
-                        )}
+                            )}
+                        </View>
                     </View>
 
                     {/* Actions Menu Trigger */}
