@@ -82,7 +82,7 @@ Location: ${sale.location || "N/A"}
 House bird : ${sale.houseBirds || 0}pcs
 Total Sold : ${birdsSold}pcs
 Total Mortality: ${totalMortality} pcs
-${(!isEnded || !isLatest) ? `\nRemaining Birds: ${(sale.cycleContext?.doc || 0) - totalMortality - birdsSold} pcs` : ""}
+${(!isEnded || !isLatest) ? `\nRemaining Birds: ${(sale.cycleContext?.doc || 0) - totalMortality - (sale.cycleContext?.cumulativeBirdsSold || 0)} pcs` : ""}
 
 ${ageText}
 Weight: ${totalWeight} kg
@@ -183,10 +183,7 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
         : "0";
     const displayPricePerKg = String(displayReport.pricePerKg ?? "0");
     const displayTotalAmount = String(displayReport.totalAmount ?? "0");
-    const displayMortality = displayReport.mortalityChange ?? sale.mortalityChange ?? 0;
-    const displayCash = String(displayReport.cashReceived ?? sale.cashReceived ?? "0");
-    const displayDeposit = String(displayReport.depositReceived ?? sale.depositReceived ?? "0");
-    const displayMedicine = String(displayReport.medicineCost ?? sale.medicineCost ?? "0");
+    const displayMortality = (displayReport && displayReport.totalMortality !== undefined && displayReport.totalMortality !== null) ? displayReport.totalMortality : sale.totalMortality;
 
     const isLatestVersion = selectedReport?.id === sortedReports[0]?.id;
 

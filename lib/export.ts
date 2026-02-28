@@ -1413,15 +1413,15 @@ export async function exportSalesLedgerExcel(sales: any[], title: string) {
             Deposit: `৳${(s.depositReceived || 0).toLocaleString()}`,
             Medicine: `৳${(s.medicineCost || 0).toLocaleString()}`,
             "Feed (Bags)": feedTotal || "-",
-            Mortality: showWeighted ? ctx.mortality : "-",
+            Mortality: s.reports?.[0]?.totalMortality ?? s.totalMortality ?? "-",
             FCR: showWeighted ? ctx.fcr : "-",
             EPI: showWeighted ? ctx.epi : "-",
             Profit: showWeighted ? `৳${Math.round(ctx?.profit || 0).toLocaleString()}` : "-"
         };
     };
 
-    // Sort sales by date and group by month/year
-    const sortedSales = [...sales].sort((a, b) => new Date(a.saleDate || a.createdAt).getTime() - new Date(b.saleDate || b.createdAt).getTime());
+    // Sort sales by date descending (newest first)
+    const sortedSales = [...sales].sort((a, b) => new Date(b.saleDate || b.createdAt).getTime() - new Date(a.saleDate || a.createdAt).getTime());
     const monthGroups: Record<string, { label: string, sales: any[] }> = {};
     sortedSales.forEach(s => {
         const d = new Date(s.saleDate || s.createdAt);
@@ -1487,8 +1487,8 @@ export async function exportSalesLedgerPDF(sales: any[], title: string) {
         }
     });
 
-    // Sort and group by month
-    const sortedSales = [...sales].sort((a, b) => new Date(a.saleDate || a.createdAt).getTime() - new Date(b.saleDate || b.createdAt).getTime());
+    // Sort by date descending (newest first) and group by month
+    const sortedSales = [...sales].sort((a, b) => new Date(b.saleDate || b.createdAt).getTime() - new Date(a.saleDate || a.createdAt).getTime());
     const monthGroups: Record<string, { label: string, sales: any[] }> = {};
     sortedSales.forEach(s => {
         const d = new Date(s.saleDate || s.createdAt);
@@ -1517,6 +1517,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string) {
                 <td><b>${s.farmerName || s.cycle?.farmer?.name || s.history?.farmer?.name || "-"}</b></td>
                 <td>${showWeighted ? `<b>${ctx.age}</b>` : (s.saleAge ?? ctx?.age ?? "N/A")} d</td>
                 <td>${s.birdsSold}</td>
+                <td>${s.reports?.[0]?.totalMortality ?? s.totalMortality ?? "-"}</td>
                 <td>${Number(s.totalWeight).toFixed(2)}</td>
                 <td>৳${(s.totalRevenue || (Number(s.totalWeight) * Number(s.pricePerKg)) || 0).toLocaleString()}</td>
                 <td><small>C: ৳${(s.cashReceived || 0).toLocaleString()}<br/>D: ৳${(s.depositReceived || 0).toLocaleString()}<br/>M: ৳${(s.medicineCost || 0).toLocaleString()}</small></td>
@@ -1538,7 +1539,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string) {
             <table>
                 <thead>
                     <tr>
-                        <th>Date</th><th>Farmer</th><th>Age</th><th>Birds</th><th>Weight</th>
+                        <th>Date</th><th>Farmer</th><th>Age</th><th>Birds</th><th>Mortality</th><th>Weight</th>
                         <th>Revenue</th><th>Cash/Dep/Med</th><th>Feed</th><th>FCR/EPI</th><th>Profit</th>
                     </tr>
                 </thead>
