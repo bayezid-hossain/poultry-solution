@@ -78,9 +78,9 @@ export default function ProblematicFeedsScreen() {
                                         <View className="flex-1 mr-2">
                                             <Text className="text-lg font-black text-foreground uppercase tracking-tight" numberOfLines={1}>{item.name}</Text>
                                             {item.officerName && isManager && (
-                                                <View className="flex-row items-center mt-1">
-                                                    <User size={14} className="text-muted-foreground mr-1" />
-                                                    <Text className="text-xs text-muted-foreground font-black uppercase tracking-widest" numberOfLines={1}>
+                                                <View className="flex-row items-center mt-1 gap-x-2">
+                                                    <User size={14} className="text-blue-500 mr-1" color={"cyan"} />
+                                                    <Text className="text-xs text-primary font-black uppercase tracking-widest" numberOfLines={1}>
                                                         {item.officerName}
                                                     </Text>
                                                 </View>
