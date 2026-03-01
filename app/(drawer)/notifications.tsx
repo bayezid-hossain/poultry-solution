@@ -6,7 +6,6 @@ import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { handleNotificationNavigation } from "@/hooks/use-push-notifications";
 import { trpc } from "@/lib/trpc";
-import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { ArrowLeft, BellIcon, CheckCheck } from "lucide-react-native";
 import { FlatList, Pressable, RefreshControl, View } from "react-native";
@@ -58,26 +57,7 @@ export default function NotificationsScreen() {
 
             {/* Header Actions */}
             <View className="flex-row items-center justify-between px-4 py-3 border-b border-border/50 bg-card">
-                <View className="flex-row gap-2">
-                    <Text className="text-xs text-muted-foreground font-black uppercase tracking-widest">
-                        Recent Alerts
-                    </Text>
-                    <Pressable
-                        onPress={async () => {
-                            //console.log"🧪 Triggering Local Test Notification...");
-                            await Notifications.scheduleNotificationAsync({
-                                content: {
-                                    title: "Local Test 🐔",
-                                    body: "If you see this, foreground notifications are WORKING locally!",
-                                    data: { data: 'goes here' },
-                                },
-                                trigger: null, // immediate
-                            });
-                        }}
-                    >
-                        <Text className="text-[10px] text-primary/50 font-bold uppercase underline">Test Push</Text>
-                    </Pressable>
-                </View>
+
                 <Button
                     variant="ghost"
                     className="h-8 px-2 flex-row items-center gap-1.5"
