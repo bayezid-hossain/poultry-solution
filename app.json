@@ -21,6 +21,9 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.poultrysolution",
+      "permissions": [
+        "REQUEST_INSTALL_PACKAGES"
+      ],
       "googleServicesFile": "./google-services.json"
     },
     "web": {
