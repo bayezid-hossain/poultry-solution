@@ -177,43 +177,43 @@ export default function OrdersScreen() {
                 </View>
 
                 {/* Segmented Tabs */}
-                <View className='flex-row gap-2'>
+                <View className='flex-row gap-1'>
                     <Button
                         variant={activeTab === 'feed' ? 'default' : 'outline'}
-                        className='flex-1 flex-row gap-2 h-11 border-border/50'
+                        className='flex-1 flex-row gap-1 px-0.5 h-10 border-border/50'
                         onPress={() => {
                             setActiveTab('feed');
                             router.setParams({ tab: 'feed' });
                         }}
                     >
-                        <Icon as={Factory} className={activeTab === 'feed' ? "text-primary-foreground" : "text-muted-foreground"} size={14} />
-                        <Text className={`font-bold uppercase tracking-wider text-xs ${activeTab === 'feed' ? "text-primary-foreground" : "text-muted-foreground"}`}>
-                            Feed Orders ({activeTab === 'feed' ? feedOrdersQuery.data?.length || 0 : '-'})
+                        <Icon as={Factory} className={activeTab === 'feed' ? "text-primary-foreground" : "text-muted-foreground"} size={12} />
+                        <Text numberOfLines={1} adjustsFontSizeToFit className={`font-bold uppercase tracking-tighter text-[10px] sm:tracking-wider sm:text-xs ${activeTab === 'feed' ? "text-primary-foreground" : "text-muted-foreground"}`}>
+                            Feed ({activeTab === 'feed' ? feedOrdersQuery.data?.length || 0 : '-'})
                         </Text>
                     </Button>
                     <Button
                         variant={activeTab === 'doc' ? 'default' : 'outline'}
-                        className='flex-1 flex-row gap-2 h-11 border-border/50'
+                        className='flex-1 flex-row gap-1 px-0.5 h-10 border-border/50'
                         onPress={() => {
                             setActiveTab('doc');
                             router.setParams({ tab: 'doc' });
                         }}
                     >
-                        <Icon as={Bird} className={activeTab === 'doc' ? "text-primary-foreground" : "text-muted-foreground"} size={14} />
-                        <Text className={`font-bold uppercase tracking-wider text-xs ${activeTab === 'doc' ? "text-primary-foreground" : "text-muted-foreground"}`}>
-                            DOC Orders ({activeTab === 'doc' ? docOrdersQuery.data?.length || 0 : '-'})
+                        <Icon as={Bird} className={activeTab === 'doc' ? "text-primary-foreground" : "text-muted-foreground"} size={12} />
+                        <Text numberOfLines={1} adjustsFontSizeToFit className={`font-bold uppercase tracking-tighter text-[10px] sm:tracking-wider sm:text-xs ${activeTab === 'doc' ? "text-primary-foreground" : "text-muted-foreground"}`}>
+                            DOC ({activeTab === 'doc' ? docOrdersQuery.data?.length || 0 : '-'})
                         </Text>
                     </Button>
                     <Button
                         variant={activeTab === 'sale' ? 'default' : 'outline'}
-                        className='flex-1 flex-row gap-2 h-11 border-border/50'
+                        className='flex-1 flex-row gap-1 px-0.5 h-10 border-border/50'
                         onPress={() => {
                             setActiveTab('sale');
                             router.setParams({ tab: 'sale' });
                         }}
                     >
-                        <Icon as={ShoppingBag} className={activeTab === 'sale' ? "text-primary-foreground" : "text-muted-foreground"} size={14} />
-                        <Text className={`font-bold uppercase tracking-wider text-xs ${activeTab === 'sale' ? "text-primary-foreground" : "text-muted-foreground"}`}>
+                        <Icon as={ShoppingBag} className={activeTab === 'sale' ? "text-primary-foreground" : "text-muted-foreground"} size={12} />
+                        <Text numberOfLines={1} adjustsFontSizeToFit className={`font-bold uppercase tracking-tighter text-[10px] sm:tracking-wider sm:text-xs ${activeTab === 'sale' ? "text-primary-foreground" : "text-muted-foreground"}`}>
                             Sale
                         </Text>
                     </Button>

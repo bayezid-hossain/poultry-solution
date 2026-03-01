@@ -30,8 +30,20 @@ export function VersionChecker() {
             const latestTag = data.tag_name.replace('v', '');
             const notes = data.body || 'Bug fixes and performance improvements.';
 
-            // Basic semver check
-            if (latestTag > currentVersion) {
+            // Semantic version check
+            const isNewer = (latest: string, current: string) => {
+                const lParts = latest.split('.').map(Number);
+                const cParts = current.split('.').map(Number);
+                for (let i = 0; i < Math.max(lParts.length, cParts.length); i++) {
+                    const l = lParts[i] || 0;
+                    const c = cParts[i] || 0;
+                    if (l > c) return true;
+                    if (l < c) return false;
+                }
+                return false;
+            };
+
+            if (isNewer(latestTag, currentVersion)) {
                 const apkAsset = data.assets?.find((asset: any) => asset.name.endsWith('.apk'));
                 if (apkAsset) {
                     setLatestVersion(latestTag);
