@@ -124,7 +124,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [action, redirectTarget]);
 
-  if (action === "loading" || (session && segments[0] === "(auth)")) {
+  if (action === "loading" || action === "redirect" || (session && segments[0] === "(auth)")) {
     return (
       <LoadingState
         fullPage
