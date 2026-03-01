@@ -21,10 +21,6 @@ export default function SalesScreen() {
     const [searchQuery, setSearchQuery] = useState("");
     const [refreshing, setRefreshing] = useState(false);
 
-    if (!membership?.isPro) {
-        return <ProBlocker feature="Sales History" description="Access the complete sales ledger and profit margins." />;
-    }
-
     const officerSalesQuery = trpc.officer.sales.getRecentSales.useQuery(
         { limit: 100, search: searchQuery },
         { enabled: !!membership?.orgId && !isManagement }
@@ -101,6 +97,15 @@ export default function SalesScreen() {
             return getLatestSaleTime(b.cycles) - getLatestSaleTime(a.cycles);
         });
     }, [recentSales]);
+
+    if (!membership?.isPro) {
+        return (
+            <View className="flex-1 bg-background">
+                <ScreenHeader title="Sales" />
+                <ProBlocker feature="Sales History" description="Access the complete sales ledger and profit margins." />
+            </View>
+        );
+    }
 
     return (
         <View className="flex-1 bg-background">

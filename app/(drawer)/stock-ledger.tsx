@@ -30,7 +30,12 @@ export default function StockLedgerScreen() {
     }, [searchQuery]);
 
     if (!membership?.isPro) {
-        return <ProBlocker feature="Stock Ledger" description="Access full stock history and realtime balances for all farmers." />;
+        return (
+            <View className="flex-1 bg-background">
+                <ScreenHeader title="Stock Ledger" />
+                <ProBlocker feature="Stock Ledger" description="Access full stock history and realtime balances for all farmers." />
+            </View>
+        );
     }
 
     return (

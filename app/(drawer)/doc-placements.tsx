@@ -37,10 +37,6 @@ export default function DocPlacementsScreen() {
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
 
-    if (!membership?.isPro) {
-        return <ProBlocker feature="DOC Placements" description="View detailed Day Old Chick placement reports and analytics." />;
-    }
-
     const officerDocQuery = trpc.officer.reports.getMonthlyDocPlacements.useQuery(
         { month, year },
         { enabled: !isManagement }
@@ -58,6 +54,15 @@ export default function DocPlacementsScreen() {
             refetch();
         }, [refetch])
     );
+
+    if (!membership?.isPro) {
+        return (
+            <View className="flex-1 bg-background">
+                <ScreenHeader title="DOC Placements" />
+                <ProBlocker feature="DOC Placements" description="View detailed Day Old Chick placement reports and analytics." />
+            </View>
+        );
+    }
 
     const toggleExpand = (id: string) => {
         setExpandedFarmers(prev => ({ ...prev, [id]: !prev[id] }));

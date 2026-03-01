@@ -53,10 +53,6 @@ export default function OrdersScreen() {
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
 
-    if (!membership?.isPro) {
-        return <ProBlocker feature="Order Management" description="Manage feed, DOC, and sale orders efficiently." />;
-    }
-
     // Feed Orders
     const officerFeedQuery = trpc.officer.feedOrders.list.useQuery(
         { orgId: membership?.orgId ?? "", limit: 50 },
@@ -99,8 +95,17 @@ export default function OrdersScreen() {
             } else {
                 saleOrdersQuery.refetch();
             }
-        }, [activeTab])
+        }, [activeTab, feedOrdersQuery, docOrdersQuery, saleOrdersQuery])
     );
+
+    if (!membership?.isPro) {
+        return (
+            <View className="flex-1 bg-background">
+                <ScreenHeader title="Order Center" />
+                <ProBlocker feature="Order Management" description="Manage feed, DOC, and sale orders efficiently." />
+            </View>
+        );
+    }
 
     const renderFeedOrderEmpty = () => {
         if (feedOrdersQuery.isLoading) return null;

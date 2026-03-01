@@ -69,7 +69,12 @@ export default function ProductionScreen() {
     };
 
     if (!membership?.isPro) {
-        return <ProBlocker feature="Monthly Production" description="Gain insights into monthly production records and historical performance." />;
+        return (
+            <View className="flex-1 bg-background">
+                <ScreenHeader title="Monthly Production" />
+                <ProBlocker feature="Monthly Production" description="Gain insights into monthly production records and historical performance." />
+            </View>
+        );
     }
 
     return (

@@ -25,6 +25,19 @@ export function formatLocalDate(dateInput: string | Date | null | undefined): st
     return `${day}/${month}/${year}`;
 }
 
+/** Sanitizes a string for use as a filename and appends current date in DD-MM-YYYY format */
+export function getSafeFileName(title: string, extension: string): string {
+    const d = new Date();
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const dateStr = `${day}-${month}-${year}`;
+    const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    // Use a simpler name if title is empty
+    const baseName = safeTitle || 'report';
+    return `${baseName}_${dateStr}.${extension}`;
+}
+
 export interface PDFExportOptions {
     title: string;
     subtitle?: string;
@@ -88,12 +101,14 @@ const getCalculationsPDFPage = (): PDFExportOptions => ({
 /**
  * Generates a PDF and returns its URI
  */
-export async function generatePDF(inputOptions: PDFExportOptions | PDFExportOptions[], mainTitleOverride?: string): Promise<string> {
+export async function generatePDF(inputOptions: PDFExportOptions | PDFExportOptions[], mainTitleOverride?: string, includeCalculations = false): Promise<string> {
     try {
         const pages = Array.isArray(inputOptions) ? [...inputOptions] : [inputOptions];
 
-        // Automatically append calculation definitions to the very end of EVERY PDF
-        pages.push(getCalculationsPDFPage());
+        // Optionally append calculation definitions to the very end
+        if (includeCalculations) {
+            pages.push(getCalculationsPDFPage());
+        }
 
         const mainTitle = mainTitleOverride || pages[0].title;
 
@@ -233,8 +248,8 @@ export async function generatePDF(inputOptions: PDFExportOptions | PDFExportOpti
 
         const { uri } = await Print.printToFileAsync({ html: fullHtml });
 
-        const safeTitle = mainTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const pdfFile = new File(Paths.document, `${safeTitle}_${Date.now()}.pdf`);
+        const fileName = getSafeFileName(mainTitle, 'pdf');
+        const pdfFile = new File(Paths.document, fileName);
 
         // Use moveAsync to rename the file correctly
         await moveAsync({
@@ -252,9 +267,9 @@ export async function generatePDF(inputOptions: PDFExportOptions | PDFExportOpti
 /**
  * Generates a Multi-Page PDF file and returns its URI
  */
-export async function generateMultiSheetPDF(sheets: { sheetName: string, options: PDFExportOptions }[], title: string): Promise<string> {
+export async function generateMultiSheetPDF(sheets: { sheetName: string, options: PDFExportOptions }[], title: string, includeCalculations = false): Promise<string> {
     const pages = sheets.map(s => s.options);
-    return generatePDF(pages, title);
+    return generatePDF(pages, title, includeCalculations);
 }
 
 export interface ExcelExportOptions {
@@ -654,8 +669,8 @@ export async function generateExcel(options: ExcelExportOptions): Promise<string
 
         const wbout = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
         const uint8Array = new Uint8Array(wbout);
-        const safeTitle = options.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const file = new File(Paths.document, `${safeTitle}_${Date.now()}.xlsx`);
+        const fileName = getSafeFileName(options.title, 'xlsx');
+        const file = new File(Paths.document, fileName);
         await file.write(uint8Array);
 
         return file.uri;
@@ -679,8 +694,8 @@ export async function generateMultiSheetExcel(sheets: { sheetName: string, optio
 
         const wbout = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
         const uint8Array = new Uint8Array(wbout);
-        const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const file = new File(Paths.document, `${safeTitle}_${Date.now()}.xlsx`);
+        const fileName = getSafeFileName(title, 'xlsx');
+        const file = new File(Paths.document, fileName);
         await file.write(uint8Array);
 
         return file.uri;
@@ -893,7 +908,7 @@ export async function exportActiveStockPDF(activeCycles: any[], title: string, r
 
     const options = { title, htmlContent };
     if (returnOptions) return options;
-    return await generatePDF(options);
+    return await generatePDF(options, title, false);
 }
 
 /**
@@ -1128,7 +1143,7 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string, retu
     `;
     const options = { title, htmlContent };
     if (returnOptions) return options;
-    return await generatePDF(options);
+    return await generatePDF(options, title, false);
 }
 
 /**
@@ -1278,7 +1293,7 @@ export async function exportRangeProductionPDF(records: any[], title: string, re
 
     const options = { title, htmlContent };
     if (returnOptions) return options;
-    return await generatePDF(options);
+    return await generatePDF(options, title, true);
 }
 
 /**
@@ -1429,7 +1444,7 @@ export async function exportYearlyPerformancePDF(data: any, title: string, retur
 
     const options = { title, htmlContent };
     if (returnOptions) return options;
-    return await generatePDF(options);
+    return await generatePDF(options, title, true);
 }
 
 
@@ -1542,7 +1557,7 @@ export async function exportAllFarmerStockPDF(farmers: any[], title: string, ret
 
     const options = { title, htmlContent };
     if (returnOptions) return options;
-    return await generatePDF(options);
+    return await generatePDF(options, title, false);
 }
 
 /**
@@ -1785,7 +1800,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
 
     const options = { title, htmlContent };
     if (returnOptions) return options;
-    return await generatePDF(options);
+    return await generatePDF(options, title, true);
 }
 
 /**
@@ -1918,5 +1933,5 @@ export async function exportProblematicFeedsPDF(farmers: any[], title: string, r
 
     const options = { title, htmlContent };
     if (returnOptions) return options;
-    return generatePDF(options);
+    return await generatePDF(options, title, false);
 }

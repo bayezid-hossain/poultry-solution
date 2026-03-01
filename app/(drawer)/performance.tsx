@@ -25,10 +25,6 @@ export default function PerformanceScreen() {
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
 
-    if (!membership?.isPro) {
-        return <ProBlocker feature="Performance Reports" description="Access advanced flock performance metrics, FCR, and EPI analytics." />;
-    }
-
     const { data, isLoading, refetch } = trpc.officer.performanceReports.getAnnualPerformance.useQuery(
         { year, officerId: isManagement ? (selectedOfficerId || undefined) : undefined },
     );
@@ -38,6 +34,15 @@ export default function PerformanceScreen() {
             refetch();
         }, [refetch])
     );
+
+    if (!membership?.isPro) {
+        return (
+            <View className="flex-1 bg-background">
+                <ScreenHeader title="Performance" />
+                <ProBlocker feature="Performance Reports" description="Access advanced flock performance metrics, FCR, and EPI analytics." />
+            </View>
+        );
+    }
 
     const YEARS = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
 
