@@ -36,12 +36,18 @@ jobs:
         run: echo "$GOOGLE_SERVICES_JSON" > google-services.json
         
       - name: Prebuild Expo Project
+        env:
+          EXPO_PUBLIC_API_MODE: production
+          NODE_ENV: production
         run: npx expo prebuild --platform android --no-install
         
       - name: Make Gradle Executable
         run: chmod +x android/gradlew
         
       - name: Build APK Release
+        env:
+          EXPO_PUBLIC_API_MODE: production
+          NODE_ENV: production
         run: cd android && ./gradlew assembleRelease
         
       - name: Create GitHub Release

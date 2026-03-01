@@ -59,7 +59,7 @@ export function VersionChecker() {
         setProgress(0);
 
         try {
-            const fileUri = `${FS.cacheDirectory}update-${latestVersion}.apk`;
+            const fileUri = `${FS.documentDirectory}update-${latestVersion}.apk`;
 
             const downloadResumable = FS.createDownloadResumable(
                 downloadUrl,
@@ -82,7 +82,7 @@ export function VersionChecker() {
             const contentUri = await FS.getContentUriAsync(result.uri);
             await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
                 data: contentUri,
-                flags: 1, // FLAG_GRANT_READ_URI_PERMISSION
+                flags: 1 | 268435456, // FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK
                 type: 'application/vnd.android.package-archive',
             });
 

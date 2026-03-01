@@ -192,7 +192,7 @@ export default function SignUpScreen() {
                             <ActivityIndicator color={"#10b981"} />
                         ) : (
                             <>
-                                <Text className="text-lg">G</Text>
+
                                 <Text className="text-foreground text-base font-semibold">
                                     Continue with Google
                                 </Text>
