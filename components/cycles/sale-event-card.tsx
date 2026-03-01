@@ -30,7 +30,7 @@ export const formatFeedBreakdown = (feedData: any) => {
 };
 
 const safeParseJSON = (data: any) => {
-    // console.log(data)
+    // //console.logdata)
     if (!data) return [];
     if (typeof data === 'string') {
         try { return JSON.parse(data); } catch (e) { return []; }
@@ -79,7 +79,8 @@ export const generateReportText = (sale: any, report: any, isLatest: boolean): s
 
 Farmer: ${sale.farmerName || "N/A"}
 Location: ${sale.location || "N/A"}
-House bird : ${sale.houseBirds || 0}pcs
+${sale.cycleContext?.birdType ? `\nBird Type: ${sale.cycleContext?.birdType}` : ""}
+${sale.houseBirds ? `${sale.cycleContext?.birdType ? "" : "\n"}House bird : ${sale.houseBirds}pcs` : ""}
 Total Sold : ${birdsSold}pcs
 Total Mortality: ${totalMortality} pcs
 ${(!isEnded || !isLatest) ? `\nRemaining Birds: ${sale.remainingBirds ?? 0} pcs` : ""}

@@ -21,5 +21,5 @@ export const TRPC_API_URL =
             ? "https://demo-newhope.vercel.app"
             : "http://192.168.0.186:3000";
 
-console.log("🚀 API MODE:", API_MODE);
-console.log("🌍 TRPC URL:", TRPC_API_URL);
+//console.log"🚀 API MODE:", API_MODE);
+//console.log"🌍 TRPC URL:", TRPC_API_URL);

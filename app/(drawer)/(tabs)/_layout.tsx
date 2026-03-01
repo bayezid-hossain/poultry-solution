@@ -4,6 +4,7 @@ import { Tabs } from "expo-router";
 import { ClipboardList, Home, LayoutDashboard, Repeat, ShoppingCart, Users } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+
 export default function TabsLayout() {
     const { colorScheme } = useTheme();
     const { data: orgStatus } = trpc.auth.getMyMembership.useQuery();

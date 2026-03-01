@@ -161,7 +161,10 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { FullWindowOverlay } from "react-native-screens";
 import { Toaster } from "sonner-native";
 
+import { usePushNotifications } from "@/hooks/use-push-notifications";
+
 function RootLayoutInner() {
+  usePushNotifications();
   const { colorScheme } = useTheme();
 
   // FullWindowOverlay is iOS only. Android Modals are handled differently, but React Native Screens

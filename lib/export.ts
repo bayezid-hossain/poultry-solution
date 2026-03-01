@@ -31,12 +31,70 @@ export interface PDFExportOptions {
     htmlContent: string;
 }
 
+const getCalculationsPDFPage = (): PDFExportOptions => ({
+    title: "Metrics Definitions & Calculations",
+    subtitle: "Reference guide for reading this report",
+    htmlContent: `
+        <div style="margin-top: 20px;">
+            <p style="margin-bottom: 20px; font-size: 13px; color: #4b5563;">
+                The following formulas and metrics are standardized across all Poultry Solution reports.
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 25%">Metric</th>
+                        <th style="width: 75%">Calculation Formula / Definition</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: bold;">FCR (Feed Conversion Ratio)</td>
+                        <td>Total Feed Consumed (kg) / Total Live Weight (kg)</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold;">EPI (European Production Index)</td>
+                        <td>(Survival Rate % &times; Average Daily Weight Gain (kg) / FCR) &times; 100</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold;">Survival Rate</td>
+                        <td>((DOC - Mortality) / DOC) &times; 100</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold;">Live Birds</td>
+                        <td>DOC - Mortality - Birds Sold (if any partial sales occurred)</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold;">Net Profit</td>
+                        <td>Total Revenue - (DOC Cost + Feed Cost + Medicine Cost)</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold;">Average Weight</td>
+                        <td>Total Weight of Birds Sold (kg) / Number of Birds Sold</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold;">Feed Cost</td>
+                        <td>Total Bags Consumed &times; Price per Bag</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: bold;">DOC Cost</td>
+                        <td>Total DOC Placed &times; Price per Chick</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `
+});
+
 /**
  * Generates a PDF and returns its URI
  */
 export async function generatePDF(inputOptions: PDFExportOptions | PDFExportOptions[], mainTitleOverride?: string): Promise<string> {
     try {
-        const pages = Array.isArray(inputOptions) ? inputOptions : [inputOptions];
+        const pages = Array.isArray(inputOptions) ? [...inputOptions] : [inputOptions];
+
+        // Automatically append calculation definitions to the very end of EVERY PDF
+        pages.push(getCalculationsPDFPage());
+
         const mainTitle = mainTitleOverride || pages[0].title;
 
         const pagesHtml = pages.map((page, index) => `
