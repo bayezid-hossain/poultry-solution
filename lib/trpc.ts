@@ -16,16 +16,38 @@ export const trpcClient = trpc.createClient({
             url: `${TRPC_API_URL}/api/trpc`,
             transformer: superjson,
             async headers() {
-                // Prevent calling the async authClient.getSession() on every TRPC request
-                // which causes race conditions and 401s due to missing context.
-                // We synchronously grab the cached session data that better-auth stores.
-                const sessionStr = SecureStore.getItem("poultrysolution_session_data");
+                // React Native fetch() notoriously drops manual `cookie:` headers.
+                // We MUST use the Authorization: Bearer <token> format for TRPC.
+                // better-auth securely stores the raw server cookies locally in Android.
+                // We synchronously parse that cookie jar to find the active session_token.
                 let token = undefined;
-                if (sessionStr) {
-                    try {
-                        const parsed = JSON.parse(sessionStr);
-                        token = parsed?.session?.token;
-                    } catch (e) { }
+
+                try {
+                    const cookieStr = SecureStore.getItem("poultrysolution_cookie");
+                    if (cookieStr) {
+                        const parsed = JSON.parse(cookieStr);
+                        // Find the cookie ending in 'session_token' (e.g. better-auth.session_token)
+                        for (const [key, val] of Object.entries(parsed) as any[]) {
+                            if (key.includes("session_token") && val?.value) {
+                                // check expiry
+                                if (!val.expires || new Date(val.expires) >= new Date()) {
+                                    token = val.value;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } catch (e) { }
+
+                // Fallback to session_data cache if cookie parser fails for any reason
+                if (!token) {
+                    const sessionStr = SecureStore.getItem("poultrysolution_session_data");
+                    if (sessionStr) {
+                        try {
+                            const parsed = JSON.parse(sessionStr);
+                            token = parsed?.session?.token;
+                        } catch (e) { }
+                    }
                 }
 
                 return {
