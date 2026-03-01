@@ -95,7 +95,8 @@ export default function OrdersScreen() {
             } else {
                 saleOrdersQuery.refetch();
             }
-        }, [activeTab, feedOrdersQuery, docOrdersQuery, saleOrdersQuery])
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [activeTab])
     );
 
     if (!membership?.isPro) {

@@ -6,7 +6,8 @@ import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { authClient } from "@/lib/auth-client";
 import { Link, useRouter } from "expo-router";
-import { useState } from "react";
+import * as WebBrowser from "expo-web-browser";
+import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
@@ -16,6 +17,8 @@ import {
     View,
 } from "react-native";
 
+WebBrowser.maybeCompleteAuthSession();
+
 export default function SignInScreen() {
     const router = useRouter();
     const [email, setEmail] = useState("");
@@ -23,6 +26,15 @@ export default function SignInScreen() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
+
+    useEffect(() => {
+        if (Platform.OS === 'android') {
+            WebBrowser.warmUpAsync().catch(() => { });
+            return () => {
+                WebBrowser.coolDownAsync().catch(() => { });
+            };
+        }
+    }, []);
 
     const handleSignIn = async () => {
         if (!email || !password) {
@@ -61,7 +73,8 @@ export default function SignInScreen() {
                 setGoogleLoading(false);
             }
         } catch (e: any) {
-            setError(e?.message ?? "Google sign-in failed.");
+            console.error("Social login exception:", e);
+            setError(e?.message ?? "An unexpected error occurred opening securely.");
             setGoogleLoading(false);
         }
     };
