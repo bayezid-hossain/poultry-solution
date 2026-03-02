@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.18] - 2026-03-02
+
 ### Changed
 - Officer name font size increased in report
 
