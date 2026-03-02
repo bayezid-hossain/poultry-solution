@@ -117,7 +117,7 @@ export async function generatePDF(inputOptions: PDFExportOptions | PDFExportOpti
                 <div class="header">
                     <h1>${page.title}</h1>
                     ${page.subtitle ? `<p>${page.subtitle}</p>` : ''}
-                    <p>Generated on: ${new Date().toLocaleString()}</p>
+                    <p>Generated on: ${formatLocalDate(new Date())}</p>
                 </div>
                 
                 ${page.htmlContent}
@@ -356,7 +356,7 @@ export function buildExcelWorksheet({ title, summaryData, rawDataTable, groupedD
         const aoa: any[][] = [
             pad([{ v: displayTitle, s: headerStyle }]),
             pad([{ v: "POULTRY SOLUTION - MANAGEMENT REPORT", s: subheaderStyle }]),
-            pad([{ v: `Report Generated: ${new Date().toLocaleString()}`, s: centeredStyle }]),
+            pad([{ v: `Report Generated: ${formatLocalDate(new Date())}`, s: centeredStyle }]),
             pad([]),
             pad([{ v: "[ SUMMARY OVERVIEW ]", s: sectionHeaderStyle }]),
             pad([])
@@ -936,7 +936,7 @@ export async function exportRangeDocPlacementsExcel(data: any, title: string, re
                 doc: c.doc,
                 status: c.status,
                 monthKey,
-                monthLabel: d.toLocaleString('default', { month: 'long', year: 'numeric' })
+                monthLabel: formatLocalDate(d)
             });
         });
     });
@@ -1057,7 +1057,7 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string, retu
                 doc: c.doc,
                 status: c.status,
                 monthKey,
-                monthLabel: d.toLocaleString('default', { month: 'long', year: 'numeric' })
+                monthLabel: formatLocalDate(d)
             });
         });
     });
@@ -1639,7 +1639,7 @@ export async function exportSalesLedgerExcel(sales: any[], title: string, return
     sortedSales.forEach(s => {
         const d = new Date(s.saleDate || s.createdAt);
         const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
-        if (!monthGroups[key]) monthGroups[key] = { label: d.toLocaleString('default', { month: 'long', year: 'numeric' }), sales: [] };
+        if (!monthGroups[key]) monthGroups[key] = { label: formatLocalDate(d), sales: [] };
         monthGroups[key].sales.push(s);
     });
 
@@ -1719,7 +1719,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
     sortedSales.forEach(s => {
         const d = new Date(s.saleDate || s.createdAt);
         const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
-        if (!monthGroups[key]) monthGroups[key] = { label: d.toLocaleString('default', { month: 'long', year: 'numeric' }), sales: [] };
+        if (!monthGroups[key]) monthGroups[key] = { label: formatLocalDate(d), sales: [] };
         monthGroups[key].sales.push(s);
     });
 

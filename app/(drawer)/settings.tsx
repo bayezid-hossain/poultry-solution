@@ -5,13 +5,15 @@ import { Icon } from "@/components/ui/icon";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
+import { triggerManualCheck } from "@/components/updater/version-checker";
 import { useStorage } from "@/context/storage-context";
 import { useTheme } from "@/context/theme-context";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc";
 import { useQueryClient } from "@tanstack/react-query";
+import Constants from 'expo-constants';
 import { useRouter } from "expo-router";
-import { Briefcase, LogOut, Moon, Smartphone, Sun, User, UserCheck } from "lucide-react-native";
+import { Briefcase, LogOut, Moon, RefreshCw, Smartphone, Sun, User, UserCheck } from "lucide-react-native";
 import { useState } from "react";
 import { Platform, Pressable, ScrollView, View } from "react-native";
 
@@ -199,6 +201,36 @@ export default function SettingsScreen() {
 
                 <Separator className="opacity-20" />
 
+                {/* 5. App Update */}
+                <View gap-3>
+                    <View className="flex-row items-center gap-2 px-1 mb-1">
+                        <Icon as={RefreshCw} size={16} className="text-muted-foreground" />
+                        <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">App Update</Text>
+                    </View>
+                    <Card className="border-border/40 p-4">
+                        <View className="flex-row items-center justify-between">
+                            <View className="flex-1 mr-4">
+                                <Text className="font-bold text-foreground">Check for Updates</Text>
+                                <Text variant="muted" className="text-[10px] font-medium leading-4 mt-1">
+                                    Current Version: v{Constants.expoConfig?.version || '1.0.0'}
+                                </Text>
+                            </View>
+                            <Button
+                                variant="outline"
+                                className="h-9 px-4 rounded-xl flex-row items-center gap-2"
+                                onPress={() => triggerManualCheck()}
+                            >
+                                <Icon as={RefreshCw} size={12} className="text-foreground" />
+                                <Text className="text-[10px] font-bold uppercase tracking-wider">
+                                    Check
+                                </Text>
+                            </Button>
+                        </View>
+                    </Card>
+                </View>
+
+                <Separator className="opacity-20" />
+
                 {/* 5. Sign Out */}
                 <Button
                     variant="destructive"
@@ -214,7 +246,7 @@ export default function SettingsScreen() {
 
                 <View className="items-center mt-4">
                     <Text className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.4em] opacity-40">
-                        Poultry Solution v1.0.0
+                        Poultry Solution v{Constants.expoConfig?.version || '1.0.0'}
                     </Text>
                 </View>
 
