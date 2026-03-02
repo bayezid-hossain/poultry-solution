@@ -34,8 +34,8 @@ import {
 import { trpc } from "@/lib/trpc";
 import { AlertTriangle, BarChart3, Bird, ClipboardList, FileText, ShoppingBag, Table, TrendingUp } from "lucide-react-native";
 import React, { useRef, useState } from "react";
-import { Modal, Pressable, ScrollView, View } from "react-native";
-import Svg, { Circle } from "react-native-svg";
+import { Animated, Easing, Modal, Pressable, ScrollView, View } from "react-native";
+import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 import { toast } from "sonner-native";
 
 const MONTHS = [
@@ -44,6 +44,59 @@ const MONTHS = [
 ];
 
 const YEARS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+function AnimatedCircularProgress({ progress = 0, stopRequested = false }: { progress: number, stopRequested: boolean }) {
+    const animatedValue = React.useRef(new Animated.Value(0)).current;
+
+    const radius = 16;
+    const strokeWidth = 2.5;
+    const circumference = 2 * Math.PI * radius;
+
+    React.useEffect(() => {
+        Animated.timing(animatedValue, {
+            toValue: progress,
+            duration: 400,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: false,
+        }).start();
+    }, [progress, animatedValue]);
+
+    const strokeDashoffset = animatedValue.interpolate({
+        inputRange: [0, 100],
+        outputRange: [circumference, 0],
+    });
+
+    return (
+        <View className="items-center justify-center w-[40px] h-[40px]">
+            <View className="absolute inset-0 bg-white/10 rounded-2xl" />
+            <Svg width={40} height={40} style={{ transform: [{ rotate: "-90deg" }] }}>
+                <Defs>
+                    <LinearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <Stop offset="0%" stopColor={stopRequested ? "#fca5a5" : "#86efac"} />
+                        <Stop offset="100%" stopColor={stopRequested ? "#ef4444" : "#22c55e"} />
+                    </LinearGradient>
+                </Defs>
+                <Circle stroke="rgba(255,255,255,0.2)" fill="none" cx={20} cy={20} r={radius} strokeWidth={strokeWidth} />
+                <AnimatedCircle
+                    stroke="url(#grad)"
+                    fill="none"
+                    cx={20}
+                    cy={20}
+                    r={radius}
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                />
+            </Svg>
+            <Text className="absolute text-white font-black text-[9px]" style={{ transform: [{ translateY: 1 }] }}>
+                {Math.round(progress)}
+            </Text>
+        </View>
+    );
+}
 
 export default function ReportsScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -100,14 +153,20 @@ export default function ReportsScreen() {
         );
     }
 
+    const getReportTitle = (base: string) => {
+        const titleSuffix = isManagement
+            ? (selectedOfficerId ? ` - ${selectedOfficerName?.split(' ')[0] || "Officer"}` : "")
+            : ` - ${sessionData?.user?.name?.split(' ')[0] || "Officer"}`;
+        return `${base}${titleSuffix}`;
+    };
+
     // Modular Fetchers
     const fetchActiveStock = async (type: 'pdf' | 'excel') => {
         const orgId = membership?.orgId ?? "";
         if (isManagement) {
             if (selectedOfficerId) {
                 const data = await utils.management.cycles.listActive.fetch({ orgId, pageSize: 500, officerId: selectedOfficerId });
-                const officerName = data.items[0]?.officerName || "Officer";
-                return type === 'pdf' ? exportActiveStockPDF(data.items, `Active Stock Report - ${officerName}`) : exportActiveStockExcel(data.items, `Active Stock Report - ${officerName}`);
+                return type === 'pdf' ? exportActiveStockPDF(data.items, getReportTitle("Active Stock")) : exportActiveStockExcel(data.items, getReportTitle("Active Stock"));
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
                 const officerPromises = officers.map(async (officer: any) => {
@@ -127,7 +186,7 @@ export default function ReportsScreen() {
             }
         }
         const data = await utils.officer.cycles.listActive.fetch({ orgId, pageSize: 500 });
-        return type === 'pdf' ? exportActiveStockPDF(data.items, "Active Stock Report") : exportActiveStockExcel(data.items, "Active Stock Report");
+        return type === 'pdf' ? exportActiveStockPDF(data.items, getReportTitle("Active Stock")) : exportActiveStockExcel(data.items, getReportTitle("Active Stock"));
     };
 
     const fetchAllFarmerStock = async (type: 'pdf' | 'excel') => {
@@ -135,8 +194,7 @@ export default function ReportsScreen() {
         if (isManagement) {
             if (selectedOfficerId) {
                 const data = await utils.management.farmers.getMany.fetch({ orgId, pageSize: 500, officerId: selectedOfficerId });
-                const officerName = data.items[0]?.officerName || "Officer";
-                return type === 'pdf' ? exportAllFarmerStockPDF(data.items, `All Farmer Stock - ${officerName}`) : exportAllFarmerStockExcel(data.items, `All Farmer Stock - ${officerName}`);
+                return type === 'pdf' ? exportAllFarmerStockPDF(data.items, getReportTitle("All Farmer Stock")) : exportAllFarmerStockExcel(data.items, getReportTitle("All Farmer Stock"));
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
                 const officerPromises = officers.map(async (officer: any) => {
@@ -156,7 +214,7 @@ export default function ReportsScreen() {
             }
         }
         const data = await utils.officer.farmers.getMany.fetch({ orgId, pageSize: 500 });
-        return type === 'pdf' ? exportAllFarmerStockPDF(data.items, "All Farmer Stock") : exportAllFarmerStockExcel(data.items, "All Farmer Stock");
+        return type === 'pdf' ? exportAllFarmerStockPDF(data.items, getReportTitle("All Farmer Stock")) : exportAllFarmerStockExcel(data.items, getReportTitle("All Farmer Stock"));
     };
 
     const fetchProblematicFeeds = async (type: 'pdf' | 'excel') => {
@@ -164,8 +222,7 @@ export default function ReportsScreen() {
         if (isManagement) {
             if (selectedOfficerId) {
                 const data = await utils.management.farmers.getProblematicFeeds.fetch({ orgId, officerId: selectedOfficerId });
-                const officerName = data[0]?.officerName || "Officer";
-                return type === 'pdf' ? exportProblematicFeedsPDF(data, `Problematic Feeds - ${officerName}`) : exportProblematicFeedsExcel(data, `Problematic Feeds - ${officerName}`);
+                return type === 'pdf' ? exportProblematicFeedsPDF(data, getReportTitle("Problematic Feeds")) : exportProblematicFeedsExcel(data, getReportTitle("Problematic Feeds"));
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
                 const officerPromises = officers.map(async (officer: any) => {
@@ -185,7 +242,7 @@ export default function ReportsScreen() {
             }
         }
         const data = await utils.officer.farmers.getProblematicFeeds.fetch({ orgId });
-        return type === 'pdf' ? exportProblematicFeedsPDF(data, "Problematic Feeds") : exportProblematicFeedsExcel(data, "Problematic Feeds");
+        return type === 'pdf' ? exportProblematicFeedsPDF(data, getReportTitle("Problematic Feeds")) : exportProblematicFeedsExcel(data, getReportTitle("Problematic Feeds"));
     };
 
     const fetchSalesLedger = async (type: 'pdf' | 'excel') => {
@@ -193,8 +250,7 @@ export default function ReportsScreen() {
         if (isManagement) {
             if (selectedOfficerId) {
                 const data = await utils.management.sales.getRecentSales.fetch({ limit: 100, officerId: selectedOfficerId, orgId });
-                const officerName = data[0]?.officerName || "Officer";
-                return type === 'pdf' ? exportSalesLedgerPDF(data as any, `Sales Ledger - ${officerName}`) : exportSalesLedgerExcel(data as any, `Sales Ledger - ${officerName}`);
+                return type === 'pdf' ? exportSalesLedgerPDF(data as any, getReportTitle("Sales Ledger")) : exportSalesLedgerExcel(data as any, getReportTitle("Sales Ledger"));
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
                 const officerPromises = officers.map(async (officer: any) => {
@@ -209,19 +265,19 @@ export default function ReportsScreen() {
                 });
                 const results = await Promise.all(officerPromises);
                 const sheets = results.filter(Boolean) as any[];
-                if (sheets.length === 0) return type === 'pdf' ? exportSalesLedgerPDF([], "Recent Sales Ledger") : exportSalesLedgerExcel([], "Recent Sales Ledger");
+                if (sheets.length === 0) return type === 'pdf' ? exportSalesLedgerPDF([], "Recent Sales") : exportSalesLedgerExcel([], "Recent Sales");
                 return type === 'pdf' ? generateMultiSheetPDF(sheets, "Recent Sales Ledger", true) : generateMultiSheetExcel(sheets, "Recent Sales Ledger");
             }
         }
         const data = await utils.officer.sales.getRecentSales.fetch({ limit: 100 });
-        return type === 'pdf' ? exportSalesLedgerPDF(data, "Recent Sales Ledger") : exportSalesLedgerExcel(data, "Recent Sales Ledger");
+        return type === 'pdf' ? exportSalesLedgerPDF(data, getReportTitle("Recent Sales")) : exportSalesLedgerExcel(data, getReportTitle("Recent Sales"));
     };
 
     const fetchDocPlacement = async (type: 'pdf' | 'excel') => {
         if (isManagement) {
             if (selectedOfficerId) {
                 const data = await utils.management.reports.getRangeDocPlacements.fetch({ orgId: membership?.orgId ?? "", officerId: selectedOfficerId, startMonth: startMonth + 1, startYear, endMonth: endMonth + 1, endYear });
-                return type === 'pdf' ? exportRangeDocPlacementsPDF(data, "DOC Placement Report") : exportRangeDocPlacementsExcel(data, "DOC Placement Report");
+                return type === 'pdf' ? exportRangeDocPlacementsPDF(data, getReportTitle("DOC Placement")) : exportRangeDocPlacementsExcel(data, getReportTitle("DOC Placement"));
             } else {
                 const orgId = membership?.orgId ?? "";
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
@@ -237,12 +293,12 @@ export default function ReportsScreen() {
                 });
                 const results = await Promise.all(officerPromises);
                 const sheets = results.filter(Boolean) as any[];
-                if (sheets.length === 0) return type === 'pdf' ? exportRangeDocPlacementsPDF({}, "DOC Placement Report") : exportRangeDocPlacementsExcel({}, "DOC Placement Report");
+                if (sheets.length === 0) return type === 'pdf' ? exportRangeDocPlacementsPDF({}, "DOC Placement") : exportRangeDocPlacementsExcel({}, "DOC Placement");
                 return type === 'pdf' ? generateMultiSheetPDF(sheets, "DOC Placement Report") : generateMultiSheetExcel(sheets, "DOC Placement Report");
             }
         }
         const data = await utils.officer.reports.getRangeDocPlacements.fetch({ startMonth: startMonth + 1, startYear, endMonth: endMonth + 1, endYear });
-        return type === 'pdf' ? exportRangeDocPlacementsPDF(data, "DOC Placement Report") : exportRangeDocPlacementsExcel(data, "DOC Placement Report");
+        return type === 'pdf' ? exportRangeDocPlacementsPDF(data, getReportTitle("DOC Placement")) : exportRangeDocPlacementsExcel(data, getReportTitle("DOC Placement"));
     };
 
     const processProductionData = (rawData: any[]) => {
@@ -263,7 +319,7 @@ export default function ReportsScreen() {
                 const orgId = membership?.orgId ?? "";
                 const rawData = await utils.management.performanceReports.getRangeProductionRecords.fetch({ orgId, officerId: selectedOfficerId, startMonth, startYear, endMonth, endYear });
                 const dataToExport = processProductionData(rawData);
-                return type === 'pdf' ? exportRangeProductionPDF(dataToExport, "Monthly Production Efficiency") : exportRangeProductionExcel(dataToExport, "Monthly Production Efficiency");
+                return type === 'pdf' ? exportRangeProductionPDF(dataToExport, getReportTitle("Monthly Production Efficiency")) : exportRangeProductionExcel(dataToExport, getReportTitle("Monthly Production Efficiency"));
             } else {
                 const orgId = membership?.orgId ?? "";
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
@@ -283,7 +339,7 @@ export default function ReportsScreen() {
         }
         const rawData = await utils.officer.performanceReports.getRangeProductionRecords.fetch({ startMonth, startYear, endMonth, endYear });
         const data = processProductionData(rawData);
-        return type === 'pdf' ? exportRangeProductionPDF(data, "Monthly Production Efficiency") : exportRangeProductionExcel(data, "Monthly Production Efficiency");
+        return type === 'pdf' ? exportRangeProductionPDF(data, getReportTitle("Monthly Production Efficiency")) : exportRangeProductionExcel(data, getReportTitle("Monthly Production Efficiency"));
     };
 
     const fetchYearlyPerformance = async (type: 'pdf' | 'excel') => {
@@ -291,7 +347,7 @@ export default function ReportsScreen() {
             const orgId = membership?.orgId ?? "";
             if (selectedOfficerId) {
                 const data = await utils.management.performanceReports.getAnnualPerformance.fetch({ orgId, officerId: selectedOfficerId, year: startYear });
-                return type === 'pdf' ? exportYearlyPerformancePDF(data, `Annual Performance Report ${startYear}`) : exportYearlyPerformanceExcel(data, `Annual Performance Report ${startYear}`);
+                return type === 'pdf' ? exportYearlyPerformancePDF(data, getReportTitle(`Annual Performance ${startYear}`)) : exportYearlyPerformanceExcel(data, getReportTitle(`Annual Performance ${startYear}`));
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
                 const officerPromises = officers.map(async (officer: any) => {
@@ -303,12 +359,12 @@ export default function ReportsScreen() {
                 });
                 const results = await Promise.all(officerPromises);
                 const sheets = results.filter(Boolean) as any[];
-                if (sheets.length === 0) return type === 'pdf' ? exportYearlyPerformancePDF({ monthlyData: [] }, `Annual Performance Report ${startYear}`) : exportYearlyPerformanceExcel({ monthlyData: [] }, `Annual Performance Report ${startYear}`);
+                if (sheets.length === 0) return type === 'pdf' ? exportYearlyPerformancePDF({ monthlyData: [] }, `Annual Performance ${startYear}`) : exportYearlyPerformanceExcel({ monthlyData: [] }, `Annual Performance ${startYear}`);
                 return type === 'pdf' ? generateMultiSheetPDF(sheets, `Annual Performance Report ${startYear}`, true) : generateMultiSheetExcel(sheets, `Annual Performance Report ${startYear}`);
             }
         }
         const data = await utils.officer.performanceReports.getAnnualPerformance.fetch({ year: startYear, officerId: undefined });
-        return type === 'pdf' ? exportYearlyPerformancePDF(data, `Annual Performance Report ${startYear}`) : exportYearlyPerformanceExcel(data, `Annual Performance Report ${startYear}`);
+        return type === 'pdf' ? exportYearlyPerformancePDF(data, getReportTitle(`Annual Performance ${startYear}`)) : exportYearlyPerformanceExcel(data, getReportTitle(`Annual Performance ${startYear}`));
     };
 
     const handleActiveStock = (type: 'pdf' | 'excel') => handleExport(`Active Stock Report`, type, () => fetchActiveStock(type));
@@ -515,7 +571,7 @@ export default function ReportsScreen() {
 
                 <Button
                     variant="default"
-                    className={`mb-6 h-16 rounded-[2rem] border-primary/20 bg-primary shadow-xl shadow-primary/20 ${isExporting && !isBulkExporting ? 'opacity-50' : 'active:scale-95'} ${isBulkExporting ? 'bg-blue-500 active:bg-blue-500' : ''}`}
+                    className={`mb-6 h-16 rounded-sm border-primary/20 bg-primary/60 shadow-xl shadow-primary/20 ${isExporting && !isBulkExporting ? 'opacity-50' : 'active:scale-95'} ${isBulkExporting ? 'bg-blue-500 active:bg-blue-500' : ''}  ${isBulkExporting && stopRequested ? 'bg-red-500 active:bg-red-500' : ''}`}
                     onPress={() => {
                         if (isBulkExporting) {
                             setStopRequested(true);
@@ -529,23 +585,7 @@ export default function ReportsScreen() {
                     <View className="flex-row items-center gap-3 relative w-full px-5">
                         <View className="w-10 h-10 items-center justify-center z-10 relative">
                             {isBulkExporting ? (
-                                <>
-                                    <View className="absolute inset-0 bg-white/10 rounded-2xl" />
-                                    <Svg width={40} height={40} className="absolute inset-0" style={{ transform: [{ rotate: '-90deg' }] }}>
-                                        <Circle stroke="rgba(255,255,255,0.2)" fill="none" cx={20} cy={20} r={16} strokeWidth={2.5} />
-                                        <Circle
-                                            stroke="#ffffff"
-                                            fill="none"
-                                            cx={20}
-                                            cy={20}
-                                            r={16}
-                                            strokeWidth={2.5}
-                                            strokeDasharray={2 * Math.PI * 16}
-                                            strokeDashoffset={(2 * Math.PI * 16) - (bulkProgress / 100) * (2 * Math.PI * 16)}
-                                            strokeLinecap="round"
-                                        />
-                                    </Svg>
-                                </>
+                                <AnimatedCircularProgress progress={bulkProgress} stopRequested={stopRequested} />
                             ) : (
                                 <View className="w-full h-full rounded-2xl bg-white/20 items-center justify-center">
                                     <Icon as={ShoppingBag} size={20} className="text-white" />
@@ -555,7 +595,7 @@ export default function ReportsScreen() {
                         <View className="flex-1 z-10">
                             <Text className="text-white font-black uppercase tracking-tight text-lg">
                                 {isBulkExporting
-                                    ? (stopRequested ? "Reverting changes..." : `Saving (${bulkProgress}%) [ Tap to stop ]`)
+                                    ? (stopRequested ? "Reverting changes..." : `Saving [ Tap to stop ]`)
                                     : "Download All Reports"}
                             </Text>
                             <Text className="text-white/70 text-[10px] font-bold uppercase tracking-widest" numberOfLines={1}>

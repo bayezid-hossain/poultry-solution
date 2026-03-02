@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Beautiful loader in download all reports button
+
+### Changed
+- Color combination of download all reports changed
+
+### Added
+- Officer name in report header
+
 ## [v1.0.15] - 2026-03-02
 
 ### Added
