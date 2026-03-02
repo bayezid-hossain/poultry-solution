@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Previously sold value in message of sale event
+
+### Changed
+- Show only age in sale report
+
+### Added
+- Shows reverting changes in download all report button when stopped
+
+### Changed
+- All report download progress bar
+
+### Fix
+- officer selector keyboard popup
+
+### Changed
+- Cannot save file while all reports are being generated
+
+### Added
+- Download all Reports cancellation
+
+### Added
+- Download all Reports
+
+### Changed
+- File naming and directory now follows Year/Month/Date/FileName-Version format
+
+### Changed
+- Officer selector design updated
+
+### Added
+- Officer selector searchability
+
+### Fixed
+- Ranged Reports date [month] fixed
+
 ## [v1.0.14] - 2026-03-02
 
 ### Added

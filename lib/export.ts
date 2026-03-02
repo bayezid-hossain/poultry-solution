@@ -1,4 +1,4 @@
-import { File, Paths } from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
 import { EncodingType, getContentUriAsync, moveAsync, readAsStringAsync, StorageAccessFramework, writeAsStringAsync } from 'expo-file-system/legacy';
 import * as IntentLauncher from 'expo-intent-launcher';
 import * as Print from 'expo-print';
@@ -25,17 +25,176 @@ export function formatLocalDate(dateInput: string | Date | null | undefined): st
     return `${day}/${month}/${year}`;
 }
 
-/** Sanitizes a string for use as a filename and appends current date in DD-MM-YYYY format */
-export function getSafeFileName(title: string, extension: string): string {
+/** Returns a relative path string like "2026/March/15" */
+export function getDatePath(): string {
     const d = new Date();
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    const dateStr = `${day}-${month}-${year}`;
+    const year = d.getFullYear().toString();
+    const month = d.toLocaleString('default', { month: 'long' });
+    const day = d.getDate().toString().padStart(2, '0');
+    return `${year}/${month}/${day}`;
+}
+
+/** Sanitizes a string for use as a filename (base only, no extension) */
+export function sanitizeFileName(title: string): string {
     const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    // Use a simpler name if title is empty
-    const baseName = safeTitle || 'report';
-    return `${baseName}_${dateStr}.${extension}`;
+    return safeTitle || 'report';
+}
+
+/** 
+ * Returns a versioned filename if the original exists in the directory.
+ * Format: "name.ext" -> "name-1.ext", "name-2.ext" etc.
+ */
+export async function getVersionedFileName(directory: Directory, baseName: string, extension: string): Promise<string> {
+    const originalName = `${baseName}.${extension}`;
+    let finalName = originalName;
+    let version = 1;
+
+    while (new File(directory, finalName).exists) {
+        finalName = `${baseName}-${version}.${extension}`;
+        version++;
+    }
+    return finalName;
+}
+
+/**
+ * Android SAF Helper: Returns a unique filename by checking existing files in the directory.
+ * Format: "name.ext" -> "name-1.ext", "name-2.ext" etc.
+ */
+export async function getUniqueSAFFileName(parentUri: string, baseName: string, extension: string): Promise<string> {
+    const contents = await StorageAccessFramework.readDirectoryAsync(parentUri);
+    const existingNames = new Set(contents.map(uri => {
+        const decoded = decodeURIComponent(uri);
+        const parts = decoded.split('/');
+        return parts[parts.length - 1];
+    }));
+
+    const originalName = `${baseName}.${extension}`;
+    if (!existingNames.has(originalName)) {
+        return originalName;
+    }
+
+    let version = 1;
+    let finalName = `${baseName}-${version}.${extension}`;
+    while (existingNames.has(finalName)) {
+        version++;
+        finalName = `${baseName}-${version}.${extension}`;
+    }
+    return finalName;
+}
+
+/** 
+ * Ensures a directory structure exists within a base directory (Internal Storage)
+ * Returns the Directory object for the leaf folder
+ */
+export async function ensureInternalDirectory(base: Directory, path: string): Promise<Directory> {
+    const parts = path.split('/');
+    let currentDir = base;
+    for (const part of parts) {
+        const subDir = new Directory(currentDir, part);
+        if (!subDir.exists) {
+            await subDir.create();
+        }
+        currentDir = subDir;
+    }
+    return currentDir;
+}
+
+/**
+ * Android SAF Helper: Ensures a directory structure exists remotely
+ * Returns the URI of the leaf folder
+ */
+export async function ensureSAFDirectory(rootUri: string, path: string): Promise<string> {
+    const parts = path.split('/');
+    let currentUri = rootUri;
+
+    for (const part of parts) {
+        let contents: string[] = [];
+        try {
+            contents = await StorageAccessFramework.readDirectoryAsync(currentUri);
+        } catch (e) {
+            console.error(`Failed to read SAF directory: ${currentUri}`, e);
+        }
+
+        let foundUri = null;
+
+        for (const itemUri of contents) {
+            let fullyDecoded = itemUri;
+            try {
+                // Decode until it stops changing (handles multiple encodings)
+                while (true) {
+                    const next = decodeURIComponent(fullyDecoded);
+                    if (next === fullyDecoded) break;
+                    fullyDecoded = next;
+                }
+            } catch (e) {
+                // Ignore decoding errors
+            }
+
+            // Exactly ends with /part or :part to ensure no partial matches like '2026 (1)' for '2026'
+            if (
+                fullyDecoded.endsWith('/' + part) ||
+                fullyDecoded.endsWith(':' + part)
+            ) {
+                foundUri = itemUri;
+                break;
+            }
+        }
+
+        if (foundUri) {
+            currentUri = foundUri;
+        } else {
+            try {
+                currentUri = await StorageAccessFramework.makeDirectoryAsync(currentUri, part);
+            } catch (e) {
+                // If creation fails, try one last time to find it (concurrency or strict naming)
+                try {
+                    const secondCheck = await StorageAccessFramework.readDirectoryAsync(currentUri);
+                    let secondFound = null;
+                    for (const itemUri of secondCheck) {
+                        let fullyDecoded = itemUri;
+                        try {
+                            while (true) {
+                                const next = decodeURIComponent(fullyDecoded);
+                                if (next === fullyDecoded) break;
+                                fullyDecoded = next;
+                            }
+                        } catch (e) { }
+
+                        if (fullyDecoded.endsWith('/' + part) || fullyDecoded.endsWith(':' + part)) {
+                            secondFound = itemUri;
+                            break;
+                        }
+                    }
+                    if (secondFound) {
+                        currentUri = secondFound;
+                    } else {
+                        console.error(`Failed to find or create SAF directory: ${part}`);
+                        // Fallback to whatever currentUri we have, it might fail downstream
+                    }
+                } catch (readErr) {
+                    console.error(`Failed fallback read`, readErr);
+                }
+            }
+        }
+    }
+    return currentUri;
+}
+
+/**
+ * Deletes files from internal storage.
+ * Useful for cleanup after cancelled bulk operations.
+ */
+export async function deleteInternalFiles(uris: string[]): Promise<void> {
+    for (const uri of uris) {
+        try {
+            const file = new File(uri);
+            if (file.exists) {
+                await file.delete();
+            }
+        } catch (e) {
+            console.error(`Failed to delete file: ${uri}`, e);
+        }
+    }
 }
 
 export interface PDFExportOptions {
@@ -248,8 +407,11 @@ export async function generatePDF(inputOptions: PDFExportOptions | PDFExportOpti
 
         const { uri } = await Print.printToFileAsync({ html: fullHtml });
 
-        const fileName = getSafeFileName(mainTitle, 'pdf');
-        const pdfFile = new File(Paths.document, fileName);
+        const safeBaseName = sanitizeFileName(mainTitle);
+        const datePath = getDatePath();
+        const parentDir = await ensureInternalDirectory(Paths.document, datePath);
+        const fileName = await getVersionedFileName(parentDir, safeBaseName, 'pdf');
+        const pdfFile = new File(parentDir, fileName);
 
         // Use moveAsync to rename the file correctly
         await moveAsync({
@@ -669,8 +831,11 @@ export async function generateExcel(options: ExcelExportOptions): Promise<string
 
         const wbout = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
         const uint8Array = new Uint8Array(wbout);
-        const fileName = getSafeFileName(options.title, 'xlsx');
-        const file = new File(Paths.document, fileName);
+        const safeBaseName = sanitizeFileName(options.title);
+        const datePath = getDatePath();
+        const parentDir = await ensureInternalDirectory(Paths.document, datePath);
+        const fileName = await getVersionedFileName(parentDir, safeBaseName, 'xlsx');
+        const file = new File(parentDir, fileName);
         await file.write(uint8Array);
 
         return file.uri;
@@ -694,8 +859,11 @@ export async function generateMultiSheetExcel(sheets: { sheetName: string, optio
 
         const wbout = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
         const uint8Array = new Uint8Array(wbout);
-        const fileName = getSafeFileName(title, 'xlsx');
-        const file = new File(Paths.document, fileName);
+        const safeBaseName = sanitizeFileName(title);
+        const datePath = getDatePath();
+        const parentDir = await ensureInternalDirectory(Paths.document, datePath);
+        const fileName = await getVersionedFileName(parentDir, safeBaseName, 'xlsx');
+        const file = new File(parentDir, fileName);
         await file.write(uint8Array);
 
         return file.uri;
@@ -936,7 +1104,7 @@ export async function exportRangeDocPlacementsExcel(data: any, title: string, re
                 doc: c.doc,
                 status: c.status,
                 monthKey,
-                monthLabel: formatLocalDate(d)
+                monthLabel: d.toLocaleString('default', { month: 'long', year: 'numeric' })
             });
         });
     });
@@ -1057,7 +1225,7 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string, retu
                 doc: c.doc,
                 status: c.status,
                 monthKey,
-                monthLabel: formatLocalDate(d)
+                monthLabel: d.toLocaleString('default', { month: 'long', year: 'numeric' })
             });
         });
     });
@@ -1639,7 +1807,7 @@ export async function exportSalesLedgerExcel(sales: any[], title: string, return
     sortedSales.forEach(s => {
         const d = new Date(s.saleDate || s.createdAt);
         const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
-        if (!monthGroups[key]) monthGroups[key] = { label: formatLocalDate(d), sales: [] };
+        if (!monthGroups[key]) monthGroups[key] = { label: d.toLocaleString('default', { month: 'long', year: 'numeric' }), sales: [] };
         monthGroups[key].sales.push(s);
     });
 
@@ -1719,7 +1887,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
     sortedSales.forEach(s => {
         const d = new Date(s.saleDate || s.createdAt);
         const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
-        if (!monthGroups[key]) monthGroups[key] = { label: formatLocalDate(d), sales: [] };
+        if (!monthGroups[key]) monthGroups[key] = { label: d.toLocaleString('default', { month: 'long', year: 'numeric' }), sales: [] };
         monthGroups[key].sales.push(s);
     });
 
@@ -1806,7 +1974,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
 /**
  * Downloads a file strictly to local device storage using StorageAccessFramework (Android) or Sharing (iOS)
  */
-export async function downloadFileToDevice(uri: string, fileName: string, mimeType: string, preferredDirectoryUri?: string | null) {
+export async function downloadFileToDevice(uri: string, fileName: string, mimeType: string, preferredDirectoryUri?: string | null, skipToast = false) {
     if (Platform.OS === "android") {
         try {
             let targetDirectoryUri = preferredDirectoryUri;
@@ -1814,31 +1982,49 @@ export async function downloadFileToDevice(uri: string, fileName: string, mimeTy
             if (!targetDirectoryUri) {
                 const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
                 if (!permissions.granted) {
-                    toast.error("Download Cancelled", {
-                        description: "Storage permission is required to save files to your device."
-                    });
+                    if (!skipToast) {
+                        toast.error("Download Cancelled", {
+                            description: "Storage permission is required to save files to your device."
+                        });
+                    }
                     return;
                 }
                 targetDirectoryUri = permissions.directoryUri;
             }
 
-            const documentUri = await StorageAccessFramework.createFileAsync(targetDirectoryUri, fileName, mimeType);
+            // Create Date-Wise Folder Structure on Device
+            const datePath = getDatePath();
+            const leafDirectoryUri = await ensureSAFDirectory(targetDirectoryUri, datePath);
+
+            // Versioning: Ensure unique filename in the SAF directory
+            const extension = fileName.split('.').pop() || '';
+            const baseName = fileName.replace(new RegExp(`\\.${extension}$`), '');
+            const uniqueName = await getUniqueSAFFileName(leafDirectoryUri, baseName, extension);
+
+            const documentUri = await StorageAccessFramework.createFileAsync(leafDirectoryUri, uniqueName, mimeType);
             if (!documentUri) {
-                toast.error("Download Failed", {
-                    description: "Could not create file in the selected directory."
-                });
+                if (!skipToast) {
+                    toast.error("Download Failed", {
+                        description: "Could not create file in the selected directory."
+                    });
+                }
                 return;
             }
             const content = await readAsStringAsync(uri, { encoding: EncodingType.Base64 });
             await writeAsStringAsync(documentUri, content, { encoding: EncodingType.Base64 });
-            toast.success("File Saved", {
-                description: "The report has been saved to your selected folder."
-            });
+
+            if (!skipToast) {
+                toast.success("File Saved", {
+                    description: `Saved to ${datePath} folder.`
+                });
+            }
         } catch (e) {
             console.error("Error downloading file", e);
-            toast.error("Download Failed", {
-                description: "There was an error saving the file."
-            });
+            if (!skipToast) {
+                toast.error("Download Failed", {
+                    description: "There was an error saving the file."
+                });
+            }
         }
     } else {
         // iOS: use sharing with a UTI to trigger Save to Files
@@ -1850,7 +2036,9 @@ export async function downloadFileToDevice(uri: string, fileName: string, mimeTy
             });
         } catch (e) {
             console.error("Error sharing/saving file", e);
-            toast.error("There was an error saving the file.");
+            if (!skipToast) {
+                toast.error("There was an error saving the file.");
+            }
         }
     }
 }

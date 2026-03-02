@@ -69,11 +69,8 @@ export const generateReportText = (sale: any, report: any, isLatest: boolean): s
     const isEnded = sale.cycleContext?.isEnded || false;
 
     const saleAge = sale.saleAge ?? sale.cycleContext?.age ?? "N/A";
-    const weightedAge = sale.cycleContext?.age ?? "N/A";
-    const showWeightedAge = isEnded && isLatest;
-    const ageText = showWeightedAge
-        ? `Weighted Age: ${weightedAge} days\nSale Age: ${saleAge} days`
-        : `Age: ${saleAge} days`;
+    const previousSold = sale.houseBirds - sale.remainingBirds - birdsSold - totalMortality;
+    const ageText = `Age: ${saleAge} days`;
 
     return `Date: ${format(new Date(sale.saleDate), "dd/MM/yyyy")}
 
@@ -81,7 +78,7 @@ Farmer: ${sale.farmerName || "N/A"}
 Location: ${sale.location || "N/A"}
 ${sale.cycleContext?.birdType ? `\nBird Type: ${sale.cycleContext?.birdType}` : ""}
 ${sale.houseBirds ? `${sale.cycleContext?.birdType ? "" : "\n"}House bird : ${sale.houseBirds}pcs` : ""}
-Total Sold : ${birdsSold}pcs
+${previousSold > 0 ? `Previously Sold: ${previousSold}pcs\n` : ""}Today's Sale : ${birdsSold}pcs
 Total Mortality: ${totalMortality} pcs
 ${(!isEnded || !isLatest) ? `\nRemaining Birds: ${sale.remainingBirds ?? 0} pcs` : ""}
 
