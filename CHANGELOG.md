@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Officer name font size increased in report
+
+### Added
+- Officer information is available in reports now
+
+### Added
+- Now users can edit their name, mobile number and branch!
+
 ## [v1.0.17] - 2026-03-02
 
 ### Added

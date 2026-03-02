@@ -11,11 +11,13 @@ import { useTheme } from "@/context/theme-context";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc";
 import { useQueryClient } from "@tanstack/react-query";
+import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
 import { useRouter } from "expo-router";
-import { Briefcase, LogOut, Moon, RefreshCw, Smartphone, Sun, User, UserCheck } from "lucide-react-native";
-import { useState } from "react";
-import { Platform, Pressable, ScrollView, View } from "react-native";
+import { Briefcase, Copy, LogOut, MapPin, Moon, Phone, RefreshCw, Smartphone, Sun, User, UserCheck } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { toast } from "sonner-native";
 
 type ColorScheme = "light" | "dark" | "system";
 
@@ -24,10 +26,22 @@ export default function SettingsScreen() {
     const queryClient = useQueryClient();
     const { preference, setColorScheme } = useTheme();
     const storage = useStorage();
-    const { data: sessionData } = trpc.auth.getSession.useQuery();
+    const { data: sessionData, refetch: refetchSession } = trpc.auth.getSession.useQuery();
     const { data: orgStatus } = trpc.auth.getMyMembership.useQuery();
 
     const [pendingMode, setPendingMode] = useState<"MANAGEMENT" | "OFFICER" | null>(null);
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [editName, setEditName] = useState("");
+    const [editBranchName, setEditBranchName] = useState("");
+    const [editMobile, setEditMobile] = useState("");
+
+    useEffect(() => {
+        if (sessionData?.user && !isEditingProfile) {
+            setEditName(sessionData.user.name || "");
+            setEditBranchName(sessionData.user.branchName || "");
+            setEditMobile(sessionData.user.mobile || "");
+        }
+    }, [sessionData?.user, isEditingProfile]);
 
     const isManager = orgStatus?.role === "OWNER" || orgStatus?.role === "MANAGER";
     const orgMode = orgStatus?.activeMode || "OFFICER";
@@ -41,6 +55,20 @@ export default function SettingsScreen() {
             setPendingMode(null);
         }
     });
+
+    const updateProfile = trpc.auth.updateProfile.useMutation({
+        onSuccess: async () => {
+            await refetchSession();
+            setIsEditingProfile(false);
+            toast.success("Profile Updated", { description: "Your information has been saved successfully." });
+        }
+    });
+
+    const copyToClipboard = async (text: string, label: string) => {
+        if (!text) return;
+        await Clipboard.setStringAsync(text);
+        toast.success(`${label} Copied`, { description: text });
+    };
 
     const handleSignOut = async () => {
         await authClient.signOut();
@@ -71,16 +99,126 @@ export default function SettingsScreen() {
             <ScrollView contentContainerClassName="p-4 pb-20 gap-6">
 
                 {/* 1. Profile Section */}
-                <View className="items-center py-6">
-                    <View className="w-24 h-24 rounded-full bg-primary/10 items-center justify-center border-4 border-background  mb-4">
+                <View className="items-center py-6 mt-2">
+                    <View className="w-24 h-24 rounded-full bg-primary/10 items-center justify-center border-4 border-background  mb-4 relative">
                         <Icon as={User} size={40} className="text-primary" />
                     </View>
-                    <Text className="text-2xl font-black text-foreground uppercase tracking-tight">
-                        {sessionData?.user?.name || "User Account"}
-                    </Text>
-                    <Text className="text-sm text-muted-foreground font-medium mt-1">
-                        {sessionData?.user?.email || "No email provided"}
-                    </Text>
+
+                    {!isEditingProfile ? (
+                        <>
+                            <Text className="text-2xl font-black text-foreground uppercase tracking-tight text-center">
+                                {sessionData?.user?.name || "User Account"}
+                            </Text>
+                            <Text className="text-sm text-muted-foreground font-medium mt-1 text-center">
+                                {sessionData?.user?.email || "No email provided"}
+                            </Text>
+
+                            <View className="w-full mt-6 bg-muted/40 rounded-3xl p-5 border border-border/40">
+                                {sessionData?.user?.branchName && (
+                                    <View className="flex-row items-center justify-between py-3 border-b border-border/40">
+                                        <View className="flex-row items-center gap-3">
+                                            <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center">
+                                                <Icon as={MapPin} size={14} className="text-primary" />
+                                            </View>
+                                            <View>
+                                                <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-0.5">Branch</Text>
+                                                <Text className="text-sm font-bold text-foreground">{sessionData.user.branchName}</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                )}
+
+                                {sessionData?.user?.mobile && (
+                                    <Pressable
+                                        className="flex-row items-center justify-between py-3 active:opacity-70"
+                                        onPress={() => copyToClipboard(sessionData.user.mobile!, "Phone Number")}
+                                    >
+                                        <View className="flex-row items-center gap-3">
+                                            <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center">
+                                                <Icon as={Phone} size={14} className="text-primary" />
+                                            </View>
+                                            <View>
+                                                <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-0.5">Mobile</Text>
+                                                <Text className="text-sm font-bold text-foreground">{sessionData.user.mobile}</Text>
+                                            </View>
+                                        </View>
+                                        <View className="w-8 h-8 rounded-full bg-muted items-center justify-center">
+                                            <Icon as={Copy} size={14} className="text-muted-foreground" />
+                                        </View>
+                                    </Pressable>
+                                )}
+
+                                {!sessionData?.user?.branchName && !sessionData?.user?.mobile && (
+                                    <Text className="text-xs text-center text-muted-foreground italic py-2">No additional details provided</Text>
+                                )}
+                            </View>
+
+                            <Button
+                                variant="outline"
+                                className="mt-6 h-12 w-full rounded-2xl border-primary/20 bg-primary/5"
+                                onPress={() => setIsEditingProfile(true)}
+                            >
+                                <Text className="text-sm font-bold uppercase tracking-wider text-primary">Edit Profile</Text>
+                            </Button>
+                        </>
+                    ) : (
+                        <View className="w-full mt-4 gap-4 px-2">
+                            <View gap-2>
+                                <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Full Name</Text>
+                                <TextInput
+                                    className="bg-muted/50 border border-border/50 text-foreground px-4 h-12 rounded-xl text-sm font-medium"
+                                    value={editName}
+                                    onChangeText={setEditName}
+                                    placeholder="Enter your full name"
+                                    placeholderTextColor="#9ca3af"
+                                />
+                            </View>
+                            <View gap-2>
+                                <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Branch Name</Text>
+                                <TextInput
+                                    className="bg-muted/50 border border-border/50 text-foreground px-4 h-12 rounded-xl text-sm font-medium"
+                                    value={editBranchName}
+                                    onChangeText={setEditBranchName}
+                                    placeholder="e.g., Dhaka North"
+                                    placeholderTextColor="#9ca3af"
+                                />
+                            </View>
+                            <View gap-2>
+                                <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Mobile Number</Text>
+                                <TextInput
+                                    className="bg-muted/50 border border-border/50 text-foreground px-4 h-12 rounded-xl text-sm font-medium"
+                                    value={editMobile}
+                                    onChangeText={setEditMobile}
+                                    placeholder="e.g., 01700000000"
+                                    placeholderTextColor="#9ca3af"
+                                    keyboardType="phone-pad"
+                                />
+                            </View>
+                            <View className="flex-row gap-3 mt-2">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 h-12 rounded-xl"
+                                    onPress={() => setIsEditingProfile(false)}
+                                    disabled={updateProfile.isPending}
+                                >
+                                    <Text className="text-xs font-bold uppercase tracking-wider">Cancel</Text>
+                                </Button>
+                                <Button
+                                    className="flex-1 h-12 rounded-xl"
+                                    disabled={!editName.trim() || updateProfile.isPending}
+                                    onPress={() => updateProfile.mutate({
+                                        name: editName.trim(),
+                                        branchName: editBranchName.trim(),
+                                        mobile: editMobile.trim()
+                                    })}
+                                >
+                                    <Text className="text-xs font-bold uppercase tracking-wider text-white">
+                                        {updateProfile.isPending ? "Saving..." : "Save Changes"}
+                                    </Text>
+                                </Button>
+                            </View>
+                        </View>
+                    )}
                 </View>
 
                 {/* 2. Workspace Mode */}

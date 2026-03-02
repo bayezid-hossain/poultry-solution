@@ -271,11 +271,20 @@ export async function generatePDF(inputOptions: PDFExportOptions | PDFExportOpti
 
         const mainTitle = mainTitleOverride || pages[0].title;
 
-        const pagesHtml = pages.map((page, index) => `
+        const pagesHtml = pages.map((page, index) => {
+            const subtitleHtml = page.subtitle ? page.subtitle.split('\n').map((line, i) => {
+                const isOfficerName = i === 0 && !line.includes('Branch:') && !line.includes('Mobile:');
+                if (isOfficerName) {
+                    return `<p style="margin: 4px 0 2px; font-size: 18px; font-weight: 700; color: #10b981;">${line}</p>`;
+                }
+                return `<p style="margin: 2px 0;">${line}</p>`;
+            }).join('') : '';
+            return `
             <div class="page-container">
                 <div class="header">
                     <h1>${page.title}</h1>
-                    ${page.subtitle ? `<p>${page.subtitle}</p>` : ''}
+                    ${subtitleHtml}
+                    <div style="height: 12px;"></div>
                     <p>Generated on: ${formatLocalDate(new Date())}</p>
                 </div>
                 
@@ -287,7 +296,7 @@ export async function generatePDF(inputOptions: PDFExportOptions | PDFExportOpti
                 </div>
             </div>
             ${index < pages.length - 1 ? '<div style="page-break-after: always;"></div>' : ''}
-        `).join('');
+        `}).join('');
 
         const fullHtml = `
             <!DOCTYPE html>
@@ -436,6 +445,7 @@ export async function generateMultiSheetPDF(sheets: { sheetName: string, options
 
 export interface ExcelExportOptions {
     title: string;
+    subtitle?: string;
     summaryData: any[];
     rawDataTable?: any[];
     groupedDataTable?: { sectionHeader: string, data: any[], footer?: string }[];
@@ -448,7 +458,7 @@ export interface ExcelExportOptions {
 /**
  * Builds an Excel worksheet object from options
  */
-export function buildExcelWorksheet({ title, summaryData, rawDataTable, groupedDataTable, rawHeaders, definitions = [], mergePrimaryColumn = false, extraMerges = [] }: ExcelExportOptions) {
+export function buildExcelWorksheet({ title, subtitle, summaryData, rawDataTable, groupedDataTable, rawHeaders, definitions = [], mergePrimaryColumn = false, extraMerges = [] }: ExcelExportOptions) {
     try {
         const displayTitle = title.replace(/_/g, ' ').toUpperCase();
         const primaryColor = '10b981'; // Emerald-500
@@ -458,6 +468,11 @@ export function buildExcelWorksheet({ title, summaryData, rawDataTable, groupedD
             font: { bold: true, color: { rgb: "FFFFFF" }, sz: 14 },
             fill: { fgColor: { rgb: primaryColor } },
             alignment: { horizontal: "center", vertical: "center" }
+        };
+        const officerNameStyle = {
+            font: { bold: true, color: { rgb: primaryColor }, sz: 12, },
+            fill: { fgColor: { rgb: "F3F4F6" } },
+            alignment: { horizontal: "center" }
         };
         const subheaderStyle = {
             font: { bold: true, color: { rgb: "4B5563" }, sz: 10 },
@@ -515,9 +530,15 @@ export function buildExcelWorksheet({ title, summaryData, rawDataTable, groupedD
             return result;
         };
 
+        const subtitleLines = subtitle ? subtitle.split('\n') : ["POULTRY SOLUTION - MANAGEMENT REPORT"];
+
         const aoa: any[][] = [
             pad([{ v: displayTitle, s: headerStyle }]),
-            pad([{ v: "POULTRY SOLUTION - MANAGEMENT REPORT", s: subheaderStyle }]),
+            ...subtitleLines.map((line, i) => {
+                const isOfficerName = i === 0 && !line.includes('Branch:') && !line.includes('Mobile:') && line !== "POULTRY SOLUTION - MANAGEMENT REPORT";
+                return pad([{ v: line, s: isOfficerName ? officerNameStyle : subheaderStyle }]);
+            }),
+            pad([]),
             pad([{ v: `Report Generated: ${formatLocalDate(new Date())}`, s: centeredStyle }]),
             pad([]),
             pad([{ v: "[ SUMMARY OVERVIEW ]", s: sectionHeaderStyle }]),
@@ -692,10 +713,23 @@ export function buildExcelWorksheet({ title, summaryData, rawDataTable, groupedD
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
 
+        const topMerges: any[] = [];
+        let rIdx = 0;
+        topMerges.push({ s: { r: rIdx, c: L_PAD }, e: { r: rIdx, c: L_PAD + gridWidth - 1 } }); // title
+        rIdx++;
+
+        subtitleLines.forEach(() => {
+            topMerges.push({ s: { r: rIdx, c: L_PAD }, e: { r: rIdx, c: L_PAD + gridWidth - 1 } }); // subtitle line
+            rIdx++;
+        });
+
+        topMerges.push({ s: { r: rIdx, c: L_PAD }, e: { r: rIdx, c: L_PAD + gridWidth - 1 } }); // space
+        rIdx++;
+
+        topMerges.push({ s: { r: rIdx, c: L_PAD }, e: { r: rIdx, c: L_PAD + gridWidth - 1 } }); // generated text
+
         const merges: any[] = [
-            { s: { r: 0, c: L_PAD }, e: { r: 0, c: L_PAD + gridWidth - 1 } },
-            { s: { r: 1, c: L_PAD }, e: { r: 1, c: L_PAD + gridWidth - 1 } },
-            { s: { r: 2, c: L_PAD }, e: { r: 2, c: L_PAD + gridWidth - 1 } },
+            ...topMerges,
             ...summaryMerges,
             ...extraMerges
         ];
@@ -917,7 +951,7 @@ export async function shareFile(uri: string, title: string, mimeType: string, UT
 /**
  * Generates an Excel report for active stock/farmers
  */
-export async function exportActiveStockExcel(activeCycles: any[], title: string, returnOptions = false): Promise<any> {
+export async function exportActiveStockExcel(activeCycles: any[], title: string, returnOptions = false, subtitle?: string): Promise<any> {
     const rawHeaders = ["Farmer", "DOC", "Age", "Main Stock (bags)", "Last Stock Updated"];
 
     // Grouping logic
@@ -930,7 +964,8 @@ export async function exportActiveStockExcel(activeCycles: any[], title: string,
 
     const rawDataTable: any[] = [];
     const extraMerges: any[] = [];
-    let startRowOffset = 15; // Details section starts at index 15
+    const subtitleLines = subtitle ? subtitle.split('\n').length : 1;
+    let startRowOffset = 14 + subtitleLines + 1; // Base index before data with subtitle span + 1 blank row
 
     Object.entries(groups).forEach(([farmerName, cycles]) => {
         const startRow = startRowOffset + rawDataTable.length;
@@ -983,6 +1018,7 @@ export async function exportActiveStockExcel(activeCycles: any[], title: string,
 
     const options: ExcelExportOptions = {
         title,
+        subtitle,
         summaryData,
         rawHeaders,
         rawDataTable,
@@ -995,7 +1031,7 @@ export async function exportActiveStockExcel(activeCycles: any[], title: string,
 /**
  * Generates a PDF report for active stock/farmers
  */
-export async function exportActiveStockPDF(activeCycles: any[], title: string, returnOptions = false) {
+export async function exportActiveStockPDF(activeCycles: any[], title: string, returnOptions = false, subtitle?: string) {
     const groups: Record<string, any[]> = {};
     activeCycles.forEach(c => {
         const key = c.farmerName || 'Unknown';
@@ -1074,7 +1110,7 @@ export async function exportActiveStockPDF(activeCycles: any[], title: string, r
         </table>
     `;
 
-    const options = { title, htmlContent };
+    const options = { title, subtitle, htmlContent };
     if (returnOptions) return options;
     return await generatePDF(options, title, false);
 }
@@ -1083,7 +1119,7 @@ export async function exportActiveStockPDF(activeCycles: any[], title: string, r
  * Generates an Excel report for DOC placements within a date range
  * Groups details by month/year with monthly sub-totals
  */
-export async function exportRangeDocPlacementsExcel(data: any, title: string, returnOptions = false): Promise<any> {
+export async function exportRangeDocPlacementsExcel(data: any, title: string, returnOptions = false, subtitle?: string): Promise<any> {
     const rawHeaders = ["Farmer", "Batch #", "Date", "DOC", "Status"];
 
     // Flatten all cycles with farmer name and parse dates
@@ -1190,6 +1226,7 @@ export async function exportRangeDocPlacementsExcel(data: any, title: string, re
 
     const options = {
         title,
+        subtitle,
         summaryData,
         rawHeaders,
         groupedDataTable,
@@ -1204,7 +1241,7 @@ export async function exportRangeDocPlacementsExcel(data: any, title: string, re
  * Generates a PDF report for DOC placements within a date range
  * Groups details by month/year with monthly sub-totals
  */
-export async function exportRangeDocPlacementsPDF(data: any, title: string, returnOptions = false) {
+export async function exportRangeDocPlacementsPDF(data: any, title: string, returnOptions = false, subtitle?: string) {
     const { summary, farmers } = data;
 
     // Flatten all cycles with farmer context
@@ -1309,7 +1346,7 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string, retu
         </div>
         ${monthSections}
     `;
-    const options = { title, htmlContent };
+    const options = { title, subtitle, htmlContent };
     if (returnOptions) return options;
     return await generatePDF(options, title, false);
 }
@@ -1317,7 +1354,7 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string, retu
 /**
  * Generates an Excel report for monthly production records within a range
  */
-export async function exportRangeProductionExcel(records: any[], title: string, returnOptions = false): Promise<any> {
+export async function exportRangeProductionExcel(records: any[], title: string, returnOptions = false, subtitle?: string): Promise<any> {
     const rawHeaders = ["Farmer", "DOC", "Surv. %", "Avg Wt (kg)", "FCR", "EPI", "Age", "Net Profit"];
 
     // Group by month
@@ -1360,6 +1397,7 @@ export async function exportRangeProductionExcel(records: any[], title: string, 
 
     const options = {
         title,
+        subtitle,
         summaryData,
         rawHeaders,
         groupedDataTable,
@@ -1373,7 +1411,7 @@ export async function exportRangeProductionExcel(records: any[], title: string, 
  * Generates a PDF report for monthly production records within a range
  * Each month shown as separate section with header
  */
-export async function exportRangeProductionPDF(records: any[], title: string, returnOptions = false) {
+export async function exportRangeProductionPDF(records: any[], title: string, returnOptions = false, subtitle?: string) {
     const totalIn = records.reduce((sum, r) => sum + r.doc, 0);
     const avgFCR = records.length > 0 ? (records.reduce((sum, r) => sum + r.fcr, 0) / records.length) : 0;
     const avgEPI = records.length > 0 ? (records.reduce((sum, r) => sum + r.epi, 0) / records.length) : 0;
@@ -1459,7 +1497,7 @@ export async function exportRangeProductionPDF(records: any[], title: string, re
         </div>
     `;
 
-    const options = { title, htmlContent };
+    const options = { title, subtitle, htmlContent };
     if (returnOptions) return options;
     return await generatePDF(options, title, true);
 }
@@ -1468,7 +1506,7 @@ export async function exportRangeProductionPDF(records: any[], title: string, re
  * Generates an Excel report for annual performance breakdown
  * Matches the original performance.tsx exportExcel logic exactly
  */
-export async function exportYearlyPerformanceExcel(data: any, title: string, returnOptions = false): Promise<any> {
+export async function exportYearlyPerformanceExcel(data: any, title: string, returnOptions = false, subtitle?: string): Promise<any> {
     const rawHeaders = ["Month", "Chicks In", "Sold", "Avg Age (days)", "Total Weight (kg)", "Feed (kg)", "Survival %", "EPI", "FCR", "Avg Price"];
     const rawDataTable = (data.monthlyData || []).map((m: any, idx: number) => ({
         "Month": m.month || ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][idx],
@@ -1493,6 +1531,7 @@ export async function exportYearlyPerformanceExcel(data: any, title: string, ret
 
     const options: ExcelExportOptions = {
         title,
+        subtitle,
         summaryData,
         rawHeaders,
         rawDataTable,
@@ -1517,7 +1556,7 @@ export async function exportYearlyPerformanceExcel(data: any, title: string, ret
  * Generates a PDF report for annual performance breakdown
  * Matches the original performance.tsx exportPdf logic exactly
  */
-export async function exportYearlyPerformancePDF(data: any, title: string, returnOptions = false) {
+export async function exportYearlyPerformancePDF(data: any, title: string, returnOptions = false, subtitle?: string) {
     const MONTHS_SHORT = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
     const fmtNum = (v: number | undefined | null) => {
@@ -1610,7 +1649,7 @@ export async function exportYearlyPerformancePDF(data: any, title: string, retur
         </div>
     `;
 
-    const options = { title, htmlContent };
+    const options = { title, subtitle, htmlContent };
     if (returnOptions) return options;
     return await generatePDF(options, title, true);
 }
@@ -1619,7 +1658,7 @@ export async function exportYearlyPerformancePDF(data: any, title: string, retur
 /**
  * Generates an Excel report for all farmers and their current main stock
  */
-export async function exportAllFarmerStockExcel(farmers: any[], title: string, returnOptions = false): Promise<any> {
+export async function exportAllFarmerStockExcel(farmers: any[], title: string, returnOptions = false, subtitle?: string): Promise<any> {
     const rawHeaders = ["Farmer Name", "Location", "Mobile", "Status", "Idle Days", "Main Stock (bags)", "Active Cycles", "Last Stock Updated"];
     const rawDataTable = farmers.map(f => {
         const idleDays = f.activeCyclesCount === 0 && f.lastCycleEndDate
@@ -1652,6 +1691,7 @@ export async function exportAllFarmerStockExcel(farmers: any[], title: string, r
 
     const options: ExcelExportOptions = {
         title,
+        subtitle,
         summaryData,
         rawHeaders,
         rawDataTable
@@ -1663,7 +1703,7 @@ export async function exportAllFarmerStockExcel(farmers: any[], title: string, r
 /**
  * Generates a PDF report for all farmers and their current main stock
  */
-export async function exportAllFarmerStockPDF(farmers: any[], title: string, returnOptions = false) {
+export async function exportAllFarmerStockPDF(farmers: any[], title: string, returnOptions = false, subtitle?: string) {
     const htmlContent = `
         <div class="kpi-container">
             <div class="kpi-card">
@@ -1723,7 +1763,7 @@ export async function exportAllFarmerStockPDF(farmers: any[], title: string, ret
         </table>
     `;
 
-    const options = { title, htmlContent };
+    const options = { title, subtitle, htmlContent };
     if (returnOptions) return options;
     return await generatePDF(options, title, false);
 }
@@ -1732,7 +1772,7 @@ export async function exportAllFarmerStockPDF(farmers: any[], title: string, ret
  * Generates an Excel report for the sales ledger
  * Matches the original sales.tsx exportExcel logic exactly
  */
-export async function exportSalesLedgerExcel(sales: any[], title: string, returnOptions = false): Promise<any> {
+export async function exportSalesLedgerExcel(sales: any[], title: string, returnOptions = false, subtitle?: string): Promise<any> {
     let totalRevenue = 0; let totalBirds = 0; let totalWeight = 0; let totalProfit = 0;
 
     // Grouping to identify latest sale per cycle
@@ -1824,6 +1864,7 @@ export async function exportSalesLedgerExcel(sales: any[], title: string, return
 
     const options: ExcelExportOptions = {
         title,
+        subtitle,
         summaryData,
         rawHeaders,
         groupedDataTable: Object.entries(monthGroups).map(([monthYear, group]) => {
@@ -1858,7 +1899,7 @@ export async function exportSalesLedgerExcel(sales: any[], title: string, return
  * Generates a PDF report for the sales ledger
  * Groups details by month/year with monthly sub-totals
  */
-export async function exportSalesLedgerPDF(sales: any[], title: string, returnOptions = false) {
+export async function exportSalesLedgerPDF(sales: any[], title: string, returnOptions = false, subtitle?: string) {
     let totalRevenue = 0; let totalBirds = 0; let totalWeight = 0; let totalProfit = 0;
 
     // Grouping to identify latest sale per cycle
@@ -1966,7 +2007,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
         ${monthSections}
     `;
 
-    const options = { title, htmlContent };
+    const options = { title, subtitle, htmlContent };
     if (returnOptions) return options;
     return await generatePDF(options, title, true);
 }
@@ -2046,7 +2087,7 @@ export async function downloadFileToDevice(uri: string, fileName: string, mimeTy
 /**
  * Generates an Excel report for Problematic Feeds
  */
-export async function exportProblematicFeedsExcel(farmers: any[], title: string, returnOptions = false): Promise<any> {
+export async function exportProblematicFeedsExcel(farmers: any[], title: string, returnOptions = false, subtitle?: string): Promise<any> {
     const data = farmers.map(f => ({
         "Farmer Name": f.name,
         "Main Stock (bags)": f.mainStock,
@@ -2056,6 +2097,7 @@ export async function exportProblematicFeedsExcel(farmers: any[], title: string,
 
     const options: ExcelExportOptions = {
         title,
+        subtitle,
         summaryData: [
             { Metric: "Total Problematic Farmers", Value: farmers.length.toString() },
             { Metric: "Total Problematic Bags", Value: farmers.reduce((acc, f) => acc + Number(f.problematicFeed || 0), 0).toString() },
@@ -2071,7 +2113,7 @@ export async function exportProblematicFeedsExcel(farmers: any[], title: string,
 /**
  * Generates a PDF report for Problematic Feeds
  */
-export async function exportProblematicFeedsPDF(farmers: any[], title: string, returnOptions = false) {
+export async function exportProblematicFeedsPDF(farmers: any[], title: string, returnOptions = false, subtitle?: string) {
     const totalBags = farmers.reduce((acc, f) => acc + Number(f.problematicFeed || 0), 0);
 
     let rowsHtml = '';
@@ -2119,7 +2161,7 @@ export async function exportProblematicFeedsPDF(farmers: any[], title: string, r
         </table>
     `;
 
-    const options = { title, htmlContent };
+    const options = { title, subtitle, htmlContent };
     if (returnOptions) return options;
     return await generatePDF(options, title, false);
 }

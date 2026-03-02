@@ -154,10 +154,39 @@ export default function ReportsScreen() {
     }
 
     const getReportTitle = (base: string) => {
-        const titleSuffix = isManagement
-            ? (selectedOfficerId ? ` - ${selectedOfficerName?.split(' ')[0] || "Officer"}` : "")
-            : ` - ${sessionData?.user?.name?.split(' ')[0] || "Officer"}`;
-        return `${base}${titleSuffix}`;
+        return base;
+    };
+
+    const getReportSubtitle = (officerOverride?: any) => {
+        let branchName = "";
+        let mobile = "";
+        let officerName = "";
+
+        if (officerOverride) {
+            officerName = officerOverride.name || "";
+            branchName = officerOverride.branchName || "";
+            mobile = officerOverride.mobile || "";
+        } else if (isManagement && selectedOfficerId) {
+            officerName = selectedOfficerName || "";
+        } else if (!isManagement) {
+            officerName = sessionData?.user?.name || "";
+            branchName = sessionData?.user?.branchName || "";
+            mobile = sessionData?.user?.mobile || "";
+        }
+
+        const parts = [];
+        if (branchName) parts.push(`Branch: ${branchName}`);
+        if (mobile) parts.push(`Mobile: ${mobile}`);
+
+        let subtitleText = parts.length > 0 ? parts.join(" | ") : "";
+
+        if (officerName) {
+            if (subtitleText) {
+                return `Officer: ${officerName}\n${subtitleText}`;
+            }
+            return `Officer: ${officerName}`;
+        }
+        return subtitleText || undefined;
     };
 
     // Modular Fetchers
@@ -166,6 +195,8 @@ export default function ReportsScreen() {
         if (isManagement) {
             if (selectedOfficerId) {
                 const data = await utils.management.cycles.listActive.fetch({ orgId, pageSize: 500, officerId: selectedOfficerId });
+                // Note: Get officer details if possible, or leave subtitle empty
+                // To keep it simple, we just use the global subtitle which might be empty for manager single officer
                 return type === 'pdf' ? exportActiveStockPDF(data.items, getReportTitle("Active Stock")) : exportActiveStockExcel(data.items, getReportTitle("Active Stock"));
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
@@ -174,7 +205,9 @@ export default function ReportsScreen() {
                     if (data.items.length > 0) {
                         return {
                             sheetName: officer.name,
-                            options: type === 'pdf' ? await exportActiveStockPDF(data.items, `Active Stock - ${officer.name}`, true) : await exportActiveStockExcel(data.items, `Active Stock - ${officer.name}`, true)
+                            options: type === 'pdf'
+                                ? await exportActiveStockPDF(data.items, `Active Stock - ${officer.name}`, true, getReportSubtitle(officer))
+                                : await exportActiveStockExcel(data.items, `Active Stock - ${officer.name}`, true, getReportSubtitle(officer))
                         };
                     }
                     return null;
@@ -186,7 +219,8 @@ export default function ReportsScreen() {
             }
         }
         const data = await utils.officer.cycles.listActive.fetch({ orgId, pageSize: 500 });
-        return type === 'pdf' ? exportActiveStockPDF(data.items, getReportTitle("Active Stock")) : exportActiveStockExcel(data.items, getReportTitle("Active Stock"));
+        const subtitle = getReportSubtitle();
+        return type === 'pdf' ? exportActiveStockPDF(data.items, getReportTitle("Active Stock"), false, subtitle) : exportActiveStockExcel(data.items, getReportTitle("Active Stock"), false, subtitle);
     };
 
     const fetchAllFarmerStock = async (type: 'pdf' | 'excel') => {
@@ -202,7 +236,9 @@ export default function ReportsScreen() {
                     if (data.items.length > 0) {
                         return {
                             sheetName: officer.name,
-                            options: type === 'pdf' ? await exportAllFarmerStockPDF(data.items, `All Farmer Stock - ${officer.name}`, true) : await exportAllFarmerStockExcel(data.items, `All Farmer Stock - ${officer.name}`, true)
+                            options: type === 'pdf'
+                                ? await exportAllFarmerStockPDF(data.items, `All Farmer Stock - ${officer.name}`, true, getReportSubtitle(officer))
+                                : await exportAllFarmerStockExcel(data.items, `All Farmer Stock - ${officer.name}`, true, getReportSubtitle(officer))
                         };
                     }
                     return null;
@@ -214,7 +250,8 @@ export default function ReportsScreen() {
             }
         }
         const data = await utils.officer.farmers.getMany.fetch({ orgId, pageSize: 500 });
-        return type === 'pdf' ? exportAllFarmerStockPDF(data.items, getReportTitle("All Farmer Stock")) : exportAllFarmerStockExcel(data.items, getReportTitle("All Farmer Stock"));
+        const subtitle = getReportSubtitle();
+        return type === 'pdf' ? exportAllFarmerStockPDF(data.items, getReportTitle("All Farmer Stock"), false, subtitle) : exportAllFarmerStockExcel(data.items, getReportTitle("All Farmer Stock"), false, subtitle);
     };
 
     const fetchProblematicFeeds = async (type: 'pdf' | 'excel') => {
@@ -230,7 +267,9 @@ export default function ReportsScreen() {
                     if (data.length > 0) {
                         return {
                             sheetName: officer.name,
-                            options: type === 'pdf' ? await exportProblematicFeedsPDF(data, `Problematic Feeds - ${officer.name}`, true) : await exportProblematicFeedsExcel(data, `Problematic Feeds - ${officer.name}`, true)
+                            options: type === 'pdf'
+                                ? await exportProblematicFeedsPDF(data, `Problematic Feeds - ${officer.name}`, true, getReportSubtitle(officer))
+                                : await exportProblematicFeedsExcel(data, `Problematic Feeds - ${officer.name}`, true, getReportSubtitle(officer))
                         };
                     }
                     return null;
@@ -242,7 +281,8 @@ export default function ReportsScreen() {
             }
         }
         const data = await utils.officer.farmers.getProblematicFeeds.fetch({ orgId });
-        return type === 'pdf' ? exportProblematicFeedsPDF(data, getReportTitle("Problematic Feeds")) : exportProblematicFeedsExcel(data, getReportTitle("Problematic Feeds"));
+        const subtitle = getReportSubtitle();
+        return type === 'pdf' ? exportProblematicFeedsPDF(data, getReportTitle("Problematic Feeds"), false, subtitle) : exportProblematicFeedsExcel(data, getReportTitle("Problematic Feeds"), false, subtitle);
     };
 
     const fetchSalesLedger = async (type: 'pdf' | 'excel') => {
@@ -250,6 +290,7 @@ export default function ReportsScreen() {
         if (isManagement) {
             if (selectedOfficerId) {
                 const data = await utils.management.sales.getRecentSales.fetch({ limit: 100, officerId: selectedOfficerId, orgId });
+                // Note: Get officer details if possible, or leave subtitle empty
                 return type === 'pdf' ? exportSalesLedgerPDF(data as any, getReportTitle("Sales Ledger")) : exportSalesLedgerExcel(data as any, getReportTitle("Sales Ledger"));
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
@@ -258,7 +299,9 @@ export default function ReportsScreen() {
                     if (data.length > 0) {
                         return {
                             sheetName: officer.name,
-                            options: type === 'pdf' ? await exportSalesLedgerPDF(data as any, `Recent Sales - ${officer.name}`, true) : await exportSalesLedgerExcel(data as any, `Recent Sales - ${officer.name}`, true)
+                            options: type === 'pdf'
+                                ? await exportSalesLedgerPDF(data as any, `Recent Sales - ${officer.name}`, true, getReportSubtitle(officer))
+                                : await exportSalesLedgerExcel(data as any, `Recent Sales - ${officer.name}`, true, getReportSubtitle(officer))
                         };
                     }
                     return null;
@@ -270,7 +313,8 @@ export default function ReportsScreen() {
             }
         }
         const data = await utils.officer.sales.getRecentSales.fetch({ limit: 100 });
-        return type === 'pdf' ? exportSalesLedgerPDF(data, getReportTitle("Recent Sales")) : exportSalesLedgerExcel(data, getReportTitle("Recent Sales"));
+        const subtitle = getReportSubtitle();
+        return type === 'pdf' ? exportSalesLedgerPDF(data, getReportTitle("Recent Sales"), false, subtitle) : exportSalesLedgerExcel(data, getReportTitle("Recent Sales"), false, subtitle);
     };
 
     const fetchDocPlacement = async (type: 'pdf' | 'excel') => {
@@ -286,7 +330,9 @@ export default function ReportsScreen() {
                     if (data?.farmers?.length > 0) {
                         return {
                             sheetName: officer.name,
-                            options: type === 'pdf' ? await exportRangeDocPlacementsPDF(data, `DOC Placements - ${officer.name}`, true) : await exportRangeDocPlacementsExcel(data, `DOC Placements - ${officer.name}`, true)
+                            options: type === 'pdf'
+                                ? await exportRangeDocPlacementsPDF(data, `DOC Placements - ${officer.name}`, true, getReportSubtitle(officer))
+                                : await exportRangeDocPlacementsExcel(data, `DOC Placements - ${officer.name}`, true, getReportSubtitle(officer))
                         };
                     }
                     return null;
@@ -298,7 +344,8 @@ export default function ReportsScreen() {
             }
         }
         const data = await utils.officer.reports.getRangeDocPlacements.fetch({ startMonth: startMonth + 1, startYear, endMonth: endMonth + 1, endYear });
-        return type === 'pdf' ? exportRangeDocPlacementsPDF(data, getReportTitle("DOC Placement")) : exportRangeDocPlacementsExcel(data, getReportTitle("DOC Placement"));
+        const subtitle = getReportSubtitle();
+        return type === 'pdf' ? exportRangeDocPlacementsPDF(data, getReportTitle("DOC Placement"), false, subtitle) : exportRangeDocPlacementsExcel(data, getReportTitle("DOC Placement"), false, subtitle);
     };
 
     const processProductionData = (rawData: any[]) => {
@@ -327,7 +374,12 @@ export default function ReportsScreen() {
                     const rawData = await utils.management.performanceReports.getRangeProductionRecords.fetch({ orgId, officerId: officer.id, startMonth, startYear, endMonth, endYear });
                     const data = processProductionData(rawData);
                     if (data.length > 0) {
-                        return { sheetName: officer.name, options: type === 'pdf' ? await exportRangeProductionPDF(data, `Production - ${officer.name}`, true) : await exportRangeProductionExcel(data, `Production - ${officer.name}`, true) };
+                        return {
+                            sheetName: officer.name,
+                            options: type === 'pdf'
+                                ? await exportRangeProductionPDF(data, `Production - ${officer.name}`, true, getReportSubtitle(officer))
+                                : await exportRangeProductionExcel(data, `Production - ${officer.name}`, true, getReportSubtitle(officer))
+                        };
                     }
                     return null;
                 });
@@ -339,7 +391,8 @@ export default function ReportsScreen() {
         }
         const rawData = await utils.officer.performanceReports.getRangeProductionRecords.fetch({ startMonth, startYear, endMonth, endYear });
         const data = processProductionData(rawData);
-        return type === 'pdf' ? exportRangeProductionPDF(data, getReportTitle("Monthly Production Efficiency")) : exportRangeProductionExcel(data, getReportTitle("Monthly Production Efficiency"));
+        const subtitle = getReportSubtitle();
+        return type === 'pdf' ? exportRangeProductionPDF(data, getReportTitle("Monthly Production Efficiency"), false, subtitle) : exportRangeProductionExcel(data, getReportTitle("Monthly Production Efficiency"), false, subtitle);
     };
 
     const fetchYearlyPerformance = async (type: 'pdf' | 'excel') => {
@@ -353,7 +406,12 @@ export default function ReportsScreen() {
                 const officerPromises = officers.map(async (officer: any) => {
                     const data = await utils.management.performanceReports.getAnnualPerformance.fetch({ orgId, officerId: officer.id, year: startYear });
                     if (data?.monthlyData?.length > 0) {
-                        return { sheetName: officer.name, options: type === 'pdf' ? await exportYearlyPerformancePDF(data, `Performance - ${officer.name}`, true) : await exportYearlyPerformanceExcel(data, `Performance - ${officer.name}`, true) };
+                        return {
+                            sheetName: officer.name,
+                            options: type === 'pdf'
+                                ? await exportYearlyPerformancePDF(data, `Performance - ${officer.name}`, true, getReportSubtitle(officer))
+                                : await exportYearlyPerformanceExcel(data, `Performance - ${officer.name}`, true, getReportSubtitle(officer))
+                        };
                     }
                     return null;
                 });
@@ -364,7 +422,8 @@ export default function ReportsScreen() {
             }
         }
         const data = await utils.officer.performanceReports.getAnnualPerformance.fetch({ year: startYear, officerId: undefined });
-        return type === 'pdf' ? exportYearlyPerformancePDF(data, getReportTitle(`Annual Performance ${startYear}`)) : exportYearlyPerformanceExcel(data, getReportTitle(`Annual Performance ${startYear}`));
+        const subtitle = getReportSubtitle();
+        return type === 'pdf' ? exportYearlyPerformancePDF(data, getReportTitle(`Annual Performance ${startYear}`), false, subtitle) : exportYearlyPerformanceExcel(data, getReportTitle(`Annual Performance ${startYear}`), false, subtitle);
     };
 
     const handleActiveStock = (type: 'pdf' | 'excel') => handleExport(`Active Stock Report`, type, () => fetchActiveStock(type));
@@ -571,7 +630,7 @@ export default function ReportsScreen() {
 
                 <Button
                     variant="default"
-                    className={`mb-6 h-16 rounded-sm border-primary/20 bg-primary dark:bg-primary/60 shadow-xl shadow-primary/20 ${isExporting && !isBulkExporting ? 'opacity-50' : 'active:scale-95'} ${isBulkExporting ? 'bg-blue-500 active:bg-blue-500' : ''}  ${isBulkExporting && stopRequested ? 'bg-red-500 active:bg-red-500' : ''}`}
+                    className={`mb-6 h-16 rounded-sm border-primary/20 bg-primary dark:bg-primary/60 shadow-xl shadow-primary/20 ${isExporting && !isBulkExporting ? 'opacity-50' : 'active:scale-95'} ${isBulkExporting ? 'dark:bg-blue-500 active:bg-blue-500' : ''}  ${isBulkExporting && stopRequested ? 'dark:bg-red-500 active:bg-red-500' : ''}`}
                     onPress={() => {
                         if (isBulkExporting) {
                             setStopRequested(true);
