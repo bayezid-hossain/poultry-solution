@@ -184,10 +184,10 @@ function RootLayoutInner() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(org)" />
         </Stack>
+        <VersionChecker />
       </AuthGuard>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <PortalHost />
-      <VersionChecker />
       {/* TopOverlay ensures toasts render above Modals, especially on iOS */}
       <TopOverlay style={Platform.OS === 'ios' ? undefined : { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'box-none' }}>
         <Toaster position="bottom-center" offset={40} />

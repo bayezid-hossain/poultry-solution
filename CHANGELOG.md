@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fix
+- Pop up update modal once
+
+### Fix
+- Farmer delete update farmer list
+
+### Added
+- Other cycles can be seen now
+
 ## [v1.0.20] - 2026-03-02
 
 ### Added

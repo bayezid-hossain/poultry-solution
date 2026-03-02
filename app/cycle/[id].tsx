@@ -3,6 +3,7 @@ import { AnalysisContent } from "@/components/cycles/analysis-content";
 import { CorrectAgeModal } from "@/components/cycles/correct-age-modal";
 import { CorrectDocModal } from "@/components/cycles/correct-doc-modal";
 import { CorrectMortalityModal } from "@/components/cycles/correct-mortality-modal";
+import { CycleAction, CycleCard } from "@/components/cycles/cycle-card";
 import { DeleteCycleModal } from "@/components/cycles/delete-cycle-modal";
 import { EndCycleModal } from "@/components/cycles/end-cycle-modal";
 import { LogsTimeline } from "@/components/cycles/logs-timeline";
@@ -33,6 +34,8 @@ export default function CycleDetailsScreen() {
     const [isSellModalOpen, setIsSellModalOpen] = useState(false);
     const [isReopenModalOpen, setIsReopenModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [activeOtherTab, setActiveOtherTab] = useState<'active' | 'inactive'>('active');
+    const [selectedActionCycle, setSelectedActionCycle] = useState<any>(null);
 
     // Accordions
     const [openSection, setOpenSection] = useState<'activity' | 'sales' | 'other' | 'insights' | null>(null);
@@ -104,7 +107,7 @@ export default function CycleDetailsScreen() {
             <ScrollView contentContainerClassName="p-4 pt-12 pb-20 gap-4">
 
                 {/* 1. Header Card */}
-                <Card className="bg-card/70 border-border/20 rounded-[20px] p-5 shadow-sm">
+                <Card className="bg-card/70 border-border/20 rounded-[20px] p-5 ">
                     <View className="flex-row items-start gap-4 mb-3">
                         <Pressable onPress={() => router.back()} className="mt-1">
                             <Icon as={ArrowLeft} size={20} className="text-foreground" />
@@ -276,9 +279,90 @@ export default function CycleDetailsScreen() {
                             <Icon as={openSection === 'other' ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
                         </Pressable>
                         {openSection === 'other' && (
-                            <View className="p-4 border-t border-border/20">
+                            <View className="p-0 border-t border-border/20">
                                 {renderSection === 'other' ? (
-                                    <Text className="text-muted-foreground italic text-center text-sm py-4">No other cycles found to display.</Text>
+                                    <View>
+                                        {/* Tab Switcher */}
+                                        <View className="flex-row p-2 gap-2 bg-muted/20">
+                                            <Pressable
+                                                onPress={() => setActiveOtherTab('active')}
+                                                className={`flex-1 py-2 rounded-xl items-center justify-center ${activeOtherTab === 'active' ? 'bg-primary ' : 'bg-transparent'}`}
+                                            >
+                                                <Text className={`text-xs font-bold uppercase tracking-widest ${activeOtherTab === 'active' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
+                                                    Active ({response.history?.filter((h: any) => h.status === 'active').length || 0})
+                                                </Text>
+                                            </Pressable>
+                                            <Pressable
+                                                onPress={() => setActiveOtherTab('inactive')}
+                                                className={`flex-1 py-2 rounded-xl items-center justify-center ${activeOtherTab === 'inactive' ? 'bg-amber-500 ' : 'bg-transparent'}`}
+                                            >
+                                                <Text className={`text-xs font-bold uppercase tracking-widest ${activeOtherTab === 'inactive' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
+                                                    History ({response.history?.filter((h: any) => h.status !== 'active').length || 0})
+                                                </Text>
+                                            </Pressable>
+                                        </View>
+
+                                        {/* Cycles List */}
+                                        <View className="p-2">
+                                            {(response.history || [])
+                                                .filter((h: any) => activeOtherTab === 'active' ? h.status === 'active' : h.status !== 'active')
+                                                .length > 0 ? (
+                                                (response.history || [])
+                                                    .filter((h: any) => activeOtherTab === 'active' ? h.status === 'active' : h.status !== 'active')
+                                                    .map((item: any) => (
+                                                        <CycleCard
+                                                            key={item.id}
+                                                            cycle={{
+                                                                ...item,
+                                                                name: item.cycleName || item.name,
+                                                                intake: Number(item.finalIntake || item.intake || 0),
+                                                                createdAt: item.startDate || item.createdAt
+                                                            }}
+                                                            onPress={() => router.push(`/cycle/${item.id}` as any)}
+                                                            onAction={(action: CycleAction) => {
+                                                                const cycleData = {
+                                                                    id: item.id,
+                                                                    name: item.cycleName || item.name,
+                                                                    doc: item.doc,
+                                                                    age: item.age,
+                                                                    mortality: item.mortality,
+                                                                    intake: Number(item.finalIntake || item.intake || 0),
+                                                                    birdsSold: item.birdsSold,
+                                                                    startDate: item.startDate || item.createdAt
+                                                                };
+                                                                setSelectedActionCycle(cycleData);
+
+                                                                if (action === 'sell') {
+                                                                    if (!membership?.isPro) { setProModal({ open: true, feature: "Sell Birds" }); return; }
+                                                                    setIsSellModalOpen(true);
+                                                                } else if (action === 'add_mortality') {
+                                                                    setIsMortalityModalOpen(true);
+                                                                } else if (action === 'edit_doc') {
+                                                                    if (!membership?.isPro) { setProModal({ open: true, feature: "Edit Initial Birds (DOC)" }); return; }
+                                                                    setIsDocModalOpen(true);
+                                                                } else if (action === 'edit_age') {
+                                                                    if (!membership?.isPro) { setProModal({ open: true, feature: "Edit Age" }); return; }
+                                                                    setIsAgeModalOpen(true);
+                                                                } else if (action === 'correct_mortality') {
+                                                                    if (!membership?.isPro) { setProModal({ open: true, feature: "Correct Total Mortality" }); return; }
+                                                                    setIsMortalityCorrectionOpen(true);
+                                                                } else if (action === 'end_cycle') {
+                                                                    setIsEndCycleOpen(true);
+                                                                } else if (action === 'reopen') {
+                                                                    setIsReopenModalOpen(true);
+                                                                } else if (action === 'delete') {
+                                                                    setIsDeleteModalOpen(true);
+                                                                }
+                                                            }}
+                                                        />
+                                                    ))
+                                            ) : (
+                                                <Text className="text-muted-foreground italic text-center text-sm py-8">
+                                                    No {activeOtherTab} cycles found.
+                                                </Text>
+                                            )}
+                                        </View>
+                                    </View>
                                 ) : (
                                     <View className="py-20 items-center justify-center">
                                         <BirdyLoader size={48} color="#10b981" />
@@ -432,35 +516,53 @@ export default function CycleDetailsScreen() {
                 <>
                     <AddMortalityModal
                         open={isMortalityModalOpen}
-                        onOpenChange={setIsMortalityModalOpen}
-                        cycleId={cycle.id}
-                        startDate={cycle.createdAt ? new Date(cycle.createdAt) : null}
+                        onOpenChange={(open) => {
+                            setIsMortalityModalOpen(open);
+                            if (!open) setSelectedActionCycle(null);
+                        }}
+                        cycleId={selectedActionCycle?.id || cycle.id}
+                        startDate={selectedActionCycle?.startDate ? new Date(selectedActionCycle.startDate) : (cycle.createdAt ? new Date(cycle.createdAt) : null)}
                         farmerName={farmer.name}
                         onSuccess={refetch}
                     />
 
                     <ReopenCycleModal
                         open={isReopenModalOpen}
-                        onOpenChange={setIsReopenModalOpen}
-                        historyId={cycle.id}
+                        onOpenChange={(open) => {
+                            setIsReopenModalOpen(open);
+                            if (!open) setSelectedActionCycle(null);
+                        }}
+                        historyId={selectedActionCycle?.id || cycle.id}
                         cycleName={farmer.name}
                         onSuccess={() => refetch()}
                     />
 
                     <DeleteCycleModal
                         open={isDeleteModalOpen}
-                        onOpenChange={setIsDeleteModalOpen}
-                        historyId={cycle.id}
+                        onOpenChange={(open) => {
+                            setIsDeleteModalOpen(open);
+                            if (!open) setSelectedActionCycle(null);
+                        }}
+                        historyId={selectedActionCycle?.id || cycle.id}
                         cycleName={farmer.name}
-                        onSuccess={() => router.back()}
+                        onSuccess={() => {
+                            if (selectedActionCycle?.id && selectedActionCycle.id !== cycle.id) {
+                                refetch();
+                            } else {
+                                router.back();
+                            }
+                        }}
                     />
                     <EndCycleModal
                         open={isEndCycleOpen}
-                        onOpenChange={setIsEndCycleOpen}
+                        onOpenChange={(open) => {
+                            setIsEndCycleOpen(open);
+                            if (!open) setSelectedActionCycle(null);
+                        }}
                         cycle={{
-                            id: cycle.id,
-                            name: cycle.name,
-                            intake: Number(cycle.intake)
+                            id: selectedActionCycle?.id || cycle.id,
+                            name: selectedActionCycle?.name || cycle.name,
+                            intake: Number(selectedActionCycle?.intake || cycle.intake)
                         }}
                         farmerName={farmer.name}
                         onRecordSale={() => {
@@ -477,42 +579,54 @@ export default function CycleDetailsScreen() {
 
                     <CorrectDocModal
                         open={isDocModalOpen}
-                        onOpenChange={setIsDocModalOpen}
-                        cycleId={cycle.id}
-                        currentDoc={cycle.doc}
+                        onOpenChange={(open) => {
+                            setIsDocModalOpen(open);
+                            if (!open) setSelectedActionCycle(null);
+                        }}
+                        cycleId={selectedActionCycle?.id || cycle.id}
+                        currentDoc={selectedActionCycle?.doc || cycle.doc}
                         onSuccess={refetch}
                     />
 
                     <CorrectAgeModal
                         open={isAgeModalOpen}
-                        onOpenChange={setIsAgeModalOpen}
-                        cycleId={cycle.id}
-                        currentAge={cycle.age}
+                        onOpenChange={(open) => {
+                            setIsAgeModalOpen(open);
+                            if (!open) setSelectedActionCycle(null);
+                        }}
+                        cycleId={selectedActionCycle?.id || cycle.id}
+                        currentAge={selectedActionCycle?.age || cycle.age}
                         onSuccess={refetch}
                     />
 
                     <CorrectMortalityModal
                         open={isMortalityCorrectionOpen}
-                        onOpenChange={setIsMortalityCorrectionOpen}
-                        cycleId={cycle.id}
+                        onOpenChange={(open) => {
+                            setIsMortalityCorrectionOpen(open);
+                            if (!open) setSelectedActionCycle(null);
+                        }}
+                        cycleId={selectedActionCycle?.id || cycle.id}
                         onSuccess={refetch}
                     />
 
                     <SellModal
                         open={isSellModalOpen}
-                        onOpenChange={setIsSellModalOpen}
-                        cycleId={cycle.id}
+                        onOpenChange={(open) => {
+                            setIsSellModalOpen(open);
+                            if (!open) setSelectedActionCycle(null);
+                        }}
+                        cycleId={selectedActionCycle?.id || cycle.id}
                         farmerId={farmer.id}
-                        cycleName={cycle.name}
+                        cycleName={selectedActionCycle?.name || cycle.name}
                         farmerName={farmer.name}
                         farmerLocation={farmer.location}
                         farmerMobile={farmer.mobile}
-                        cycleAge={cycle.age}
-                        doc={cycle.doc}
-                        mortality={cycle.mortality || 0}
-                        birdsSold={cycle.birdsSold || 0}
-                        intake={Number(cycle.intake || 0)}
-                        startDate={new Date(cycle.startDate)}
+                        cycleAge={selectedActionCycle?.age || cycle.age}
+                        doc={selectedActionCycle?.doc || cycle.doc}
+                        mortality={selectedActionCycle?.mortality || cycle.mortality || 0}
+                        birdsSold={selectedActionCycle?.birdsSold || cycle.birdsSold || 0}
+                        intake={Number(selectedActionCycle?.intake || cycle.intake || 0)}
+                        startDate={new Date(selectedActionCycle?.startDate || cycle.startDate)}
                     />
                 </>
             )}

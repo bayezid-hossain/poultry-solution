@@ -245,6 +245,7 @@ export default function FarmersScreen() {
                         farmerId={deleteFarmer.id}
                         organizationId={deleteFarmer.organizationId}
                         farmerName={deleteFarmer.name}
+                        onSuccess={() => refetch()}
                     />)
             }
             {

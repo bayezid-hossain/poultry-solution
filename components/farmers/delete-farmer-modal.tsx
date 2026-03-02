@@ -14,6 +14,7 @@ interface DeleteFarmerModalProps {
     farmerName: string;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onSuccess?: () => void;
 }
 
 export function DeleteFarmerModal({
@@ -22,16 +23,26 @@ export function DeleteFarmerModal({
     farmerName,
     open,
     onOpenChange,
+    onSuccess,
 }: DeleteFarmerModalProps) {
+    const utils = trpc.useUtils();
 
     const mutation = trpc.officer.farmers.delete.useMutation({
-        onSuccess: () => {
+        onSuccess: async () => {
             onOpenChange(false);
-            // Navigate back after successful deletion
-            if (router.canGoBack()) {
-                router.back();
+            // Invalidate queries to refetch data
+            await utils.officer.farmers.listWithStock.invalidate();
+            await utils.management.farmers.getMany.invalidate();
+
+            if (onSuccess) {
+                onSuccess();
             } else {
-                router.replace("/(drawer)/(tabs)/farmers");
+                // Default navigation if no custom success handler
+                if (router.canGoBack()) {
+                    router.back();
+                } else {
+                    router.replace("/(drawer)/(tabs)/farmers");
+                }
             }
         },
         onError: (err: any) => {
