@@ -29,11 +29,11 @@ export const trpcClient = trpc.createClient({
                         // Find the cookie ending in 'session_token' (e.g. better-auth.session_token)
                         for (const [key, val] of Object.entries(parsed) as any[]) {
                             if (key.includes("session_token") && val?.value) {
-                                // check expiry
-                                if (!val.expires || new Date(val.expires) >= new Date()) {
-                                    token = val.value;
-                                    break;
-                                }
+                                // REMOVED: Local expiry check. 
+                                // Trust the server to handle session expiration.
+                                // Local clocks are often out of sync.
+                                token = val.value;
+                                break;
                             }
                         }
                     }
