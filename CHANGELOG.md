@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.16] - 2026-03-02
+
 ### Added
 - Beautiful loader in download all reports button
 
