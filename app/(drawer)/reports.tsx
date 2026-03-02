@@ -206,8 +206,8 @@ export default function ReportsScreen() {
                         return {
                             sheetName: officer.name,
                             options: type === 'pdf'
-                                ? await exportActiveStockPDF(data.items, `Active Stock - ${officer.name}`, true, getReportSubtitle(officer))
-                                : await exportActiveStockExcel(data.items, `Active Stock - ${officer.name}`, true, getReportSubtitle(officer))
+                                ? await exportActiveStockPDF(data.items, `Active Stock `, true, getReportSubtitle(officer))
+                                : await exportActiveStockExcel(data.items, `Active Stock `, true, getReportSubtitle(officer))
                         };
                     }
                     return null;
@@ -237,8 +237,8 @@ export default function ReportsScreen() {
                         return {
                             sheetName: officer.name,
                             options: type === 'pdf'
-                                ? await exportAllFarmerStockPDF(data.items, `All Farmer Stock - ${officer.name}`, true, getReportSubtitle(officer))
-                                : await exportAllFarmerStockExcel(data.items, `All Farmer Stock - ${officer.name}`, true, getReportSubtitle(officer))
+                                ? await exportAllFarmerStockPDF(data.items, `All Farmer Stock `, true, getReportSubtitle(officer))
+                                : await exportAllFarmerStockExcel(data.items, `All Farmer Stock `, true, getReportSubtitle(officer))
                         };
                     }
                     return null;
@@ -268,8 +268,8 @@ export default function ReportsScreen() {
                         return {
                             sheetName: officer.name,
                             options: type === 'pdf'
-                                ? await exportProblematicFeedsPDF(data, `Problematic Feeds - ${officer.name}`, true, getReportSubtitle(officer))
-                                : await exportProblematicFeedsExcel(data, `Problematic Feeds - ${officer.name}`, true, getReportSubtitle(officer))
+                                ? await exportProblematicFeedsPDF(data, `Problematic Feeds `, true, getReportSubtitle(officer))
+                                : await exportProblematicFeedsExcel(data, `Problematic Feeds `, true, getReportSubtitle(officer))
                         };
                     }
                     return null;
@@ -300,8 +300,8 @@ export default function ReportsScreen() {
                         return {
                             sheetName: officer.name,
                             options: type === 'pdf'
-                                ? await exportSalesLedgerPDF(data as any, `Recent Sales - ${officer.name}`, true, getReportSubtitle(officer))
-                                : await exportSalesLedgerExcel(data as any, `Recent Sales - ${officer.name}`, true, getReportSubtitle(officer))
+                                ? await exportSalesLedgerPDF(data as any, `Recent Sales `, true, getReportSubtitle(officer))
+                                : await exportSalesLedgerExcel(data as any, `Recent Sales `, true, getReportSubtitle(officer))
                         };
                     }
                     return null;
@@ -331,8 +331,8 @@ export default function ReportsScreen() {
                         return {
                             sheetName: officer.name,
                             options: type === 'pdf'
-                                ? await exportRangeDocPlacementsPDF(data, `DOC Placements - ${officer.name}`, true, getReportSubtitle(officer))
-                                : await exportRangeDocPlacementsExcel(data, `DOC Placements - ${officer.name}`, true, getReportSubtitle(officer))
+                                ? await exportRangeDocPlacementsPDF(data, `DOC Placements `, true, getReportSubtitle(officer))
+                                : await exportRangeDocPlacementsExcel(data, `DOC Placements `, true, getReportSubtitle(officer))
                         };
                     }
                     return null;
@@ -377,8 +377,8 @@ export default function ReportsScreen() {
                         return {
                             sheetName: officer.name,
                             options: type === 'pdf'
-                                ? await exportRangeProductionPDF(data, `Production - ${officer.name}`, true, getReportSubtitle(officer))
-                                : await exportRangeProductionExcel(data, `Production - ${officer.name}`, true, getReportSubtitle(officer))
+                                ? await exportRangeProductionPDF(data, `Production `, true, getReportSubtitle(officer))
+                                : await exportRangeProductionExcel(data, `Production `, true, getReportSubtitle(officer))
                         };
                     }
                     return null;
@@ -409,8 +409,8 @@ export default function ReportsScreen() {
                         return {
                             sheetName: officer.name,
                             options: type === 'pdf'
-                                ? await exportYearlyPerformancePDF(data, `Performance - ${officer.name}`, true, getReportSubtitle(officer))
-                                : await exportYearlyPerformanceExcel(data, `Performance - ${officer.name}`, true, getReportSubtitle(officer))
+                                ? await exportYearlyPerformancePDF(data, `Performance `, true, getReportSubtitle(officer))
+                                : await exportYearlyPerformanceExcel(data, `Performance `, true, getReportSubtitle(officer))
                         };
                     }
                     return null;
