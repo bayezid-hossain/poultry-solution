@@ -29,8 +29,8 @@ export function OfficerSelector({ orgId, onOfficerChange, disableGlobal = false 
         { enabled: !!orgId }
     );
 
-    const handleSelect = (id: string | null, name: string) => {
-        setSelectedOfficer(id, name);
+    const handleSelect = (id: string | null, name: string, branch?: string | null, mob?: string | null) => {
+        setSelectedOfficer(id, name, branch, mob);
         setIsOpen(false);
         setSearchQuery("");
         if (onOfficerChange) {
@@ -176,7 +176,7 @@ export function OfficerSelector({ orgId, onOfficerChange, disableGlobal = false 
                                                         ? 'bg-primary/10 border-primary/20'
                                                         : 'bg-muted/20 border-border/30'
                                                         }`}
-                                                    onPress={() => handleSelect(officer.id, officer.name)}
+                                                    onPress={() => handleSelect(officer.id, officer.name, officer.branchName, officer.mobile)}
                                                 >
                                                     <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${getAvatarColor(officer.id)}`}>
                                                         <Text className="text-white font-black text-sm">{getInitials(officer.name)}</Text>

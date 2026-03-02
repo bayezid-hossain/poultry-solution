@@ -5,6 +5,7 @@ import { OfficerKpiCards } from '@/components/dashboard/officer-kpi-cards';
 import { PerformanceInsights } from '@/components/dashboard/performance-insights';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { SmartWatchdog } from '@/components/dashboard/smart-watchdog';
+import { ProBlocker } from '@/components/pro-blocker';
 import { ScreenHeader } from '@/components/screen-header';
 import { Icon } from '@/components/ui/icon';
 import { LoadingState } from '@/components/ui/loading-state';
@@ -110,6 +111,15 @@ export default function HomeScreen() {
 
   if (statsLoading || cyclesLoading) {
     return <LoadingState fullPage title="Synchronizing" description="Fetching Global Operations..." />;
+  }
+
+  if (membership && !membership.isPro) {
+    return (
+      <View className="flex-1 bg-background">
+        <ScreenHeader title="Dashboard" />
+        <ProBlocker feature="Dashboard Analytics" description="Unlock comprehensive production monitoring and management insights." />
+      </View>
+    );
   }
 
   const cycles = cyclesData?.items || [];

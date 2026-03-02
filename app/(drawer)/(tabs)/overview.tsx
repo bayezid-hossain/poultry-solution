@@ -1,4 +1,5 @@
 /// <reference types="nativewind/types" />
+import { ProBlocker } from "@/components/pro-blocker";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,15 @@ export default function OverviewScreen() {
                 <View className="flex-1 items-center justify-center">
                     <LoadingState title="Synchronizing" description="Fetching management dashboard..." />
                 </View>
+            </View>
+        );
+    }
+
+    if (membership && !membership.isPro) {
+        return (
+            <View className="flex-1 bg-background">
+                <ScreenHeader title="Management" />
+                <ProBlocker feature="Management Dashboard" description="Unlock advanced organization-wide analytics and oversight tools." />
             </View>
         );
     }

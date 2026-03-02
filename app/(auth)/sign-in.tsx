@@ -17,7 +17,6 @@ import {
     View,
 } from "react-native";
 
-WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
     const router = useRouter();
@@ -67,8 +66,11 @@ export default function SignInScreen() {
             const result = await authClient.signIn.social({
                 provider: "google",
                 callbackURL: "/",
-            });
+                newUserCallbackURL: "/",
+                prompt: "select_account"
+            } as any);
             if (result?.error) {
+                console.error("Google sign-in error:", result.error);
                 setError(result.error.message ?? "Google sign-in failed.");
                 setGoogleLoading(false);
             }

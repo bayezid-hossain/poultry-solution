@@ -14,7 +14,11 @@ import { Text } from "@/components/ui/text";
 import { StorageProvider } from "@/context/storage-context";
 import { ThemeProvider, useTheme } from "@/context/theme-context";
 import { authClient } from "@/lib/auth-client";
+import * as WebBrowser from "expo-web-browser";
 import { Platform } from "react-native";
+
+// Handle redirects back to the app from social login as early as possible
+WebBrowser.maybeCompleteAuthSession();
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { data: session, isPending: isSessionPending } = authClient.useSession();

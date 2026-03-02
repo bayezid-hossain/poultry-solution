@@ -102,7 +102,7 @@ export default function ReportsScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const { data: sessionData } = trpc.auth.getSession.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
-    const { selectedOfficerId, selectedOfficerName } = useGlobalFilter();
+    const { selectedOfficerId, selectedOfficerName, branchName: selectedBranch, mobile: selectedMobile } = useGlobalFilter();
 
     // Range states
     const [startMonth, setStartMonth] = useState(new Date().getMonth());
@@ -168,6 +168,8 @@ export default function ReportsScreen() {
             mobile = officerOverride.mobile || "";
         } else if (isManagement && selectedOfficerId) {
             officerName = selectedOfficerName || "";
+            branchName = selectedBranch || "";
+            mobile = selectedMobile || "";
         } else if (!isManagement) {
             officerName = sessionData?.user?.name || "";
             branchName = sessionData?.user?.branchName || "";
@@ -195,9 +197,8 @@ export default function ReportsScreen() {
         if (isManagement) {
             if (selectedOfficerId) {
                 const data = await utils.management.cycles.listActive.fetch({ orgId, pageSize: 500, officerId: selectedOfficerId });
-                // Note: Get officer details if possible, or leave subtitle empty
-                // To keep it simple, we just use the global subtitle which might be empty for manager single officer
-                return type === 'pdf' ? exportActiveStockPDF(data.items, getReportTitle("Active Stock")) : exportActiveStockExcel(data.items, getReportTitle("Active Stock"));
+                const subtitle = getReportSubtitle();
+                return type === 'pdf' ? exportActiveStockPDF(data.items, getReportTitle("Active Stock"), false, subtitle) : exportActiveStockExcel(data.items, getReportTitle("Active Stock"), false, subtitle);
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
                 const officerPromises = officers.map(async (officer: any) => {
@@ -228,7 +229,8 @@ export default function ReportsScreen() {
         if (isManagement) {
             if (selectedOfficerId) {
                 const data = await utils.management.farmers.getMany.fetch({ orgId, pageSize: 500, officerId: selectedOfficerId });
-                return type === 'pdf' ? exportAllFarmerStockPDF(data.items, getReportTitle("All Farmer Stock")) : exportAllFarmerStockExcel(data.items, getReportTitle("All Farmer Stock"));
+                const subtitle = getReportSubtitle();
+                return type === 'pdf' ? exportAllFarmerStockPDF(data.items, getReportTitle("All Farmer Stock"), false, subtitle) : exportAllFarmerStockExcel(data.items, getReportTitle("All Farmer Stock"), false, subtitle);
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
                 const officerPromises = officers.map(async (officer: any) => {
@@ -259,7 +261,8 @@ export default function ReportsScreen() {
         if (isManagement) {
             if (selectedOfficerId) {
                 const data = await utils.management.farmers.getProblematicFeeds.fetch({ orgId, officerId: selectedOfficerId });
-                return type === 'pdf' ? exportProblematicFeedsPDF(data, getReportTitle("Problematic Feeds")) : exportProblematicFeedsExcel(data, getReportTitle("Problematic Feeds"));
+                const subtitle = getReportSubtitle();
+                return type === 'pdf' ? exportProblematicFeedsPDF(data, getReportTitle("Problematic Feeds"), false, subtitle) : exportProblematicFeedsExcel(data, getReportTitle("Problematic Feeds"), false, subtitle);
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
                 const officerPromises = officers.map(async (officer: any) => {
@@ -290,8 +293,8 @@ export default function ReportsScreen() {
         if (isManagement) {
             if (selectedOfficerId) {
                 const data = await utils.management.sales.getRecentSales.fetch({ limit: 100, officerId: selectedOfficerId, orgId });
-                // Note: Get officer details if possible, or leave subtitle empty
-                return type === 'pdf' ? exportSalesLedgerPDF(data as any, getReportTitle("Sales Ledger")) : exportSalesLedgerExcel(data as any, getReportTitle("Sales Ledger"));
+                const subtitle = getReportSubtitle();
+                return type === 'pdf' ? exportSalesLedgerPDF(data as any, getReportTitle("Sales Ledger"), false, subtitle) : exportSalesLedgerExcel(data as any, getReportTitle("Sales Ledger"), false, subtitle);
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
                 const officerPromises = officers.map(async (officer: any) => {
@@ -321,7 +324,8 @@ export default function ReportsScreen() {
         if (isManagement) {
             if (selectedOfficerId) {
                 const data = await utils.management.reports.getRangeDocPlacements.fetch({ orgId: membership?.orgId ?? "", officerId: selectedOfficerId, startMonth: startMonth + 1, startYear, endMonth: endMonth + 1, endYear });
-                return type === 'pdf' ? exportRangeDocPlacementsPDF(data, getReportTitle("DOC Placement")) : exportRangeDocPlacementsExcel(data, getReportTitle("DOC Placement"));
+                const subtitle = getReportSubtitle();
+                return type === 'pdf' ? exportRangeDocPlacementsPDF(data, getReportTitle("DOC Placement"), false, subtitle) : exportRangeDocPlacementsExcel(data, getReportTitle("DOC Placement"), false, subtitle);
             } else {
                 const orgId = membership?.orgId ?? "";
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
@@ -366,7 +370,8 @@ export default function ReportsScreen() {
                 const orgId = membership?.orgId ?? "";
                 const rawData = await utils.management.performanceReports.getRangeProductionRecords.fetch({ orgId, officerId: selectedOfficerId, startMonth, startYear, endMonth, endYear });
                 const dataToExport = processProductionData(rawData);
-                return type === 'pdf' ? exportRangeProductionPDF(dataToExport, getReportTitle("Monthly Production Efficiency")) : exportRangeProductionExcel(dataToExport, getReportTitle("Monthly Production Efficiency"));
+                const subtitle = getReportSubtitle();
+                return type === 'pdf' ? exportRangeProductionPDF(dataToExport, getReportTitle("Monthly Production Efficiency"), false, subtitle) : exportRangeProductionExcel(dataToExport, getReportTitle("Monthly Production Efficiency"), false, subtitle);
             } else {
                 const orgId = membership?.orgId ?? "";
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
@@ -400,7 +405,8 @@ export default function ReportsScreen() {
             const orgId = membership?.orgId ?? "";
             if (selectedOfficerId) {
                 const data = await utils.management.performanceReports.getAnnualPerformance.fetch({ orgId, officerId: selectedOfficerId, year: startYear });
-                return type === 'pdf' ? exportYearlyPerformancePDF(data, getReportTitle(`Annual Performance ${startYear}`)) : exportYearlyPerformanceExcel(data, getReportTitle(`Annual Performance ${startYear}`));
+                const subtitle = getReportSubtitle();
+                return type === 'pdf' ? exportYearlyPerformancePDF(data, getReportTitle(`Annual Performance ${startYear}`), false, subtitle) : exportYearlyPerformanceExcel(data, getReportTitle(`Annual Performance ${startYear}`), false, subtitle);
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
                 const officerPromises = officers.map(async (officer: any) => {

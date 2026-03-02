@@ -27,6 +27,8 @@ export function ProBlocker({
         onSuccess: () => {
             toast.success("Pro access requested successfully!");
             queryClient.invalidateQueries({ queryKey: [["officer", "getMyRequestStatus"]] });
+            // Refresh membership status immediately to see if it's already updated
+            queryClient.invalidateQueries({ queryKey: [["auth", "getMyMembership"]] });
         },
         onError: (err) => {
             toast.error(`Request failed: ${err.message}`);
