@@ -135,7 +135,7 @@ export default function ReportsScreen() {
 
     // TRPC Utils
     const utils = trpc.useUtils();
-    const { directoryUri } = useStorage();
+    const { directoryUri, saveDirectoryUri } = useStorage();
 
     const handleExport = async (reportName: string, type: 'pdf' | 'excel', fetcher: () => Promise<any>) => {
         setIsExporting(true);
@@ -490,6 +490,8 @@ export default function ReportsScreen() {
         let completed = 0;
 
         try {
+            let activeDir = directoryUri;
+
             for (const report of reports) {
                 if (stopRequestedRef.current) break;
 
@@ -527,7 +529,11 @@ export default function ReportsScreen() {
             } else {
                 setCurrentBulkTask("Saving to Device...");
                 for (const file of createdFiles) {
-                    await downloadFileToDevice(file.uri, file.name, file.type, directoryUri, true);
+                    const usedDir = await downloadFileToDevice(file.uri, file.name, file.type, activeDir, true);
+                    if (usedDir && !activeDir) {
+                        activeDir = usedDir;
+                        await saveDirectoryUri(usedDir);
+                    }
                 }
                 toast.success("All Reports Downloaded", { description: "Verified and saved to your device." });
             }
@@ -779,7 +785,17 @@ export default function ReportsScreen() {
                     type={previewData.type}
                     onView={() => openFile(previewData.uri, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
                     onShare={() => shareFile(previewData.uri, previewData.title, previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
-                    onDownload={isBulkExporting ? undefined : () => downloadFileToDevice(previewData.uri, previewData.title + (previewData.type === 'pdf' ? '.pdf' : '.xlsx'), previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', directoryUri)}
+                    onDownload={isBulkExporting ? undefined : async () => {
+                        const usedDir = await downloadFileToDevice(
+                            previewData.uri,
+                            previewData.title + (previewData.type === 'pdf' ? '.pdf' : '.xlsx'),
+                            previewData.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            directoryUri
+                        );
+                        if (usedDir && !directoryUri) {
+                            await saveDirectoryUri(usedDir);
+                        }
+                    }}
                 />
             )}
 

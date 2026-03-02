@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Storage Selection once
+
 ## [v1.0.18] - 2026-03-02
 
 ### Changed

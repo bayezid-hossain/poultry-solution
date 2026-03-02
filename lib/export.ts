@@ -2015,7 +2015,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
 /**
  * Downloads a file strictly to local device storage using StorageAccessFramework (Android) or Sharing (iOS)
  */
-export async function downloadFileToDevice(uri: string, fileName: string, mimeType: string, preferredDirectoryUri?: string | null, skipToast = false) {
+export async function downloadFileToDevice(uri: string, fileName: string, mimeType: string, preferredDirectoryUri?: string | null, skipToast = false): Promise<string | undefined> {
     if (Platform.OS === "android") {
         try {
             let targetDirectoryUri = preferredDirectoryUri;
@@ -2059,6 +2059,7 @@ export async function downloadFileToDevice(uri: string, fileName: string, mimeTy
                     description: `Saved to ${datePath} folder.`
                 });
             }
+            return targetDirectoryUri;
         } catch (e) {
             console.error("Error downloading file", e);
             if (!skipToast) {
@@ -2066,6 +2067,7 @@ export async function downloadFileToDevice(uri: string, fileName: string, mimeTy
                     description: "There was an error saving the file."
                 });
             }
+            return;
         }
     } else {
         // iOS: use sharing with a UTI to trigger Save to Files
@@ -2075,11 +2077,13 @@ export async function downloadFileToDevice(uri: string, fileName: string, mimeTy
                 dialogTitle: `Download ${fileName}`,
                 UTI: mimeType === 'application/pdf' ? 'com.adobe.pdf' : 'com.microsoft.excel.xls'
             });
+            return "ios_shared";
         } catch (e) {
             console.error("Error sharing/saving file", e);
             if (!skipToast) {
                 toast.error("There was an error saving the file.");
             }
+            return;
         }
     }
 }

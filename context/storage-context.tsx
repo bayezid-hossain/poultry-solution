@@ -11,6 +11,7 @@ interface StorageState {
     isConfigured: boolean;
     setupDownloadFolder: () => Promise<void>;
     resetDownloadFolder: () => Promise<void>;
+    saveDirectoryUri: (uri: string) => Promise<void>;
 }
 
 const StorageContext = createContext<StorageState>({
@@ -18,6 +19,7 @@ const StorageContext = createContext<StorageState>({
     isConfigured: false,
     setupDownloadFolder: async () => { },
     resetDownloadFolder: async () => { },
+    saveDirectoryUri: async () => { },
 });
 
 export function StorageProvider({ children }: { children: React.ReactNode }) {
@@ -58,6 +60,11 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const saveDirectoryUri = async (uri: string) => {
+        await AsyncStorage.setItem(STORAGE_KEY, uri);
+        setDirectoryUri(uri);
+    };
+
     const resetDownloadFolder = async () => {
         await AsyncStorage.removeItem(STORAGE_KEY);
         setDirectoryUri(null);
@@ -69,7 +76,8 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
             directoryUri,
             isConfigured: !!directoryUri || Platform.OS !== "android",
             setupDownloadFolder,
-            resetDownloadFolder
+            resetDownloadFolder,
+            saveDirectoryUri
         }}>
             {children}
         </StorageContext.Provider>
