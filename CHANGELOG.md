@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.14] - 2026-03-02
+
 ### Added
 - Version checker show only once per session
 
