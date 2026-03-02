@@ -10,9 +10,10 @@ export interface OfficerSelectorProps {
     orgId?: string;
     onOfficerChange?: (officerId: string | null) => void;
     disableGlobal?: boolean;
+    disabled?: boolean;
 }
 
-export function OfficerSelector({ orgId, onOfficerChange, disableGlobal = false }: OfficerSelectorProps) {
+export function OfficerSelector({ orgId, onOfficerChange, disableGlobal = false, disabled = false }: OfficerSelectorProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -60,8 +61,8 @@ export function OfficerSelector({ orgId, onOfficerChange, disableGlobal = false 
         <>
             {/* Trigger Button */}
             <Pressable
-                onPress={() => setIsOpen(true)}
-                className="flex-row items-center gap-2 bg-muted/40 border border-border/50 px-4 py-2.5 rounded-full active:bg-muted/60"
+                onPress={() => !disabled && setIsOpen(true)}
+                className={`flex-row items-center gap-2 bg-muted/40 border border-border/50 px-4 py-2.5 rounded-full active:bg-muted/60 ${disabled ? 'opacity-40' : ''}`}
             >
                 <View className="w-5 h-5 rounded-full bg-primary/10 items-center justify-center">
                     <Icon as={Filter} size={10} className="text-primary" />

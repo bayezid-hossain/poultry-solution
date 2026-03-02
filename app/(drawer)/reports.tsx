@@ -43,6 +43,13 @@ const MONTHS = [
     "July", "August", "September", "October", "November", "December"
 ];
 
+interface LockedOfficer {
+    id: string | null;
+    name: string | null;
+    branch: string | null;
+    mobile: string | null;
+}
+
 const YEARS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -157,7 +164,7 @@ export default function ReportsScreen() {
         return base;
     };
 
-    const getReportSubtitle = (officerOverride?: any) => {
+    const getReportSubtitle = (officerOverride?: any, lockedSelection?: LockedOfficer) => {
         let branchName = "";
         let mobile = "";
         let officerName = "";
@@ -166,6 +173,10 @@ export default function ReportsScreen() {
             officerName = officerOverride.name || "";
             branchName = officerOverride.branchName || "";
             mobile = officerOverride.mobile || "";
+        } else if (lockedSelection && lockedSelection.id) {
+            officerName = lockedSelection.name || "";
+            branchName = lockedSelection.branch || "";
+            mobile = lockedSelection.mobile || "";
         } else if (isManagement && selectedOfficerId) {
             officerName = selectedOfficerName || "";
             branchName = selectedBranch || "";
@@ -192,12 +203,13 @@ export default function ReportsScreen() {
     };
 
     // Modular Fetchers
-    const fetchActiveStock = async (type: 'pdf' | 'excel') => {
+    const fetchActiveStock = async (type: 'pdf' | 'excel', lockedSelection?: LockedOfficer) => {
         const orgId = membership?.orgId ?? "";
         if (isManagement) {
-            if (selectedOfficerId) {
-                const data = await utils.management.cycles.listActive.fetch({ orgId, pageSize: 500, officerId: selectedOfficerId });
-                const subtitle = getReportSubtitle();
+            const officerId = lockedSelection ? lockedSelection.id : selectedOfficerId;
+            if (officerId) {
+                const data = await utils.management.cycles.listActive.fetch({ orgId, pageSize: 500, officerId });
+                const subtitle = getReportSubtitle(undefined, lockedSelection);
                 return type === 'pdf' ? exportActiveStockPDF(data.items, getReportTitle("Active Stock"), false, subtitle) : exportActiveStockExcel(data.items, getReportTitle("Active Stock"), false, subtitle);
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
@@ -224,12 +236,13 @@ export default function ReportsScreen() {
         return type === 'pdf' ? exportActiveStockPDF(data.items, getReportTitle("Active Stock"), false, subtitle) : exportActiveStockExcel(data.items, getReportTitle("Active Stock"), false, subtitle);
     };
 
-    const fetchAllFarmerStock = async (type: 'pdf' | 'excel') => {
+    const fetchAllFarmerStock = async (type: 'pdf' | 'excel', lockedSelection?: LockedOfficer) => {
         const orgId = membership?.orgId ?? "";
         if (isManagement) {
-            if (selectedOfficerId) {
-                const data = await utils.management.farmers.getMany.fetch({ orgId, pageSize: 500, officerId: selectedOfficerId });
-                const subtitle = getReportSubtitle();
+            const officerId = lockedSelection ? lockedSelection.id : selectedOfficerId;
+            if (officerId) {
+                const data = await utils.management.farmers.getMany.fetch({ orgId, pageSize: 500, officerId });
+                const subtitle = getReportSubtitle(undefined, lockedSelection);
                 return type === 'pdf' ? exportAllFarmerStockPDF(data.items, getReportTitle("All Farmer Stock"), false, subtitle) : exportAllFarmerStockExcel(data.items, getReportTitle("All Farmer Stock"), false, subtitle);
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
@@ -256,12 +269,13 @@ export default function ReportsScreen() {
         return type === 'pdf' ? exportAllFarmerStockPDF(data.items, getReportTitle("All Farmer Stock"), false, subtitle) : exportAllFarmerStockExcel(data.items, getReportTitle("All Farmer Stock"), false, subtitle);
     };
 
-    const fetchProblematicFeeds = async (type: 'pdf' | 'excel') => {
+    const fetchProblematicFeeds = async (type: 'pdf' | 'excel', lockedSelection?: LockedOfficer) => {
         const orgId = membership?.orgId ?? "";
         if (isManagement) {
-            if (selectedOfficerId) {
-                const data = await utils.management.farmers.getProblematicFeeds.fetch({ orgId, officerId: selectedOfficerId });
-                const subtitle = getReportSubtitle();
+            const officerId = lockedSelection ? lockedSelection.id : selectedOfficerId;
+            if (officerId) {
+                const data = await utils.management.farmers.getProblematicFeeds.fetch({ orgId, officerId });
+                const subtitle = getReportSubtitle(undefined, lockedSelection);
                 return type === 'pdf' ? exportProblematicFeedsPDF(data, getReportTitle("Problematic Feeds"), false, subtitle) : exportProblematicFeedsExcel(data, getReportTitle("Problematic Feeds"), false, subtitle);
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
@@ -288,12 +302,13 @@ export default function ReportsScreen() {
         return type === 'pdf' ? exportProblematicFeedsPDF(data, getReportTitle("Problematic Feeds"), false, subtitle) : exportProblematicFeedsExcel(data, getReportTitle("Problematic Feeds"), false, subtitle);
     };
 
-    const fetchSalesLedger = async (type: 'pdf' | 'excel') => {
+    const fetchSalesLedger = async (type: 'pdf' | 'excel', lockedSelection?: LockedOfficer) => {
         const orgId = membership?.orgId ?? "";
         if (isManagement) {
-            if (selectedOfficerId) {
-                const data = await utils.management.sales.getRecentSales.fetch({ limit: 100, officerId: selectedOfficerId, orgId });
-                const subtitle = getReportSubtitle();
+            const officerId = lockedSelection ? lockedSelection.id : selectedOfficerId;
+            if (officerId) {
+                const data = await utils.management.sales.getRecentSales.fetch({ limit: 100, officerId, orgId });
+                const subtitle = getReportSubtitle(undefined, lockedSelection);
                 return type === 'pdf' ? exportSalesLedgerPDF(data as any, getReportTitle("Sales Ledger"), false, subtitle) : exportSalesLedgerExcel(data as any, getReportTitle("Sales Ledger"), false, subtitle);
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
@@ -320,11 +335,12 @@ export default function ReportsScreen() {
         return type === 'pdf' ? exportSalesLedgerPDF(data, getReportTitle("Recent Sales"), false, subtitle) : exportSalesLedgerExcel(data, getReportTitle("Recent Sales"), false, subtitle);
     };
 
-    const fetchDocPlacement = async (type: 'pdf' | 'excel') => {
+    const fetchDocPlacement = async (type: 'pdf' | 'excel', lockedSelection?: LockedOfficer) => {
         if (isManagement) {
-            if (selectedOfficerId) {
-                const data = await utils.management.reports.getRangeDocPlacements.fetch({ orgId: membership?.orgId ?? "", officerId: selectedOfficerId, startMonth: startMonth + 1, startYear, endMonth: endMonth + 1, endYear });
-                const subtitle = getReportSubtitle();
+            const officerId = lockedSelection ? lockedSelection.id : selectedOfficerId;
+            if (officerId) {
+                const data = await utils.management.reports.getRangeDocPlacements.fetch({ orgId: membership?.orgId ?? "", officerId, startMonth: startMonth + 1, startYear, endMonth: endMonth + 1, endYear });
+                const subtitle = getReportSubtitle(undefined, lockedSelection);
                 return type === 'pdf' ? exportRangeDocPlacementsPDF(data, getReportTitle("DOC Placement"), false, subtitle) : exportRangeDocPlacementsExcel(data, getReportTitle("DOC Placement"), false, subtitle);
             } else {
                 const orgId = membership?.orgId ?? "";
@@ -364,13 +380,14 @@ export default function ReportsScreen() {
         return data;
     };
 
-    const fetchProduction = async (type: 'pdf' | 'excel') => {
+    const fetchProduction = async (type: 'pdf' | 'excel', lockedSelection?: LockedOfficer) => {
         if (isManagement) {
-            if (selectedOfficerId) {
+            const officerId = lockedSelection ? lockedSelection.id : selectedOfficerId;
+            if (officerId) {
                 const orgId = membership?.orgId ?? "";
-                const rawData = await utils.management.performanceReports.getRangeProductionRecords.fetch({ orgId, officerId: selectedOfficerId, startMonth, startYear, endMonth, endYear });
+                const rawData = await utils.management.performanceReports.getRangeProductionRecords.fetch({ orgId, officerId, startMonth, startYear, endMonth, endYear });
                 const dataToExport = processProductionData(rawData);
-                const subtitle = getReportSubtitle();
+                const subtitle = getReportSubtitle(undefined, lockedSelection);
                 return type === 'pdf' ? exportRangeProductionPDF(dataToExport, getReportTitle("Monthly Production Efficiency"), false, subtitle) : exportRangeProductionExcel(dataToExport, getReportTitle("Monthly Production Efficiency"), false, subtitle);
             } else {
                 const orgId = membership?.orgId ?? "";
@@ -400,12 +417,13 @@ export default function ReportsScreen() {
         return type === 'pdf' ? exportRangeProductionPDF(data, getReportTitle("Monthly Production Efficiency"), false, subtitle) : exportRangeProductionExcel(data, getReportTitle("Monthly Production Efficiency"), false, subtitle);
     };
 
-    const fetchYearlyPerformance = async (type: 'pdf' | 'excel') => {
+    const fetchYearlyPerformance = async (type: 'pdf' | 'excel', lockedSelection?: LockedOfficer) => {
         if (isManagement) {
             const orgId = membership?.orgId ?? "";
-            if (selectedOfficerId) {
-                const data = await utils.management.performanceReports.getAnnualPerformance.fetch({ orgId, officerId: selectedOfficerId, year: startYear });
-                const subtitle = getReportSubtitle();
+            const officerId = lockedSelection ? lockedSelection.id : selectedOfficerId;
+            if (officerId) {
+                const data = await utils.management.performanceReports.getAnnualPerformance.fetch({ orgId, officerId, year: startYear });
+                const subtitle = getReportSubtitle(undefined, lockedSelection);
                 return type === 'pdf' ? exportYearlyPerformancePDF(data, getReportTitle(`Annual Performance ${startYear}`), false, subtitle) : exportYearlyPerformanceExcel(data, getReportTitle(`Annual Performance ${startYear}`), false, subtitle);
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
@@ -448,17 +466,24 @@ export default function ReportsScreen() {
         setSessionFiles([]);
         const createdFiles: { uri: string, name: string, type: string }[] = [];
 
+        const lockedSelection: LockedOfficer = {
+            id: selectedOfficerId,
+            name: selectedOfficerName,
+            branch: selectedBranch,
+            mobile: selectedMobile
+        };
+
         const reports = [
-            { name: "Active Stock", fetcher: fetchActiveStock },
-            { name: "All Farmer Stock", fetcher: fetchAllFarmerStock },
-            { name: "Problematic Feeds", fetcher: fetchProblematicFeeds },
-            { name: "Recent Sales", fetcher: fetchSalesLedger },
-            { name: "DOC Placements", fetcher: fetchDocPlacement },
-            { name: "Monthly Production", fetcher: fetchProduction },
-            { name: "Yearly Performance", fetcher: fetchYearlyPerformance },
+            { name: "Active Stock", fetcher: (t: any) => fetchActiveStock(t, lockedSelection) },
+            { name: "All Farmer Stock", fetcher: (t: any) => fetchAllFarmerStock(t, lockedSelection) },
+            { name: "Problematic Feeds", fetcher: (t: any) => fetchProblematicFeeds(t, lockedSelection) },
+            { name: "Recent Sales", fetcher: (t: any) => fetchSalesLedger(t, lockedSelection) },
+            { name: "DOC Placements", fetcher: (t: any) => fetchDocPlacement(t, lockedSelection) },
+            { name: "Monthly Production", fetcher: (t: any) => fetchProduction(t, lockedSelection) },
+            { name: "Yearly Performance", fetcher: (t: any) => fetchYearlyPerformance(t, lockedSelection) },
         ];
 
-        const officerPrefix = isManagement ? (selectedOfficerId ? selectedOfficerName?.split(' ')[0] : "All_Officers") : (sessionData?.user?.name?.split(' ')[0] || "My");
+        const officerPrefix = isManagement ? (lockedSelection.id ? lockedSelection.name?.split(' ')[0] : "All_Officers") : (sessionData?.user?.name?.split(' ')[0] || "My");
         const prefix = `${sanitizeFileName(officerPrefix || "")}_`;
 
         const totalTasks = reports.length * 2;
@@ -630,7 +655,7 @@ export default function ReportsScreen() {
             <ScrollView className="flex-1" contentContainerStyle={{ padding: 20 }}>
                 {isManagement && (
                     <View className="mb-6">
-                        <OfficerSelector orgId={membership?.orgId ?? ""} />
+                        <OfficerSelector orgId={membership?.orgId ?? ""} disabled={isBulkExporting} />
                     </View>
                 )}
 

@@ -160,7 +160,7 @@ export default function SignInScreen() {
                         {loading ? (
                             <ActivityIndicator color={"#ffffff"} />
                         ) : (
-                            <Text className="text-primary-foreground text-base font-bold">Sign In</Text>
+                            <Text className="text-primary-foreground text-base font-bold shrink-0">Sign In</Text>
                         )}
                     </Button>
 
@@ -183,7 +183,7 @@ export default function SignInScreen() {
                             <ActivityIndicator color={"#10b981"} />
                         ) : (
                             <>
-                                <Text className="text-foreground text-base font-semibold">
+                                <Text className="text-foreground text-base font-semibold shrink-0 flex-1 text-center">
                                     Continue with Google
                                 </Text>
                             </>
@@ -198,7 +198,7 @@ export default function SignInScreen() {
                     </Text>
                     <Link href="/(auth)/sign-up" asChild>
                         <Pressable>
-                            <Text className="text-primary text-sm font-bold">
+                            <Text className="text-primary text-sm font-bold shrink-0">
                                 Sign Up
                             </Text>
                         </Pressable>

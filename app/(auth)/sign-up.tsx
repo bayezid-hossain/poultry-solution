@@ -167,7 +167,7 @@ export default function SignUpScreen() {
                         {loading ? (
                             <ActivityIndicator color={"#ffffff"} />
                         ) : (
-                            <Text className="text-primary-foreground text-base font-bold">
+                            <Text className="text-primary-foreground text-base font-bold shrink-0">
                                 Create Account
                             </Text>
                         )}
@@ -193,7 +193,7 @@ export default function SignUpScreen() {
                         ) : (
                             <>
 
-                                <Text className="text-foreground text-base font-semibold">
+                                <Text className="text-foreground text-base font-semibold shrink-0 flex-1 text-center">
                                     Continue with Google
                                 </Text>
                             </>
@@ -208,7 +208,7 @@ export default function SignUpScreen() {
                     </Text>
                     <Link href="/(auth)/sign-in" asChild>
                         <Pressable>
-                            <Text className="text-primary text-sm font-bold">
+                            <Text className="text-primary text-sm font-bold shrink-0">
                                 Sign In
                             </Text>
                         </Pressable>
