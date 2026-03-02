@@ -112,7 +112,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         // Active User
         if (inAuthGroup || inOrgGroup) {
           action = "redirect";
-          redirectTarget = "/"; // Redirect to root (tabs index)
+          redirectTarget = "/(drawer)/(tabs)"; // Redirect to root (tabs index) via explicit drawer path
         } else {
           action = "render";
         }

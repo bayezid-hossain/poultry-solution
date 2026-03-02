@@ -50,9 +50,14 @@ export const trpcClient = trpc.createClient({
                     }
                 }
 
-                return {
-                    Authorization: token ? `Bearer ${token}` : undefined,
-                };
+                // Only return Authorization header if token exists and isn't the string "undefined"
+                if (token && token !== "undefined") {
+                    return {
+                        Authorization: `Bearer ${token}`,
+                    };
+                }
+
+                return {};
             },
         }),
     ],
