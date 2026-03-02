@@ -6,6 +6,7 @@ import { CreateFeedOrderModal } from "@/components/orders/create-feed-order-moda
 import { CreateSaleOrderModal } from "@/components/orders/create-sale-order-modal";
 import { DeleteDocOrderModal } from "@/components/orders/delete-doc-order-modal";
 import { DeleteFeedOrderModal } from "@/components/orders/delete-feed-order-modal";
+import { DeleteSaleOrderModal } from "@/components/orders/delete-sale-order-modal";
 import { DocOrderCard } from "@/components/orders/doc-order-card";
 import { FeedOrderCard } from "@/components/orders/feed-order-card";
 import { SaleOrderCard } from "@/components/orders/sale-order-card";
@@ -48,6 +49,7 @@ export default function OrdersScreen() {
 
     // Sale Action States
     const [isCreateSaleOpen, setIsCreateSaleOpen] = useState(false);
+    const [deletingSaleOrderId, setDeletingSaleOrderId] = useState<string | null>(null);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
@@ -289,6 +291,7 @@ export default function OrdersScreen() {
                                     <SaleOrderCard
                                         order={item}
                                         onPress={() => { /* Handle press if needed */ }}
+                                        onDelete={() => setDeletingSaleOrderId(item.id)}
                                     />
                                 </View>
                             )}
@@ -393,6 +396,15 @@ export default function OrdersScreen() {
                         orgId={membership.orgId}
                         onSuccess={() => saleOrdersQuery.refetch()}
                     />
+
+                    {deletingSaleOrderId && (
+                        <DeleteSaleOrderModal
+                            open={!!deletingSaleOrderId}
+                            onOpenChange={(open: boolean) => !open && setDeletingSaleOrderId(null)}
+                            saleOrderId={deletingSaleOrderId}
+                            onSuccess={() => saleOrdersQuery.refetch()}
+                        />
+                    )}
                 </>
             )}
         </View>

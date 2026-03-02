@@ -44,6 +44,7 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
 
     const [orderDate, setOrderDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const { data: sessionData } = trpc.auth.getSession.useQuery();
     const [branchName, setBranchName] = useState("");
     const [items, setItems] = useState<SaleItem[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -52,10 +53,10 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
     useEffect(() => {
         if (open) {
             setOrderDate(new Date());
-            setBranchName("");
+            setBranchName(sessionData?.user?.branchName || "");
             setItems([]);
         }
-    }, [open]);
+    }, [open, sessionData?.user?.branchName]);
 
     const { data: searchResults, isFetching: isSearching } = trpc.officer.farmers.listWithStock.useQuery(
         { orgId, page: 1, pageSize: 20, search: searchQuery },

@@ -4,7 +4,7 @@ import { Text } from "@/components/ui/text";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from "expo-router";
-import { Calendar, ChevronDown, ChevronUp, Copy, ShoppingBag } from "lucide-react-native";
+import { Calendar, ChevronDown, ChevronUp, Copy, ShoppingBag, Trash2 } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { toast } from "sonner-native";
@@ -12,9 +12,11 @@ import { toast } from "sonner-native";
 export function SaleOrderCard({
     order,
     onPress,
+    onDelete,
 }: {
     order: any,
     onPress?: () => void,
+    onDelete?: () => void,
 }) {
     const router = useRouter();
     const [isExpanded, setIsExpanded] = useState(false);
@@ -84,12 +86,21 @@ export function SaleOrderCard({
                                 <Text className="text-xs text-muted-foreground">ID: {order.id.slice(0, 8).toUpperCase()}</Text>
                             </View>
                         </View>
-                        <Pressable
-                            onPress={handleCopy}
-                            className="w-8 h-8 rounded-lg bg-primary items-center justify-center active:bg-primary/80"
-                        >
-                            <Icon as={Copy} size={14} className="text-primary-foreground" />
-                        </Pressable>
+                        <View className="flex-row items-center gap-2">
+                            <Pressable
+                                onPress={handleCopy}
+                                className="w-8 h-8 rounded-lg bg-primary items-center justify-center active:bg-primary/80"
+                            >
+                                <Icon as={Copy} size={14} className="text-primary-foreground" />
+                            </Pressable>
+                            <Pressable
+                                onPress={onDelete}
+                                className="w-8 h-8 rounded-lg bg-destructive items-center justify-center active:bg-destructive/80"
+                            >
+                                <Icon as={Trash2} size={14} className="text-destructive-foreground" />
+                            </Pressable>
+
+                        </View>
                     </View>
 
                     <View className="flex-row gap-4 mb-3">

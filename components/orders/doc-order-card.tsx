@@ -4,7 +4,7 @@ import { Text } from "@/components/ui/text";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from "expo-router";
-import { Bird, Calendar, ChevronDown, ChevronUp, Copy } from "lucide-react-native";
+import { Bird, Calendar, ChevronDown, ChevronUp, Copy, Trash2 } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { toast } from "sonner-native";
@@ -90,6 +90,7 @@ export function DocOrderCard({
                             </View>
                         </View>
                         <View className="flex-row gap-2">
+
                             <Pressable
                                 onPress={handleCopy}
                                 className="w-8 h-8 rounded-lg bg-primary items-center justify-center active:bg-primary/80"
@@ -101,6 +102,12 @@ export function DocOrderCard({
                                     {order.status}
                                 </Text>
                             </View>
+                            <Pressable
+                                onPress={onDelete}
+                                className="w-8 h-8 rounded-lg bg-destructive items-center justify-center active:bg-destructive/80"
+                            >
+                                <Icon as={Trash2} size={14} className="text-destructive-foreground" />
+                            </Pressable>
                         </View>
                     </View>
 
@@ -167,9 +174,6 @@ export function DocOrderCard({
 
                     {!isConfirmed && (
                         <View className="flex-row items-center justify-end gap-2 border-t border-border/30 pt-3 mt-3">
-                            <Pressable onPress={onDelete} className="px-4 py-2 rounded-lg bg-destructive/10 active:bg-destructive/20 border border-destructive/20">
-                                <Text className="text-destructive font-bold text-xs">Delete</Text>
-                            </Pressable>
                             <Pressable onPress={onEdit} className="px-4 py-2 rounded-lg bg-muted active:bg-accent border border-border/50">
                                 <Text className="text-foreground font-bold text-xs">Edit</Text>
                             </Pressable>

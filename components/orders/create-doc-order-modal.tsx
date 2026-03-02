@@ -60,6 +60,7 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
     const [birdTypePickerItemId, setBirdTypePickerItemId] = useState<{ itemId: string, batchId: string } | null>(null);
     const [newBirdType, setNewBirdType] = useState("");
 
+    const { data: sessionData } = trpc.auth.getSession.useQuery();
     const utils = trpc.useUtils();
 
     useEffect(() => {
@@ -95,11 +96,11 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                 }, []));
             } else {
                 setOrderDate(new Date());
-                setBranchName("");
+                setBranchName(sessionData?.user?.branchName || "");
                 setItems([]);
             }
         }
-    }, [open, initialData]);
+    }, [open, initialData, sessionData?.user?.branchName]);
 
     // Search State
     const [searchQuery, setSearchQuery] = useState("");

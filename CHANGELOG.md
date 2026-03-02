@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Branch info is automatically fileld in orders
+
+### Added
+- Orders can be deleted after confirmation now
+
 ## [v1.0.23] - 2026-03-02
 
 ### Fix
