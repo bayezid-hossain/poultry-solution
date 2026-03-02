@@ -92,7 +92,7 @@ function AnimatedCircularProgress({ progress = 0, stopRequested = false }: { pro
                 />
             </Svg>
             <Text className="absolute text-white font-black text-[9px]" style={{ transform: [{ translateY: 1 }] }}>
-                {Math.round(progress)}
+                {Math.round(progress)}%
             </Text>
         </View>
     );
@@ -571,7 +571,7 @@ export default function ReportsScreen() {
 
                 <Button
                     variant="default"
-                    className={`mb-6 h-16 rounded-sm border-primary/20 bg-primary/60 shadow-xl shadow-primary/20 ${isExporting && !isBulkExporting ? 'opacity-50' : 'active:scale-95'} ${isBulkExporting ? 'bg-blue-500 active:bg-blue-500' : ''}  ${isBulkExporting && stopRequested ? 'bg-red-500 active:bg-red-500' : ''}`}
+                    className={`mb-6 h-16 rounded-sm border-primary/20 bg-primary dark:bg-primary/60 shadow-xl shadow-primary/20 ${isExporting && !isBulkExporting ? 'opacity-50' : 'active:scale-95'} ${isBulkExporting ? 'bg-blue-500 active:bg-blue-500' : ''}  ${isBulkExporting && stopRequested ? 'bg-red-500 active:bg-red-500' : ''}`}
                     onPress={() => {
                         if (isBulkExporting) {
                             setStopRequested(true);
