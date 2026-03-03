@@ -72,6 +72,27 @@ export default function TabsDrawerLayout() {
             headerShown: false
           }}
         />
+        <Drawer.Screen
+          name="tutorial"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false
+          }}
+        />
+        <Drawer.Screen
+          name="notifications"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false
+          }}
+        />
+        <Drawer.Screen
+          name="problematic-feeds"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false
+          }}
+        />
 
       </Drawer>
     </View>

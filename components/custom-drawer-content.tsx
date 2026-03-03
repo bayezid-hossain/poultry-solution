@@ -4,7 +4,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
 import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
-import { BarChart3, Bird, ClipboardList, Crown, Download, LayoutDashboard, Package, Settings, ShoppingBag, TrendingUp, Users, Wheat } from "lucide-react-native";
+import { BarChart3, Bird, BookOpen, ClipboardList, Crown, Download, LayoutDashboard, Package, Settings, ShoppingBag, TrendingUp, Users, Wheat } from "lucide-react-native";
 import { Image, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SubscriptionStatus } from "./subscription-status";
@@ -183,8 +183,18 @@ export function CustomDrawerContent(props: any) {
                     <Separator className="opacity-20" />
                 </View>
 
-                {/* Settings Section */}
-                <View className="px-2 mt-4">
+                {/* Tutorial & Settings Section */}
+                <View className="px-2 mt-4 gap-0.5">
+                    <Pressable
+                        onPress={() => router.push("/(drawer)/tutorial" as any)}
+                        className={`flex-row items-center gap-3 px-3 py-2 rounded-xl ${pathname === "/tutorial" ? "bg-primary/10" : "active:bg-accent/50"
+                            }`}
+                    >
+                        <Icon as={BookOpen} size={20} className={pathname === "/tutorial" ? "text-primary" : "text-foreground"} />
+                        <Text className={`text-sm flex-1 ${pathname === "/tutorial" ? "text-primary font-bold" : "font-medium text-foreground"}`}>
+                            Tutorial
+                        </Text>
+                    </Pressable>
                     <Pressable
                         onPress={() => router.push("/(drawer)/settings" as any)}
                         className={`flex-row items-center gap-3 px-3 py-2 rounded-xl ${pathname === "/settings" ? "bg-primary/10" : "active:bg-accent/50"
