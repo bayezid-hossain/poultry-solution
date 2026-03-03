@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.25] - 2026-03-03
+
 ### Fix
 - Added loader for Confirm Adjustment button in the Adjust Sale Modal.
 
