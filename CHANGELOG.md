@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.26] - 2026-03-03
+
+### Fix
+- Pro guard for backdate cycle modal
+
 ## [v1.0.25] - 2026-03-03
 
 ### Fix
