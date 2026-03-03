@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.27] - 2026-03-04
+
+### Added
+- **Interactive Tour Guide:** Added a comprehensive step-by-step Interactive Tutorial in the sidebar to help new Officers and Managers learn the system.
+- **Deep-Dive Explanations:** The tutorial explicitly explains hidden features, including FCR/EPI math, Smart Watchdog rules, auto-reopening logic, and cascade updates.
+- **Safety Limits Documented:** Added clear documentation on system bounds (e.g., maximum limits for stock entries, DOC counts, and backdating rules) to prevent user errors.
+
+### Fix
+- Added Branch Name and Officer Name auto-fill explanation in Orders and Reports workflows.
+- Adjusted tutorial accessibility and persistence to ensure users only see relevant tips based on their current Role (Manager vs Officer) and active Mode.
 ## [v1.0.26] - 2026-03-03
 
 ### Fix
