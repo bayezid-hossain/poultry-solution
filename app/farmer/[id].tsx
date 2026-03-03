@@ -153,7 +153,7 @@ export default function FarmerDetailScreen() {
 
     const handleCycleAction = useCallback((action: CycleAction, cycle: any) => {
         setSelectedCycleId(cycle.id);
-        const requiresPro = ['sell', 'edit_doc', 'edit_age', 'correct_mortality'];
+        const requiresPro = ['sell', 'edit_doc', 'edit_age', 'correct_mortality', 'backdate'];
         if (requiresPro.includes(action) && !membership?.isPro) {
             setProModal({ open: true, feature: "Advanced Cycle Actions" });
             return;
