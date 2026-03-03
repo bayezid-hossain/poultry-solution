@@ -50,13 +50,27 @@ jobs:
           NODE_ENV: production
         run: cd android && ./gradlew assembleRelease
         
+      - name: Extract Release Notes
+        id: release_notes
+        run: |
+          node -e "
+            const fs = require('fs');
+            const version = process.env.GITHUB_REF_NAME;
+            const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+            // Match the header for the current version and capture everything until the next header
+            const escapeRegex = (s) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\\\$&');
+            const match = changelog.match(new RegExp('## \\\[' + escapeRegex(version) + '\\\].*?\\n([\\\\s\\\\S]*?)(?=\\n## |$)', 'i'));
+            let notes = match ? match[1].trim() : 'Bug fixes and performance improvements.';
+            fs.writeFileSync('RELEASE_NOTES.txt', notes);
+          "
+          
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: android/app/build/outputs/apk/release/app-release.apk
           name: Release ${{ github.ref_name }}
+          body_path: RELEASE_NOTES.txt
           draft: false
           prerelease: false
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

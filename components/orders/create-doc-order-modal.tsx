@@ -376,7 +376,7 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                             }}
                             ListEmptyComponent={
                                 <View className="p-8 items-center">
-                                    <Text className="text-muted-foreground">No farmers found.</Text>
+                                    <Text className="text-muted-foreground">{isSearching ? "Loading farmers..." : "No farmers found."}</Text>
                                 </View>
                             }
                         />
@@ -438,12 +438,15 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                                     <Text className="text-sm font-semibold">Branch Name</Text>
                                     <View className="h-12 bg-muted/50 rounded-lg flex-row items-center px-4 border border-border/50">
                                         <Icon as={MapPin} size={18} className="text-muted-foreground mr-2" />
-                                        <Input
-                                            className="flex-1 h-full border-0 bg-transparent px-0"
-                                            placeholder="Enter branch name"
-                                            value={branchName}
-                                            onChangeText={setBranchName}
-                                        />
+                                        <View className="flex-1 overflow-hidden">
+                                            <Input
+                                                className="h-full border-0 px-0"
+                                                style={{ backgroundColor: 'transparent' }}
+                                                placeholder="Branch name"
+                                                value={branchName}
+                                                onChangeText={setBranchName}
+                                            />
+                                        </View>
                                     </View>
                                 </View>
                             </View>

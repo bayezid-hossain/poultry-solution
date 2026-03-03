@@ -1,5 +1,6 @@
 import { AddMortalityModal } from "@/components/cycles/add-mortality-modal";
 import { AnalysisContent } from "@/components/cycles/analysis-content";
+import { BackdateCycleModal } from "@/components/cycles/backdate-cycle-modal";
 import { CorrectAgeModal } from "@/components/cycles/correct-age-modal";
 import { CorrectDocModal } from "@/components/cycles/correct-doc-modal";
 import { CorrectMortalityModal } from "@/components/cycles/correct-mortality-modal";
@@ -20,7 +21,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { Activity, Archive, ArrowLeft, Bird, ChevronDown, ChevronUp, LineChart, MoreHorizontal, Package, Pencil, Power, RotateCcw, ShoppingCart, Skull, Trash2, Wheat } from "lucide-react-native";
+import { Activity, Archive, ArrowLeft, Bird, ChevronDown, ChevronUp, LineChart, MoreHorizontal, Package, Pencil, Power, Rewind, RotateCcw, ShoppingCart, Skull, Trash2, Wheat } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 
@@ -34,6 +35,7 @@ export default function CycleDetailsScreen() {
     const [isSellModalOpen, setIsSellModalOpen] = useState(false);
     const [isReopenModalOpen, setIsReopenModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isBackdateOpen, setIsBackdateOpen] = useState(false);
     const [activeOtherTab, setActiveOtherTab] = useState<'active' | 'inactive'>('active');
     const [selectedActionCycle, setSelectedActionCycle] = useState<any>(null);
 
@@ -328,7 +330,8 @@ export default function CycleDetailsScreen() {
                                                                     mortality: item.mortality,
                                                                     intake: Number(item.finalIntake || item.intake || 0),
                                                                     birdsSold: item.birdsSold,
-                                                                    startDate: item.startDate || item.createdAt
+                                                                    startDate: item.startDate || item.createdAt,
+                                                                    endDate: item.endDate,
                                                                 };
                                                                 setSelectedActionCycle(cycleData);
 
@@ -352,6 +355,8 @@ export default function CycleDetailsScreen() {
                                                                     setIsReopenModalOpen(true);
                                                                 } else if (action === 'delete') {
                                                                     setIsDeleteModalOpen(true);
+                                                                } else if (action === 'backdate') {
+                                                                    setIsBackdateOpen(true);
                                                                 }
                                                             }}
                                                         />
@@ -499,6 +504,12 @@ export default function CycleDetailsScreen() {
                                     </View>
                                     <Text className="font-medium text-foreground text-base flex-1">Reopen Cycle</Text>
                                 </Pressable>
+                                <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => { setIsMenuOpen(false); setIsBackdateOpen(true); }}>
+                                    <View className="w-8 items-center justify-center mr-3">
+                                        <Icon as={Rewind} size={20} className="text-foreground" />
+                                    </View>
+                                    <Text className="font-medium text-foreground text-base flex-1">Backdate Cycle</Text>
+                                </Pressable>
                                 <Pressable className="flex-row items-center py-4 mt-2 active:bg-red-500/10 rounded-xl" onPress={() => { setIsMenuOpen(false); setIsDeleteModalOpen(true); }}>
                                     <View className="w-8 items-center justify-center mr-3">
                                         <Icon as={Trash2} size={20} className="text-destructive" />
@@ -526,33 +537,6 @@ export default function CycleDetailsScreen() {
                         onSuccess={refetch}
                     />
 
-                    <ReopenCycleModal
-                        open={isReopenModalOpen}
-                        onOpenChange={(open) => {
-                            setIsReopenModalOpen(open);
-                            if (!open) setSelectedActionCycle(null);
-                        }}
-                        historyId={selectedActionCycle?.id || cycle.id}
-                        cycleName={farmer.name}
-                        onSuccess={() => refetch()}
-                    />
-
-                    <DeleteCycleModal
-                        open={isDeleteModalOpen}
-                        onOpenChange={(open) => {
-                            setIsDeleteModalOpen(open);
-                            if (!open) setSelectedActionCycle(null);
-                        }}
-                        historyId={selectedActionCycle?.id || cycle.id}
-                        cycleName={farmer.name}
-                        onSuccess={() => {
-                            if (selectedActionCycle?.id && selectedActionCycle.id !== cycle.id) {
-                                refetch();
-                            } else {
-                                router.back();
-                            }
-                        }}
-                    />
                     <EndCycleModal
                         open={isEndCycleOpen}
                         onOpenChange={(open) => {
@@ -630,6 +614,50 @@ export default function CycleDetailsScreen() {
                     />
                 </>
             )}
+
+            {/* Modals — Available for both active and archived cycles */}
+            <ReopenCycleModal
+                open={isReopenModalOpen}
+                onOpenChange={(open) => {
+                    setIsReopenModalOpen(open);
+                    if (!open) setSelectedActionCycle(null);
+                }}
+                historyId={selectedActionCycle?.id || cycle.id}
+                cycleName={farmer.name}
+                onSuccess={() => refetch()}
+            />
+
+            <DeleteCycleModal
+                open={isDeleteModalOpen}
+                onOpenChange={(open) => {
+                    setIsDeleteModalOpen(open);
+                    if (!open) setSelectedActionCycle(null);
+                }}
+                historyId={selectedActionCycle?.id || cycle.id}
+                cycleName={farmer.name}
+                onSuccess={() => {
+                    if (selectedActionCycle?.id && selectedActionCycle.id !== cycle.id) {
+                        refetch();
+                    } else {
+                        router.back();
+                    }
+                }}
+            />
+
+            <BackdateCycleModal
+                cycle={{
+                    id: selectedActionCycle?.id || cycle.id,
+                    startDate: selectedActionCycle?.startDate || (cycle as any).startDate || cycle.createdAt || new Date(),
+                    endDate: selectedActionCycle?.endDate || (cycle as any).endDate || cycle.updatedAt || new Date(),
+                }}
+                farmerName={farmer.name}
+                open={isBackdateOpen}
+                onOpenChange={(open) => {
+                    setIsBackdateOpen(open);
+                    if (!open) setSelectedActionCycle(null);
+                }}
+                onSuccess={() => refetch()}
+            />
 
             <ProAccessModal
                 open={proModal.open}

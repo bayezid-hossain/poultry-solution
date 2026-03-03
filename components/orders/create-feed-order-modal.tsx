@@ -350,7 +350,7 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                             }}
                             ListEmptyComponent={
                                 <View className="p-8 items-center">
-                                    <Text className="text-muted-foreground">No farmers found.</Text>
+                                    <Text className="text-muted-foreground">{isSearching ? "Loading farmers..." : "No farmers found."}</Text>
                                 </View>
                             }
                         />

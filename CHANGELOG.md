@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fix
+- Added loader for Confirm Adjustment button in the Adjust Sale Modal.
+
+### Fix
+- Farmer list loader added
+
+### Fix
+- Sale details loader now closes after all calculation.
+
+### Fix
+- Branch input background color changed to transparent.
+
+### Fix
+- Farmer header details updated
+
+### Added
+- Cycle Backdate! You can now change the cycle start and end date accordingly without affecting any conflict with other records!
+
 ## [v1.0.24] - 2026-03-02
 
 ### Added

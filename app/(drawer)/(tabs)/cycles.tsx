@@ -1,4 +1,5 @@
 import { AddMortalityModal } from "@/components/cycles/add-mortality-modal";
+import { BackdateCycleModal } from "@/components/cycles/backdate-cycle-modal";
 import { BulkImportModal } from "@/components/cycles/bulk-import-modal";
 import { CorrectAgeModal } from "@/components/cycles/correct-age-modal";
 import { CorrectDocModal } from "@/components/cycles/correct-doc-modal";
@@ -49,6 +50,7 @@ export default function CyclesScreen() {
     const [isEditAgeOpen, setIsEditAgeOpen] = useState(false);
     const [isCorrectMortalityOpen, setIsCorrectMortalityOpen] = useState(false);
     const [isEndCycleOpen, setIsEndCycleOpen] = useState(false);
+    const [isBackdateOpen, setIsBackdateOpen] = useState(false);
 
     // Group Layout Action Menu
     const [isGroupMenuOpen, setIsGroupMenuOpen] = useState(false);
@@ -75,6 +77,7 @@ export default function CyclesScreen() {
             case 'correct_mortality': setIsCorrectMortalityOpen(true); break;
             case 'end_cycle': setIsEndCycleOpen(true); break;
             case 'reopen': setIsReopenModalOpen(true); break;
+            case 'backdate': setIsBackdateOpen(true); break;
             case 'delete': setIsDeleteModalOpen(true); break;
         }
     }, [membership?.isPro]);
@@ -485,6 +488,18 @@ export default function CyclesScreen() {
                             onOpenChange={setIsDeleteModalOpen}
                             historyId={selectedCycle.id}
                             cycleName={selectedCycle.cycle?.name || selectedCycle.name || "Unknown Cycle"}
+                            onSuccess={() => historyQuery.refetch()}
+                        />
+
+                        <BackdateCycleModal
+                            cycle={{
+                                id: selectedCycle.id,
+                                startDate: selectedCycle.startDate || selectedCycle.createdAt || new Date(),
+                                endDate: selectedCycle.endDate || new Date(),
+                            }}
+                            farmerName={selectedCycle.farmerName || selectedCycle.name || ""}
+                            open={isBackdateOpen}
+                            onOpenChange={setIsBackdateOpen}
                             onSuccess={() => historyQuery.refetch()}
                         />
                     </>

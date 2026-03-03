@@ -1,4 +1,5 @@
 import { AddMortalityModal } from "@/components/cycles/add-mortality-modal";
+import { BackdateCycleModal } from "@/components/cycles/backdate-cycle-modal";
 import { CorrectAgeModal } from "@/components/cycles/correct-age-modal";
 import { CorrectDocModal } from "@/components/cycles/correct-doc-modal";
 import { CorrectMortalityModal } from "@/components/cycles/correct-mortality-modal";
@@ -26,7 +27,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { Activity, AlertCircle, Archive, ArrowLeft, ArrowRightLeft, Bird, ChevronDown, ChevronUp, History, Link, MoreVertical, Package, Pencil, Plus, Scale, ShoppingCart, Trash2, Wrench } from "lucide-react-native";
+import { Activity, AlertCircle, Archive, ArrowLeft, ArrowRightLeft, Bird, CalendarIcon, ChevronDown, ChevronUp, History, Link, MoreVertical, Package, Pencil, Plus, Scale, ShoppingCart, Trash2, Wrench } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
@@ -61,6 +62,7 @@ export default function FarmerDetailScreen() {
     const [isEndCycleOpen, setIsEndCycleOpen] = useState(false);
     const [isReopenModalOpen, setIsReopenModalOpen] = useState(false);
     const [isDeleteCycleOpen, setIsDeleteCycleOpen] = useState(false);
+    const [isBackdateOpen, setIsBackdateOpen] = useState(false);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
@@ -166,6 +168,7 @@ export default function FarmerDetailScreen() {
             case 'end_cycle': setIsEndCycleOpen(true); break;
             case 'reopen': setIsReopenModalOpen(true); break;
             case 'delete': setIsDeleteCycleOpen(true); break;
+            case 'backdate': setIsBackdateOpen(true); break;
         }
     }, [membership?.isPro]);
 
@@ -281,25 +284,57 @@ export default function FarmerDetailScreen() {
                 }
             >
                 {/* Farmer Title Section */}
-                <View className="mb-6">
-                    <View className="flex-row justify-between items-start">
-                        <View className="flex-1">
-                            <Text className="text-3xl font-black text-foreground uppercase tracking-tight">{farmer.name}</Text>
-                            <Text className="text-base text-muted-foreground">{farmer.location || "No location"}</Text>
-                            {farmer.createdAt && (
-                                <Text className="text-sm font-bold text-primary mt-1">Joined {format(new Date(farmer.createdAt), "dd MMM yyyy")}</Text>
-                            )}
-                            {idleDays !== null && (
-                                <Text className="text-sm font-bold text-orange-500 mt-0.5">Idle for {idleDays} day{idleDays === 1 ? "" : "s"}</Text>
-                            )}
+                <View className="mb-8 bg-card p-5 rounded-[24px] border border-border/50 shadow-sm">
+                    <View className="flex-row items-center gap-4">
+                        {/* Avatar/Icon Circle */}
+                        <View className="w-16 h-16 rounded-2xl bg-primary/10 items-center justify-center border border-primary/20">
+                            <Icon as={Activity} size={32} className="text-primary" />
                         </View>
-                        <Pressable onPress={() => setIsEditOpen(true)} className="h-10 w-10 items-center justify-center rounded-xl bg-muted/30 border border-border/50">
-                            <Icon as={MoreVertical} size={20} className="text-muted-foreground" />
-                        </Pressable>
+
+                        <View className="flex-1">
+                            <View className="flex-row justify-between items-start">
+                                <View className="flex-1">
+                                    <Text className="text-2xl font-black text-foreground uppercase tracking-tight">{farmer.name}</Text>
+                                    <View className="flex-row items-center gap-1.5 mt-0.5">
+                                        <View className="w-2 h-2 rounded-full bg-emerald-500" />
+                                        <Text className="text-sm font-bold text-muted-foreground">{farmer.location || "No location"}</Text>
+                                    </View>
+                                </View>
+                                <Pressable
+                                    onPress={() => setIsEditOpen(true)}
+                                    className="h-10 w-10 items-center justify-center rounded-xl bg-muted/30 border border-border/50 active:bg-muted/50"
+                                >
+                                    <Icon as={MoreVertical} size={20} className="text-muted-foreground" />
+                                </Pressable>
+                            </View>
+                        </View>
                     </View>
-                    <Text className="text-sm text-muted-foreground italic mt-2">
-                        Farmer History & Details • Production & Stock Management
-                    </Text>
+
+                    {/* Metadata Badges */}
+                    <View className="flex-row flex-wrap gap-2 mt-5 pt-4 border-t border-border/30">
+                        {farmer.createdAt && (
+                            <View className="bg-primary/5 px-3 py-1.5 rounded-full border border-primary/10 flex-row items-center gap-1.5">
+                                <Icon as={CalendarIcon} size={12} className="text-primary" />
+                                <Text className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                                    Joined {format(new Date(farmer.createdAt), "dd MMM yy")}
+                                </Text>
+                            </View>
+                        )}
+                        {idleDays !== null && (
+                            <View className="bg-orange-500/5 px-3 py-1.5 rounded-full border border-orange-500/10 flex-row items-center gap-1.5">
+                                <View className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                                <Text className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">
+                                    Idle {idleDays} day{idleDays === 1 ? "" : "s"}
+                                </Text>
+                            </View>
+                        )}
+                        <View className="bg-muted/30 px-3 py-1.5 rounded-full border border-border/50 flex-row items-center gap-1.5">
+                            <Icon as={Bird} size={12} className="text-muted-foreground" />
+                            <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                {activeCycles.length} Active Cycles
+                            </Text>
+                        </View>
+                    </View>
                 </View>
 
                 {/* ESTIMATED REMAINING Card */}
@@ -592,15 +627,33 @@ export default function FarmerDetailScreen() {
                 </View>
 
                 {/* Dangerous Zone */}
-                <View className="mt-10 pt-6 border-t border-border/50">
-                    <Button
-                        variant="ghost"
-                        onPress={() => setIsDeleteOpen(true)}
-                        className="h-14 flex-row items-center justify-center gap-2"
-                    >
-                        <Icon as={Trash2} size={18} className="text-destructive" />
-                        <Text className="text-destructive font-bold">Delete Farmer Profile</Text>
-                    </Button>
+                <View className="mt-12 mb-10">
+                    <Card className="border-destructive/20 bg-destructive/5 overflow-hidden rounded-[24px]">
+                        <CardContent className="p-6">
+                            <View className="flex-row items-center gap-3 mb-4">
+                                <View className="w-10 h-10 rounded-full bg-destructive/10 items-center justify-center">
+                                    <Icon as={AlertCircle} size={20} className="text-destructive" />
+                                </View>
+                                <View>
+                                    <Text className="text-base font-black text-foreground uppercase tracking-tight">Danger Zone</Text>
+                                    <Text className="text-xs text-muted-foreground">Permanent actions for this profile</Text>
+                                </View>
+                            </View>
+
+                            <Text className="text-sm text-muted-foreground mb-6 leading-5">
+                                Deleting this farmer profile will permanently remove all associated cycles, stock history, and sales record. This action cannot be undone.
+                            </Text>
+
+                            <Button
+                                variant="destructive"
+                                onPress={() => setIsDeleteOpen(true)}
+                                className="h-14 rounded-2xl flex-row items-center justify-center gap-2 shadow-none"
+                            >
+                                <Icon as={Trash2} size={18} className="text-destructive-foreground" />
+                                <Text className="text-destructive-foreground font-bold">Delete Farmer Profile</Text>
+                            </Button>
+                        </CardContent>
+                    </Card>
                 </View>
             </ScrollView>
 
@@ -759,6 +812,18 @@ export default function FarmerDetailScreen() {
                         onOpenChange={setIsDeleteCycleOpen}
                         historyId={selectedCycle.id}
                         cycleName={selectedCycle.cycle?.name || selectedCycle.name || "Unknown Cycle"}
+                        onSuccess={refetchAll}
+                    />
+
+                    <BackdateCycleModal
+                        cycle={{
+                            id: selectedCycle.id,
+                            startDate: selectedCycle.startDate || selectedCycle.createdAt || new Date(),
+                            endDate: selectedCycle.endDate || new Date(),
+                        }}
+                        farmerName={selectedCycle.farmerName || farmer.name}
+                        open={isBackdateOpen}
+                        onOpenChange={setIsBackdateOpen}
                         onSuccess={refetchAll}
                     />
                 </>

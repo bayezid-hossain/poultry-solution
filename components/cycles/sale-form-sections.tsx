@@ -139,12 +139,22 @@ export const FeedFieldArray = ({
                                 render={({ field: { onChange, value } }) => (
                                     <Input
                                         placeholder="Bags"
-                                        keyboardType="number-pad"
+                                        keyboardType="decimal-pad"
                                         value={value?.toString() || ""}
                                         onChangeText={(text) => {
-                                            const num = parseInt(text, 10) || 0;
+                                            // Handle edge cases like empty string or just "."
+                                            if (text === "" || text === ".") {
+                                                onChange(0);
+                                                onBagsChange?.(index, 0);
+                                                return;
+                                            }
+                                            // We allow the text to flow, but parse it for the form state
+                                            // to avoid the dot immediately disappearing, we only onChange 
+                                            // if it's a valid number. React hook form handles the rest if value?.toString() is used.
+                                            // Actually, the simplest fix (used by your other decimal inputs) is just parsing it.
+                                            const num = text.endsWith('.') ? text : (parseFloat(text) || 0);
                                             onChange(num);
-                                            onBagsChange?.(index, num);
+                                            onBagsChange?.(index, parseFloat(num.toString()) || 0);
                                         }}
                                         className="h-12 bg-muted/30 border-border/50 font-mono text-center"
                                         returnKeyType="next"

@@ -106,8 +106,8 @@ export function EditFarmerModal({
                         </View>
 
                         {/* Form */}
-                        <ScrollView className="p-6 space-y-4" bounces={false}>
-                            <View className="gap-2">
+                        <ScrollView className="p-6 space-y-6" bounces={false}>
+                            <View className="gap-2 mb-2">
                                 <Text className="text-sm font-bold text-foreground ml-1">Full Name</Text>
                                 <Input
                                     ref={nameRef}
@@ -120,7 +120,7 @@ export function EditFarmerModal({
                                 />
                             </View>
 
-                            <View className="gap-2">
+                            <View className="gap-2 mb-2">
                                 <View className="flex-row items-center gap-1 ml-1">
                                     <Icon as={MapPin} size={14} className="text-muted-foreground" />
                                     <Text className="text-sm font-bold text-foreground">Location</Text>

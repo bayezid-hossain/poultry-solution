@@ -57,7 +57,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
 
     // Fetch farmers for selection
     const farmersProcedure = isManagement ? trpc.management.farmers.getMany : trpc.officer.farmers.getMany;
-    const { data: farmersData } = (farmersProcedure as any).useQuery({
+    const { data: farmersData, isLoading: isLoadingFarmers } = (farmersProcedure as any).useQuery({
         orgId: (membership?.orgId ?? "") as string,
         pageSize: 100, // Fetch more for searchable list
         sortBy: "name",
@@ -211,7 +211,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                                                 ))
                                             ) : (
                                                 <View className="p-4 items-center">
-                                                    <Text className="text-xs text-muted-foreground italic">No farmers found</Text>
+                                                    <Text className="text-xs text-muted-foreground italic">{isLoadingFarmers ? "Loading farmers..." : "No farmers found"}</Text>
                                                 </View>
                                             )}
                                         </ScrollView>

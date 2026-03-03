@@ -3,7 +3,7 @@ import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { Bird, Check, ChevronDown, Hash, Plus, X } from "lucide-react-native";
+import { Bird, Check, ChevronDown, ChevronUp, Hash, Plus, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
 import { toast } from "sonner-native";
@@ -177,7 +177,7 @@ export function CreateCycleModal({
                                             <Text className={`text-base font-medium ${farmerId ? 'text-foreground' : 'text-muted-foreground'}`}>
                                                 {farmerName || (isLoadingFarmers ? "Loading farmers..." : "Select Farmer")}
                                             </Text>
-                                            <Icon as={ChevronDown} size={20} className={`text-muted-foreground transition-transform ${isFarmerOpen ? 'rotate-180' : ''}`} />
+                                            <Icon as={isFarmerOpen ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
                                         </Pressable>
 
                                         {/* Modal for Farmer Selection */}
@@ -222,7 +222,7 @@ export function CreateCycleModal({
                                                         )}
                                                         ListEmptyComponent={() => (
                                                             <View className="p-8 items-center">
-                                                                <Text className="text-muted-foreground">No farmers found</Text>
+                                                                <Text className="text-muted-foreground">{isLoadingFarmers ? "Loading farmers..." : "No farmers found"}</Text>
                                                             </View>
                                                         )}
                                                     />
@@ -280,7 +280,7 @@ export function CreateCycleModal({
                                             <Text className={`text-base font-medium ${birdType ? 'text-foreground' : 'text-muted-foreground'}`}>
                                                 {birdType || (isLoadingBirdTypes ? "Loading types..." : "Select Bird Type")}
                                             </Text>
-                                            <Icon as={ChevronDown} size={20} className={`text-muted-foreground transition-transform ${isBirdTypeOpen ? 'rotate-180' : ''}`} />
+                                            <Icon as={isBirdTypeOpen ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
                                         </Pressable>
 
                                         {/* Modal for Bird Type Selection */}

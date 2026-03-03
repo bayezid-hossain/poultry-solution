@@ -361,7 +361,7 @@ export const SellModal = ({
         if (stockIndex > -1) {
             const bStock = baselineStock.find(bs => (bs.type || "").toUpperCase().trim() === currentType);
             const baselineStockBags = Number(bStock?.bags || 0);
-            const newStockBags = Math.max(0, baselineStockBags - consumedDelta);
+            const newStockBags = parseFloat(Math.max(0, baselineStockBags - consumedDelta).toFixed(2));
 
             if (Number(currentStock[stockIndex].bags) !== newStockBags) {
                 currentStock[stockIndex] = { ...currentStock[stockIndex], bags: newStockBags };

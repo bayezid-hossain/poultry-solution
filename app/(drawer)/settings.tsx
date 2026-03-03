@@ -163,7 +163,7 @@ export default function SettingsScreen() {
                         </>
                     ) : (
                         <View className="w-full mt-4 gap-4 px-2">
-                            <View gap-2>
+                            <View className="gap-y-2">
                                 <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Full Name</Text>
                                 <TextInput
                                     className="bg-muted/50 border border-border/50 text-foreground px-4 h-12 rounded-xl text-sm font-medium"
@@ -173,7 +173,7 @@ export default function SettingsScreen() {
                                     placeholderTextColor="#9ca3af"
                                 />
                             </View>
-                            <View gap-2>
+                            <View className="gap-y-2">
                                 <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Branch Name</Text>
                                 <TextInput
                                     className="bg-muted/50 border border-border/50 text-foreground px-4 h-12 rounded-xl text-sm font-medium"
@@ -183,7 +183,7 @@ export default function SettingsScreen() {
                                     placeholderTextColor="#9ca3af"
                                 />
                             </View>
-                            <View gap-2>
+                            <View className="gap-y-2">
                                 <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Mobile Number</Text>
                                 <TextInput
                                     className="bg-muted/50 border border-border/50 text-foreground px-4 h-12 rounded-xl text-sm font-medium"

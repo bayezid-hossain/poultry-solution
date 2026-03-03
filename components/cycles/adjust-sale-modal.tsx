@@ -170,7 +170,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         if (stockIndex > -1) {
             const bStock = baselineStock.find((bs: any) => (bs.type || "").toUpperCase().trim() === currentType);
             const baselineStockBags = Number(bStock?.bags || 0);
-            const newStockBags = Math.max(0, baselineStockBags - consumedDelta);
+            const newStockBags = parseFloat(Math.max(0, baselineStockBags - consumedDelta).toFixed(2));
 
             if (Number(currentStock[stockIndex].bags) !== newStockBags) {
                 currentStock[stockIndex] = { ...currentStock[stockIndex], bags: newStockBags };
@@ -669,9 +669,13 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                 onPress={remainingBirdsAfterAdjustment === 0 ? handlePreview : handleConfirmClick}
                                 disabled={generateReport.isPending || previewMutation.isPending}
                             >
-                                <Icon as={ShoppingCart} className="text-white" size={20} />
+                                {(generateReport.isPending || previewMutation.isPending) ? (
+                                    <ActivityIndicator color="#ffffff" />
+                                ) : (
+                                    <Icon as={ShoppingCart} className="text-white" size={20} />
+                                )}
                                 <Text className="text-white font-bold text-lg">
-                                    {remainingBirdsAfterAdjustment === 0 ? "Preview & Close Batch" : "Confirm Adjustment"}
+                                    {generateReport.isPending ? "Saving..." : previewMutation.isPending ? "Loading Preview..." : remainingBirdsAfterAdjustment === 0 ? "Preview & Close Batch" : "Confirm Adjustment"}
                                 </Text>
                             </Button>
                         </View>

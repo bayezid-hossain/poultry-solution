@@ -111,6 +111,7 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
     const [showDetails, setShowDetails] = useState(false);
     const [showVersionPicker, setShowVersionPicker] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [isSwitchingVersion, setIsSwitchingVersion] = useState(false);
 
     const handleCopy = async () => {
         try {
@@ -149,13 +150,20 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
 
     // Backend mutation to persist version selection
     const setActiveMutation = trpc.officer.sales.setActiveVersion.useMutation({
-        onSuccess: () => {
+        onSuccess: async () => {
             // Broad invalidation to ensure all screens (Farmer Detail, Sales History, Cycles) update
-            utils.officer.sales.getSaleEvents.invalidate();
-            utils.officer.sales.getRecentSales.invalidate();
-            utils.officer.cycles.getDetails.invalidate();
-            utils.officer.cycles.listPast.invalidate();
-            utils.officer.farmers.getDetails.invalidate();
+            // Await all invalidations so the loader stays visible until fresh data arrives
+            await Promise.all([
+                utils.officer.sales.getSaleEvents.invalidate(),
+                utils.officer.sales.getRecentSales.invalidate(),
+                utils.officer.cycles.getDetails.invalidate(),
+                utils.officer.cycles.listPast.invalidate(),
+                utils.officer.farmers.getDetails.invalidate(),
+            ]);
+            setIsSwitchingVersion(false);
+        },
+        onError: () => {
+            setIsSwitchingVersion(false);
         },
     });
 
@@ -165,6 +173,7 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
 
         // Only persist to backend for the latest sale
         if (isLatest) {
+            setIsSwitchingVersion(true);
             setActiveMutation.mutate({
                 saleEventId: sale.id,
                 saleReportId: reportId,
@@ -285,11 +294,7 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                                 </Text>
                                 <Icon as={showVersionPicker ? ChevronUp : ChevronDown} size={14} className="text-muted-foreground opacity-50 ml-1" />
                             </Button>
-                            {setActiveMutation.isPending && (
-                                <View className="ml-2 bg-emerald-500/10 p-1.5 rounded-full border border-emerald-500/20">
-                                    <BirdyLoader size={12} color="#10b981" />
-                                </View>
-                            )}
+
                         </View>
                     )}
 
@@ -359,7 +364,7 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
 
                 {showDetails && (
                     <View className="px-4 pb-4 pt-2 border-t border-border/30 relative">
-                        <View className={setActiveMutation.isPending ? "opacity-30" : ""} pointerEvents={setActiveMutation.isPending ? "none" : "auto"}>
+                        <View className={isSwitchingVersion ? "opacity-30" : ""} pointerEvents={isSwitchingVersion ? "none" : "auto"}>
                             <SaleDetailsContent
                                 sale={sale}
                                 isLatest={isLatest}
@@ -372,7 +377,7 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                                 selectedReport={selectedReport}
                             />
                         </View>
-                        {setActiveMutation.isPending && (
+                        {isSwitchingVersion && (
                             <View className="absolute inset-0 items-center justify-center z-10 bg-background/40" pointerEvents="none">
                                 <View className="bg-card px-5 py-3 rounded-2xl flex-row items-center justify-center gap-3 border border-border/50 shadow-xl">
                                     <View className="bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/20">

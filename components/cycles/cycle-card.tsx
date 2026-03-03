@@ -2,11 +2,11 @@ import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { useRouter } from "expo-router";
-import { Bird, CalendarDays, CircleDashed, MoreHorizontal, Pencil, Power, RotateCcw, ShoppingCart, Skull, Trash2, User, Wheat, Wrench } from "lucide-react-native";
+import { Bird, CalendarDays, CircleDashed, MoreHorizontal, Pencil, Power, Rewind, RotateCcw, ShoppingCart, Skull, Trash2, User, Wheat, Wrench } from "lucide-react-native";
 import { useState } from "react";
 import { Modal, Pressable, TouchableOpacity, View } from "react-native";
 
-export type CycleAction = 'sell' | 'add_mortality' | 'edit_doc' | 'edit_age' | 'correct_mortality' | 'end_cycle' | 'reopen' | 'delete';
+export type CycleAction = 'sell' | 'add_mortality' | 'edit_doc' | 'edit_age' | 'correct_mortality' | 'end_cycle' | 'reopen' | 'backdate' | 'delete';
 
 interface CycleCardProps {
     cycle: {
@@ -264,6 +264,10 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                                     <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => handleAction('reopen')}>
                                         <View className="w-8 items-center justify-center mr-3"><Icon as={RotateCcw} size={20} className="text-foreground" /></View>
                                         <Text className="text-base font-medium text-foreground">Reopen Cycle</Text>
+                                    </Pressable>
+                                    <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => handleAction('backdate')}>
+                                        <View className="w-8 items-center justify-center mr-3"><Icon as={Rewind} size={20} className="text-foreground" /></View>
+                                        <Text className="text-base font-medium text-foreground">Backdate Cycle</Text>
                                     </Pressable>
                                     <Pressable className="flex-row items-center py-4 mt-2 active:bg-red-500/10 rounded-xl" onPress={() => handleAction('delete')}>
                                         <View className="w-8 items-center justify-center mr-3"><Icon as={Trash2} size={20} className="text-destructive" /></View>
