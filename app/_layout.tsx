@@ -5,7 +5,7 @@ import { PortalHost } from "@rn-primitives/portal";
 import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import "react-native-reanimated";
 import "../global.css";
@@ -14,6 +14,7 @@ import { Text } from "@/components/ui/text";
 import { StorageProvider } from "@/context/storage-context";
 import { ThemeProvider, useTheme } from "@/context/theme-context";
 import { authClient } from "@/lib/auth-client";
+import { isSocialAuthInProgress, setSocialAuthInProgress } from "@/lib/social-auth-flag";
 import * as WebBrowser from "expo-web-browser";
 import { Platform } from "react-native";
 
@@ -25,7 +26,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const segments = useSegments();
   const router = useRouter();
 
-  // Timeout for deep link URL resolution — don't wait forever
+  // Track if user has ever been authenticated in this mount cycle
+  // This distinguishes cold-start (need to wait for deep link) from sign-out (go straight to sign-in)
+  const hadSessionRef = useRef(false);
+  if (session) hadSessionRef.current = true;
+
+  // Timeout for deep link URL resolution on cold-start only
   const [urlReady, setUrlReady] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setUrlReady(true), 2500);
@@ -49,18 +55,50 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const url = Linking.useLinkingURL();
 
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
+  const consumedUrlRef = useRef<string | null>(null);
+
+  // Check if this URL looks like an auth callback
+  const urlIsAuthCallback = !!(url && (url.includes("code=") || url.includes("error=")));
+  // Synchronous check: if URL is an auth callback and hasn't been consumed yet, treat as processing
+  const isNewAuthCallback = urlIsAuthCallback && url !== consumedUrlRef.current;
+
   useEffect(() => {
-    if (url?.includes("code=") || url?.includes("error=")) {
+    if (isNewAuthCallback) {
       setIsProcessingAuth(true);
-      // Timeout to release the loading state in case auth fails or hangs
-      const timer = setTimeout(() => setIsProcessingAuth(false), 5000);
+      // Safety timeout in case auth hangs
+      const timer = setTimeout(() => {
+        consumedUrlRef.current = url;
+        setIsProcessingAuth(false);
+      }, 8000);
       return () => clearTimeout(timer);
     }
   }, [url]);
 
-  const isAuthCallback = isProcessingAuth || url?.includes("code=") || url?.includes("error=");
+  // Once session arrives, immediately consume the URL and clear processing
+  useEffect(() => {
+    if (session && (isProcessingAuth || isSocialAuthInProgress())) {
+      consumedUrlRef.current = url;
+      setIsProcessingAuth(false);
+      setSocialAuthInProgress(false);
+    }
+  }, [session, isProcessingAuth]);
 
-  if (isSessionPending) {
+  // Module-level flag bridges the gap when useLinkingURL() hasn't resolved yet
+  const isAuthCallback = isProcessingAuth || isNewAuthCallback || isSocialAuthInProgress();
+
+  // Detect sign-out: user had a session before, no longer has one, and not doing social auth
+  const isSigningOut = hadSessionRef.current && !session && !isAuthCallback;
+
+  if (isSigningOut) {
+    // Sign-out flow: skip ALL loading states, redirect straight to sign-in
+    const inAuthGroup = segments[0] === "(auth)";
+    if (inAuthGroup) {
+      action = "render";
+    } else {
+      action = "redirect";
+      redirectTarget = "/(auth)/sign-in";
+    }
+  } else if (isSessionPending) {
     action = "loading";
   } else if (isAuthCallback && !session) {
     // If we have an auth code but no session yet, we are processing login.
@@ -71,8 +109,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     if (inAuthGroup) {
       action = "render";
     } else {
-      // If we are not in the auth group and have no session, we need to redirect.
-      // Wait briefly for the URL to resolve to avoid flickering sign-in if a deep link is coming.
+      // Cold-start: wait briefly for URL to resolve to avoid flickering sign-in if a deep link is coming.
       if (!url && !urlReady && Platform.OS !== 'web') {
         action = "loading";
       } else {
@@ -128,7 +165,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [action, redirectTarget]);
 
-  if (action === "loading" || action === "redirect" || (session && segments[0] === "(auth)")) {
+  // Show loading overlay ONLY for auth callback processing or membership loading
+  // Never show it when redirecting to sign-in (sign-out should be instant)
+  const showLoadingOverlay = action === "loading" || (session && segments[0] === "(auth)");
+
+  if (showLoadingOverlay) {
     return (
       <LoadingState
         fullPage
@@ -145,7 +186,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           Failed to load membership status.
           {membershipError?.message}
         </Text>
-        <Pressable onPress={() => authClient.signOut()} className="mt-4 bg-destructive p-3 rounded">
+        <Pressable onPress={() => { authClient.signOut(); queryClient.clear(); }} className="mt-4 bg-destructive p-3 rounded">
           <Text className="text-destructive-foreground">Sign Out</Text>
         </Pressable>
       </View>

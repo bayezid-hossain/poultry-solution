@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.29] - 2026-03-05
+
+### Added
+- **Pull-to-Refresh:** Manager mode Overview, Officers, and Members pages now support pull-to-refresh for live data updates.
+- **Member Role in Pending Approvals:** The pending approvals list in the Members page now displays the requested role (Officer/Manager) for each pending member.
+- **Confirm Modals for Member Actions:** Replaced system alert dialogs for Deactivate/Activate and Remove member actions with themed bottom sheet confirm modals, including a loading indicator while processing.
+- **Social Auth Flag:** Created a module-level auth flag (`lib/social-auth-flag.ts`) that persists across React remounts to prevent sign-in page flashes when returning from Google authentication.
+
+### Changed
+- **Splash Screen:** Removed the app logo from the native Android splash screen. Now shows a plain background color only — the BirdyLoader is the sole animated loader throughout the app.
+- **ConfirmModal Component:** Enhanced with `isLoading` prop support to show an ActivityIndicator on the confirm button while waiting for API responses.
+
+### Fixed
+- **Auth State Leakage:** Added `queryClient.clear()` to all sign-out paths (settings, pending-approval, error boundary) and sign-in/sign-up success flows to prevent stale cached data from previous sessions leaking into new logins.
+- **Stale Pending Approval Screen:** Fixed an issue where logging out and signing in as a different user would briefly show the previous user's "Waiting for Approval" screen due to cached membership data.
+- **Join Org / Pending Approval Delays:** Replaced manual `router.replace()` navigation with `trpc.useUtils().invalidate()` to let the AuthGuard handle routing, eliminating race conditions and delays.
+- **Social Sign-In Flash:** Fixed the "Connecting securely..." overlay disappearing and briefly revealing the sign-in form when returning from Google OAuth, by using a module-level flag set before opening Chrome Custom Tab.
+- **Sign-Out Loop:** Fixed infinite loading loop after sign-out caused by persistent deep link URLs re-triggering the auth callback detection. Implemented URL consumption via `consumedUrlRef`.
+- **Sign-Out Loading Flash:** Eliminated the "Synchronizing" loader appearing during sign-out by detecting sign-out state (`hadSessionRef`) and bypassing all loading states for immediate redirect to sign-in.
+- **Access Level Updates:** Disabled role and access level update buttons for non-OWNER users in the Members screen, matching backend restrictions.
+
 ## [v1.0.27] - 2026-03-04
 
 ### Added

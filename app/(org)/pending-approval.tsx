@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { authClient } from '@/lib/auth-client';
-import { trpc } from '@/lib/trpc';
+import { queryClient, trpc } from '@/lib/trpc';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,14 +12,12 @@ export default function PendingApprovalScreen() {
     const { data: membership, isLoading, refetch } = trpc.auth.getMyMembership.useQuery();
 
     const handleRefresh = async () => {
-        const result = await refetch();
-        if (result.data?.status === 'ACTIVE') {
-            router.replace('/');
-        }
+        await refetch();
     };
 
     const handleSignOut = async () => {
         await authClient.signOut();
+        queryClient.clear();
     };
 
     return (

@@ -5,6 +5,8 @@ import { BirdyLoader } from "@/components/ui/loading-state";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { authClient } from "@/lib/auth-client";
+import { setSocialAuthInProgress } from "@/lib/social-auth-flag";
+import { queryClient } from "@/lib/trpc";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -29,10 +31,11 @@ export default function SignUpScreen() {
     const handleGoogleSignIn = async () => {
         setError("");
         setGoogleLoading(true);
+        setSocialAuthInProgress(true);
         try {
             await authClient.signIn.social({
                 provider: "google",
-                callbackURL: "/(tabs)",
+                callbackURL: "/?social_auth=true",
             });
         } catch (e: any) {
             setError(e?.message ?? "Google sign-in failed.");
@@ -64,6 +67,7 @@ export default function SignUpScreen() {
             if (result.error) {
                 setError(result.error.message ?? "Sign up failed. Please try again.");
             } else {
+                queryClient.clear();
                 // Navigate to email verification
                 router.replace({
                     pathname: "/(auth)/verify-email",

@@ -24,9 +24,10 @@ export default function JoinOrganizationScreen() {
         }
     }, [organizations]);
 
+    const utils = trpc.useUtils();
     const joinMutation = trpc.auth.joinOrganization.useMutation({
-        onSuccess: () => {
-            router.replace('/pending-approval');
+        onSuccess: async () => {
+            await utils.auth.getMyMembership.invalidate();
         },
         onError: (error) => {
             alert(error.message);

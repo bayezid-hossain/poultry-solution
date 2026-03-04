@@ -4,7 +4,7 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { AlertTriangle } from "lucide-react-native";
 import React from "react";
-import { Pressable, View } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
 
 interface ConfirmModalProps {
     visible: boolean;
@@ -15,6 +15,7 @@ interface ConfirmModalProps {
     onConfirm: () => void;
     onCancel: () => void;
     destructive?: boolean;
+    isLoading?: boolean;
 }
 
 export function ConfirmModal({
@@ -26,6 +27,7 @@ export function ConfirmModal({
     onConfirm,
     onCancel,
     destructive = false,
+    isLoading = false,
 }: ConfirmModalProps) {
     return (
         <BottomSheetModal open={visible} onOpenChange={(v) => !v && onCancel()}>
@@ -64,10 +66,15 @@ export function ConfirmModal({
                         onPress={onConfirm}
                         variant={destructive ? "destructive" : "default"}
                         className="flex-1 h-12 rounded-2xl"
+                        disabled={isLoading}
                     >
-                        <Text className="font-bold uppercase tracking-wider text-xs">
-                            {confirmText}
-                        </Text>
+                        {isLoading ? (
+                            <ActivityIndicator color={"#fff"} />
+                        ) : (
+                            <Text className={`font-bold uppercase tracking-wider text-xs ${destructive ? "text-white" : ""}`}>
+                                {confirmText}
+                            </Text>
+                        )}
                     </Button>
                 </View>
             </View>

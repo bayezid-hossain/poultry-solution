@@ -5,6 +5,8 @@ import { BirdyLoader } from "@/components/ui/loading-state";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { authClient } from "@/lib/auth-client";
+import { setSocialAuthInProgress } from "@/lib/social-auth-flag";
+import { queryClient } from "@/lib/trpc";
 import { Link, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
@@ -50,6 +52,7 @@ export default function SignInScreen() {
             if (result.error) {
                 setError(result.error.message ?? "Sign in failed. Please try again.");
             } else {
+                queryClient.clear();
                 router.replace("/");
             }
         } catch (e: any) {
@@ -62,11 +65,12 @@ export default function SignInScreen() {
     const handleGoogleSignIn = async () => {
         setError("");
         setGoogleLoading(true);
+        setSocialAuthInProgress(true);
         try {
             const result = await authClient.signIn.social({
                 provider: "google",
-                callbackURL: "/",
-                newUserCallbackURL: "/",
+                callbackURL: "/?social_auth=true",
+                newUserCallbackURL: "/?social_auth=true",
                 prompt: "select_account"
             } as any);
             if (result?.error) {
