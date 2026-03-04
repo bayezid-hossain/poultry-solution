@@ -1,3 +1,4 @@
+import { BottomSheetModal } from "@/components/ui/bottom-sheet-modal";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
@@ -5,8 +6,8 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { MapPin, Phone, User, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
-import { toast, Toaster } from "sonner-native";
+import { ScrollView, TextInput, View } from "react-native";
+import { toast } from "sonner-native";
 
 interface EditFarmerModalProps {
     farmer: {
@@ -68,119 +69,97 @@ export function EditFarmerModal({
     };
 
     return (
-        <Modal
-            animationType="fade"
-            transparent={true}
-            visible={open}
-            onRequestClose={() => onOpenChange(false)}
-        >
+        <BottomSheetModal open={open} onOpenChange={onOpenChange}>
+            {/* Header */}
+            <View className="p-6 pb-2 flex-row justify-between items-center border-b border-border/50">
+                <View className="flex-row items-center gap-3">
+                    <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
+                        <Icon as={User} size={20} className="text-primary" />
+                    </View>
+                    <View>
+                        <Text className="text-xl font-bold text-foreground">Edit Profile</Text>
+                        <Text className="text-xs text-muted-foreground mt-0.5">
+                            Update farmer information
+                        </Text>
+                    </View>
+                </View>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onPress={() => onOpenChange(false)}>
+                    <Icon as={X} size={18} className="text-muted-foreground" />
+                </Button>
+            </View>
 
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "padding"}
-                className="flex-1"
-            >
-                <Pressable
-                    className="flex-1 bg-black/60 items-center justify-center p-4"
-                    onPress={() => onOpenChange(false)}
-                >
-                    <Pressable
-                        className="w-full max-w-sm bg-card rounded-3xl overflow-hidden"
-                        onPress={(e) => e.stopPropagation()}
+            {/* Form */}
+            <ScrollView className="p-6 space-y-6" bounces={false} keyboardShouldPersistTaps="handled">
+                <View className="gap-2 mb-2">
+                    <Text className="text-sm font-bold text-foreground ml-1">Full Name</Text>
+                    <Input
+                        ref={nameRef}
+                        placeholder="Farmer Name"
+                        value={name}
+                        onChangeText={setName}
+                        className="h-12 bg-muted/30 border-border/50"
+                        returnKeyType="next"
+                        onSubmitEditing={() => locationRef.current?.focus()}
+                    />
+                </View>
+
+                <View className="gap-2 mb-2">
+                    <View className="flex-row items-center gap-1 ml-1">
+                        <Icon as={MapPin} size={14} className="text-muted-foreground" />
+                        <Text className="text-sm font-bold text-foreground">Location</Text>
+                    </View>
+                    <Input
+                        ref={locationRef}
+                        placeholder="Village, Upazila"
+                        value={location}
+                        onChangeText={setLocation}
+                        className="h-12 bg-muted/30 border-border/50"
+                        returnKeyType="next"
+                        onSubmitEditing={() => mobileRef.current?.focus()}
+                    />
+                </View>
+
+                <View className="gap-2">
+                    <View className="flex-row items-center gap-1 ml-1">
+                        <Icon as={Phone} size={14} className="text-muted-foreground" />
+                        <Text className="text-sm font-bold text-foreground">Mobile Number</Text>
+                    </View>
+                    <Input
+                        ref={mobileRef}
+                        placeholder="017XXXXXXXX"
+                        keyboardType="phone-pad"
+                        value={mobile}
+                        onChangeText={setMobile}
+                        className="h-12 bg-muted/30 border-border/50"
+                        returnKeyType="next"
+                        onSubmitEditing={handleSubmit}
+                    />
+                    <Text className="text-[10px] text-muted-foreground ml-1">
+                        Format: 013XXXXXXXX to 019XXXXXXXX
+                    </Text>
+                </View>
+
+
+
+                <View className="flex-row gap-3 pt-6 pb-6">
+                    <Button
+                        variant="outline"
+                        className="flex-1 h-12 rounded-xl"
+                        onPress={() => onOpenChange(false)}
                     >
-                        {/* Header */}
-                        <View className="p-6 pb-2 flex-row justify-between items-center border-b border-border/50">
-                            <View className="flex-row items-center gap-3">
-                                <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
-                                    <Icon as={User} size={20} className="text-primary" />
-                                </View>
-                                <View>
-                                    <Text className="text-xl font-bold text-foreground">Edit Profile</Text>
-                                    <Text className="text-xs text-muted-foreground mt-0.5">
-                                        Update farmer information
-                                    </Text>
-                                </View>
-                            </View>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onPress={() => onOpenChange(false)}>
-                                <Icon as={X} size={18} className="text-muted-foreground" />
-                            </Button>
-                        </View>
-
-                        {/* Form */}
-                        <ScrollView className="p-6 space-y-6" bounces={false}>
-                            <View className="gap-2 mb-2">
-                                <Text className="text-sm font-bold text-foreground ml-1">Full Name</Text>
-                                <Input
-                                    ref={nameRef}
-                                    placeholder="Farmer Name"
-                                    value={name}
-                                    onChangeText={setName}
-                                    className="h-12 bg-muted/30 border-border/50"
-                                    returnKeyType="next"
-                                    onSubmitEditing={() => locationRef.current?.focus()}
-                                />
-                            </View>
-
-                            <View className="gap-2 mb-2">
-                                <View className="flex-row items-center gap-1 ml-1">
-                                    <Icon as={MapPin} size={14} className="text-muted-foreground" />
-                                    <Text className="text-sm font-bold text-foreground">Location</Text>
-                                </View>
-                                <Input
-                                    ref={locationRef}
-                                    placeholder="Village, Upazila"
-                                    value={location}
-                                    onChangeText={setLocation}
-                                    className="h-12 bg-muted/30 border-border/50"
-                                    returnKeyType="next"
-                                    onSubmitEditing={() => mobileRef.current?.focus()}
-                                />
-                            </View>
-
-                            <View className="gap-2">
-                                <View className="flex-row items-center gap-1 ml-1">
-                                    <Icon as={Phone} size={14} className="text-muted-foreground" />
-                                    <Text className="text-sm font-bold text-foreground">Mobile Number</Text>
-                                </View>
-                                <Input
-                                    ref={mobileRef}
-                                    placeholder="017XXXXXXXX"
-                                    keyboardType="phone-pad"
-                                    value={mobile}
-                                    onChangeText={setMobile}
-                                    className="h-12 bg-muted/30 border-border/50"
-                                    returnKeyType="next"
-                                    onSubmitEditing={handleSubmit}
-                                />
-                                <Text className="text-[10px] text-muted-foreground ml-1">
-                                    Format: 013XXXXXXXX to 019XXXXXXXX
-                                </Text>
-                            </View>
-
-
-
-                            <View className="flex-row gap-3 pt-6">
-                                <Button
-                                    variant="outline"
-                                    className="flex-1 h-12 rounded-xl"
-                                    onPress={() => onOpenChange(false)}
-                                >
-                                    <Text className="font-bold">Cancel</Text>
-                                </Button>
-                                <Button
-                                    className="flex-1 h-12 bg-primary rounded-xl shadow-none"
-                                    onPress={handleSubmit}
-                                    disabled={mutation.isPending}
-                                >
-                                    <Text className="text-primary-foreground font-bold">
-                                        {mutation.isPending ? "Saving..." : "Save Changes"}
-                                    </Text>
-                                </Button>
-                            </View>
-                        </ScrollView>
-                    </Pressable>
-                </Pressable>
-            </KeyboardAvoidingView>
-            <Toaster position="bottom-center" offset={40} />
-        </Modal>
+                        <Text className="font-bold">Cancel</Text>
+                    </Button>
+                    <Button
+                        className="flex-1 h-12 bg-primary rounded-xl shadow-none"
+                        onPress={handleSubmit}
+                        disabled={mutation.isPending}
+                    >
+                        <Text className="text-primary-foreground font-bold">
+                            {mutation.isPending ? "Saving..." : "Save Changes"}
+                        </Text>
+                    </Button>
+                </View>
+            </ScrollView>
+        </BottomSheetModal>
     );
 }

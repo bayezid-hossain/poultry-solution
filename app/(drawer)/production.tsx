@@ -81,7 +81,7 @@ export default function ProductionScreen() {
         <View className="flex-1 bg-background">
             <ScreenHeader title="Monthly Production" />
 
-            <ScrollView contentContainerClassName="p-4 pb-20" className="flex-1">
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="p-4 pb-20" className="flex-1">
                 {/* Title */}
                 <View className="mb-4">
                     <Text className="text-3xl font-black text-foreground mb-1">Monthly Production Record</Text>
@@ -145,7 +145,7 @@ export default function ProductionScreen() {
                         </Card>
 
                         {farmers.length > 0 ? (
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false}>
                                 <View>
                                     {/* Table Header */}
                                     <View className="flex-row border-b border-border/50 pb-3 mb-1">
@@ -254,7 +254,7 @@ export default function ProductionScreen() {
                 >
                     <View className="bg-card w-full rounded-[2rem] p-6 border border-border/50">
                         <Text className="text-lg font-black uppercase tracking-tight mb-4 ml-1">Select Month</Text>
-                        <ScrollView className="max-h-96">
+                        <ScrollView keyboardShouldPersistTaps="handled" className="max-h-96">
                             <View className="flex-row flex-wrap gap-2">
                                 {MONTHS.map((m, i) => (
                                     <Button

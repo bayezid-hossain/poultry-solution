@@ -57,7 +57,7 @@ export default function OfficerDetailScreen() {
                 }
             />
 
-            <ScrollView contentContainerClassName="p-4 pb-20" className="flex-1">
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="p-4 pb-20" className="flex-1">
                 {/* Officer Info */}
                 <Card className="mb-6 border-border/50 overflow-hidden">
                     <CardContent className="p-6">

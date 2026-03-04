@@ -814,7 +814,7 @@ export default function TutorialScreen() {
         <View className="flex-1 bg-background">
             <ScreenHeader title="Tutorial" />
 
-            <ScrollView contentContainerClassName="p-4 pb-24 gap-4">
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="p-4 pb-24 gap-4">
                 {/* Hero */}
                 <View className="rounded-3xl bg-primary/5 border border-primary/10 p-6">
                     <View className="flex-row items-center gap-3 mb-4">

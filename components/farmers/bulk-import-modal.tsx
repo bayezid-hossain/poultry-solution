@@ -415,7 +415,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                     </View>
                 ) : (
                     <View className="flex-1">
-                        <ScrollView className="flex-1 p-5" contentContainerStyle={{ paddingBottom: 40 }}>
+                        <ScrollView className="flex-1 p-5" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
                             {/* Sub-header with Stats */}
                             <View className="flex-row items-center justify-between mb-6 px-1">
                                 <View>

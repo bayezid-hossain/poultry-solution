@@ -1,4 +1,5 @@
 import { RestockModal } from "@/components/farmers/restock-modal";
+import { BottomSheetModal } from "@/components/ui/bottom-sheet-modal";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,7 @@ import {
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 import { toast, Toaster } from "sonner-native";
 import { z } from "zod";
 import { CorrectAgeModal } from "./correct-age-modal";
@@ -382,17 +383,8 @@ export const SellModal = ({
     const getError = (field: keyof FormValues) => form.formState.errors[field]?.message;
 
     return (
-        <Modal
-            animationType="slide"
-            transparent={false} // Full screen modal
-            visible={open}
-            onRequestClose={() => onOpenChange(false)}
-        >
-
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "padding"}
-                className="flex-1 bg-background"
-            >
+        <BottomSheetModal open={open} onOpenChange={onOpenChange} fullScreen>
+            <View className="flex-1 bg-background">
                 {/* Header */}
                 <View className="flex-row items-center justify-between p-4 border-b border-border/50 bg-card pt-12">
                     <View className="flex-row items-center gap-2">
@@ -416,7 +408,7 @@ export const SellModal = ({
 
                 {step === "preview" && previewData ? (
                     <View className="flex-1">
-                        <ScrollView className="flex-1 px-4 pt-4">
+                        <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
                             <View className="mb-4 bg-primary/10 p-3 rounded-lg border border-primary/20 items-center">
                                 <Text className="text-sm font-bold text-primary">Preview Sale Details</Text>
                                 <Text className="text-xs text-center text-muted-foreground mt-1">
@@ -464,7 +456,7 @@ export const SellModal = ({
                     </View>
                 ) : (
                     <View className="flex-1">
-                        <ScrollView className="flex-1" contentContainerClassName="p-4 gap-6 pb-20">
+                        <ScrollView className="flex-1" contentContainerClassName="p-4 gap-6 pb-20" keyboardShouldPersistTaps="handled">
                             {/* SECTION 1: FARMER INFO */}
                             <View className="space-y-4 gap-y-2">
                                 <FarmerInfoHeader
@@ -918,7 +910,7 @@ export const SellModal = ({
                         </View>
                     </View>
                 )}
-            </KeyboardAvoidingView>
+            </View>
 
             <RestockModal
                 farmerId={farmerId}
@@ -943,6 +935,6 @@ export const SellModal = ({
                 }}
             />
             <Toaster position="bottom-center" offset={40} />
-        </Modal>
+        </BottomSheetModal>
     );
 };

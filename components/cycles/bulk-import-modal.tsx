@@ -436,7 +436,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                     </View>
                 ) : (
                     <View className="flex-1">
-                        <ScrollView className="flex-1 p-5" contentContainerStyle={{ paddingBottom: 40 }}>
+                        <ScrollView className="flex-1 p-5" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
                             <View className="flex-row items-center justify-between mb-6 px-1">
                                 <View>
                                     <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Extraction Result</Text>

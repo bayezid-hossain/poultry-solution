@@ -76,7 +76,7 @@ export function ConfirmDocOrderModal({ open, onOpenChange, order, onSuccess }: C
             </View>
 
             {/* Content */}
-            <ScrollView className="flex-1" contentContainerStyle={{ gap: 24, paddingBottom: 40, padding: 16 }}>
+            <ScrollView className="flex-1" contentContainerStyle={{ gap: 24, paddingBottom: 40, padding: 16 }} keyboardShouldPersistTaps="handled">
                 <View className="bg-primary/5 p-4 rounded-xl border border-primary/20 mb-2">
                     <Text className="text-sm text-foreground">
                         Confirming this order will automatically generate <Text className="font-bold">new active cycles</Text> for the listed farmers. Please confirm or adjust the placement dates below.

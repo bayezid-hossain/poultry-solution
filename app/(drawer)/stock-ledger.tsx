@@ -144,7 +144,7 @@ function StockTab({
             {refreshing && (
                 <LoadingState fullPage title="Synchronizing" description="Updating stock records..." />
             )}
-            <ScrollView
+            <ScrollView keyboardShouldPersistTaps="handled"
                 contentContainerClassName="p-4 pb-20"
                 className="flex-1"
                 refreshControl={
@@ -379,7 +379,7 @@ function ImportHistoryTab({
             {refreshing && (
                 <LoadingState fullPage title="Synchronizing" description="Fetching import history..." />
             )}
-            <ScrollView
+            <ScrollView keyboardShouldPersistTaps="handled"
                 contentContainerClassName="p-4 pb-20"
                 className="flex-1"
                 refreshControl={

@@ -106,7 +106,7 @@ export default function CycleDetailsScreen() {
 
     return (
         <View className="flex-1 bg-background">
-            <ScrollView contentContainerClassName="p-4 pt-12 pb-20 gap-4">
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="p-4 pt-12 pb-20 gap-4">
 
                 {/* 1. Header Card */}
                 <Card className="bg-card/70 border-border/20 rounded-[20px] p-5 ">

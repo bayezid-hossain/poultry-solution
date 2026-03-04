@@ -71,7 +71,7 @@ export function ExportPreviewDialog({ visible, onClose, onView, onShare, onDownl
                 </View>
 
                 <Text className="text-[10px] text-center text-muted-foreground mt-6 opacity-50 font-medium italic">
-                    The report has been generated and saved locally.
+                    The report has been generated and ready for preview, sharing or saving.
                 </Text>
             </View>
         </BottomSheetModal>

@@ -90,7 +90,7 @@ export default function MembersScreen() {
                     <Text className="mt-4 text-muted-foreground font-medium">Loading members...</Text>
                 </View>
             ) : (
-                <ScrollView contentContainerClassName="p-4 pb-20" className="flex-1">
+                <ScrollView contentContainerClassName="p-4 pb-20" className="flex-1" keyboardShouldPersistTaps="handled">
 
                     {/* Pending Approvals */}
                     {pendingMembers.length > 0 && (

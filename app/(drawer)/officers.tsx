@@ -35,7 +35,7 @@ export default function OfficersScreen() {
                     <Text className="mt-4 text-muted-foreground font-medium">Loading officers...</Text>
                 </View>
             ) : (
-                <ScrollView contentContainerClassName="p-4 pb-20" className="flex-1">
+                <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="p-4 pb-20" className="flex-1">
                     {/* Header */}
                     <View className="flex-row items-center gap-3 mb-6">
                         <View className="w-10 h-10 rounded-2xl bg-primary/10 items-center justify-center">

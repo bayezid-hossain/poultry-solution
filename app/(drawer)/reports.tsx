@@ -635,7 +635,7 @@ export default function ReportsScreen() {
             <Pressable onPress={onClose} className="flex-1 bg-black/60 items-center justify-center p-6">
                 <View className="bg-card w-full rounded-[2rem] p-6 border border-border/50 max-h-[80%]">
                     <Text className="text-lg font-black uppercase tracking-tight mb-4 ml-1">{title}</Text>
-                    <ScrollView>
+                    <ScrollView keyboardShouldPersistTaps="handled" >
                         <View className="flex-row flex-wrap gap-2">
                             {items.map((item, idx) => (
                                 <Button
@@ -658,7 +658,7 @@ export default function ReportsScreen() {
         <View className="flex-1 bg-background">
             <ScreenHeader title="Download Reports" />
 
-            <ScrollView className="flex-1" contentContainerStyle={{ padding: 20 }}>
+            <ScrollView keyboardShouldPersistTaps="handled" className="flex-1" contentContainerStyle={{ padding: 20 }}>
                 {isManagement && (
                     <View className="mb-6">
                         <OfficerSelector orgId={membership?.orgId ?? ""} disabled={isBulkExporting} />

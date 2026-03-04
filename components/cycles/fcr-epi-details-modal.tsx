@@ -56,7 +56,7 @@ export const FcrEpiDetailsModal = ({
                 </Button>
             </View>
 
-            <ScrollView contentContainerClassName="p-4 pb-10 gap-6">
+            <ScrollView contentContainerClassName="p-4 pb-10 gap-6" keyboardShouldPersistTaps="handled">
                 {/* Step 1: FCR */}
                 <View className="gap-3">
                     <View className="flex-row items-center gap-2">

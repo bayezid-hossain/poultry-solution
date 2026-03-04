@@ -96,7 +96,7 @@ export default function SettingsScreen() {
         <View className="flex-1 bg-background">
             <ScreenHeader title="Settings" />
 
-            <ScrollView contentContainerClassName="p-4 pb-20 gap-6">
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="p-4 pb-20 gap-6">
 
                 {/* 1. Profile Section */}
                 <View className="items-center py-6 mt-2">

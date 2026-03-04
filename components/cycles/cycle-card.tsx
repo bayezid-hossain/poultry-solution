@@ -1,10 +1,11 @@
+import { BottomSheetModal } from "@/components/ui/bottom-sheet-modal";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { useRouter } from "expo-router";
 import { Bird, CalendarDays, CircleDashed, MoreHorizontal, Pencil, Power, Rewind, RotateCcw, ShoppingCart, Skull, Trash2, User, Wheat, Wrench } from "lucide-react-native";
 import { useState } from "react";
-import { Modal, Pressable, TouchableOpacity, View } from "react-native";
+import { Pressable, TouchableOpacity, View } from "react-native";
 
 export type CycleAction = 'sell' | 'add_mortality' | 'edit_doc' | 'edit_age' | 'correct_mortality' | 'end_cycle' | 'reopen' | 'backdate' | 'delete';
 
@@ -210,75 +211,55 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                 </View>
             </Pressable>
 
-            {/* Actions Bottom Sheet Modal */}
-            <Modal
-                transparent
-                visible={isMenuOpen}
-                animationType="fade"
-                onRequestClose={() => setIsMenuOpen(false)}
-            >
-                <Pressable
-                    className="flex-1 bg-black/50 justify-end"
-                    onPress={() => setIsMenuOpen(false)}
-                >
-                    <Pressable
-                        className="bg-card rounded-t-3xl pb-8 overflow-hidden border-t border-border/50"
-                        onPress={(e) => e.stopPropagation()}
-                    >
-                        <View className="items-center py-4">
-                            <View className="w-12 h-1.5 bg-muted rounded-full" />
-                        </View>
+            <BottomSheetModal open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                <View className="px-6 py-4 pb-12">
+                    <Text className="text-lg font-black text-foreground mb-4">Cycle Actions</Text>
 
-                        <View className="px-6 pb-2">
-                            <Text className="text-lg font-black text-foreground mb-4">Cycle Actions</Text>
-
-                            {isActive ? (
-                                <>
-                                    <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => handleAction('sell')}>
-                                        <View className="w-8 items-center justify-center mr-3"><Icon as={ShoppingCart} size={20} className="text-primary" /></View>
-                                        <Text className="text-base font-bold text-foreground">Sell Birds</Text>
-                                    </Pressable>
-                                    <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => handleAction('add_mortality')}>
-                                        <View className="w-8 items-center justify-center mr-3"><Icon as={Skull} size={20} className="text-foreground" /></View>
-                                        <Text className="text-base font-medium text-foreground">Add Mortality</Text>
-                                    </Pressable>
-                                    <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('edit_doc')}>
-                                        <View className="w-8 items-center justify-center mr-3"><Icon as={Pencil} size={20} className="text-foreground" /></View>
-                                        <Text className="text-base font-medium text-foreground">Edit Initial Birds (DOC)</Text>
-                                    </Pressable>
-                                    <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('edit_age')}>
-                                        <View className="w-8 items-center justify-center mr-3"><Icon as={CalendarDays} size={20} className="text-foreground" /></View>
-                                        <Text className="text-base font-medium text-foreground">Edit Age</Text>
-                                    </Pressable>
-                                    <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('correct_mortality')}>
-                                        <View className="w-8 items-center justify-center mr-3"><Icon as={Wrench} size={20} className="text-foreground" /></View>
-                                        <Text className="text-base font-medium text-foreground">Correct Total Mortality</Text>
-                                    </Pressable>
-                                    <Pressable className="flex-row items-center py-4 mt-2 active:bg-red-500/10 rounded-xl" onPress={() => handleAction('end_cycle')}>
-                                        <View className="w-8 items-center justify-center mr-3"><Icon as={Power} size={20} className="text-destructive" /></View>
-                                        <Text className="text-base font-bold text-destructive">End Cycle</Text>
-                                    </Pressable>
-                                </>
-                            ) : (
-                                <>
-                                    <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => handleAction('reopen')}>
-                                        <View className="w-8 items-center justify-center mr-3"><Icon as={RotateCcw} size={20} className="text-foreground" /></View>
-                                        <Text className="text-base font-medium text-foreground">Reopen Cycle</Text>
-                                    </Pressable>
-                                    <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => handleAction('backdate')}>
-                                        <View className="w-8 items-center justify-center mr-3"><Icon as={Rewind} size={20} className="text-foreground" /></View>
-                                        <Text className="text-base font-medium text-foreground">Backdate Cycle</Text>
-                                    </Pressable>
-                                    <Pressable className="flex-row items-center py-4 mt-2 active:bg-red-500/10 rounded-xl" onPress={() => handleAction('delete')}>
-                                        <View className="w-8 items-center justify-center mr-3"><Icon as={Trash2} size={20} className="text-destructive" /></View>
-                                        <Text className="text-base font-bold text-destructive">Delete Record</Text>
-                                    </Pressable>
-                                </>
-                            )}
-                        </View>
-                    </Pressable>
-                </Pressable>
-            </Modal>
+                    {isActive ? (
+                        <>
+                            <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => handleAction('sell')}>
+                                <View className="w-8 items-center justify-center mr-3"><Icon as={ShoppingCart} size={20} className="text-primary" /></View>
+                                <Text className="text-base font-bold text-foreground">Sell Birds</Text>
+                            </Pressable>
+                            <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => handleAction('add_mortality')}>
+                                <View className="w-8 items-center justify-center mr-3"><Icon as={Skull} size={20} className="text-foreground" /></View>
+                                <Text className="text-base font-medium text-foreground">Add Mortality</Text>
+                            </Pressable>
+                            <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('edit_doc')}>
+                                <View className="w-8 items-center justify-center mr-3"><Icon as={Pencil} size={20} className="text-foreground" /></View>
+                                <Text className="text-base font-medium text-foreground">Edit Initial Birds (DOC)</Text>
+                            </Pressable>
+                            <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('edit_age')}>
+                                <View className="w-8 items-center justify-center mr-3"><Icon as={CalendarDays} size={20} className="text-foreground" /></View>
+                                <Text className="text-base font-medium text-foreground">Edit Age</Text>
+                            </Pressable>
+                            <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('correct_mortality')}>
+                                <View className="w-8 items-center justify-center mr-3"><Icon as={Wrench} size={20} className="text-foreground" /></View>
+                                <Text className="text-base font-medium text-foreground">Correct Total Mortality</Text>
+                            </Pressable>
+                            <Pressable className="flex-row items-center py-4 mt-2 active:bg-red-500/10 rounded-xl" onPress={() => handleAction('end_cycle')}>
+                                <View className="w-8 items-center justify-center mr-3"><Icon as={Power} size={20} className="text-destructive" /></View>
+                                <Text className="text-base font-bold text-destructive">End Cycle</Text>
+                            </Pressable>
+                        </>
+                    ) : (
+                        <>
+                            <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => handleAction('reopen')}>
+                                <View className="w-8 items-center justify-center mr-3"><Icon as={RotateCcw} size={20} className="text-foreground" /></View>
+                                <Text className="text-base font-medium text-foreground">Reopen Cycle</Text>
+                            </Pressable>
+                            <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => handleAction('backdate')}>
+                                <View className="w-8 items-center justify-center mr-3"><Icon as={Rewind} size={20} className="text-foreground" /></View>
+                                <Text className="text-base font-medium text-foreground">Backdate Cycle</Text>
+                            </Pressable>
+                            <Pressable className="flex-row items-center py-4 mt-2 active:bg-red-500/10 rounded-xl" onPress={() => handleAction('delete')}>
+                                <View className="w-8 items-center justify-center mr-3"><Icon as={Trash2} size={20} className="text-destructive" /></View>
+                                <Text className="text-base font-bold text-destructive">Delete Record</Text>
+                            </Pressable>
+                        </>
+                    )}
+                </View>
+            </BottomSheetModal>
         </Card>
     );
 }

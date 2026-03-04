@@ -158,7 +158,7 @@ export default function SalesScreen() {
                     {refreshing && (
                         <LoadingState fullPage title="Synchronizing" description="Fetching latest sales..." />
                     )}
-                    <ScrollView
+                    <ScrollView keyboardShouldPersistTaps="handled"
                         contentContainerClassName="p-4 pb-20 gap-4"
                         className="flex-1"
                         refreshControl={

@@ -64,7 +64,7 @@ export const ProfitDetailsModal = ({
                 </Button>
             </View>
 
-            <ScrollView contentContainerClassName="p-4 pb-10 gap-6">
+            <ScrollView contentContainerClassName="p-4 pb-10 gap-6" keyboardShouldPersistTaps="handled">
                 {/* Formula Summary */}
                 <View className="bg-muted/30 p-4 rounded-2xl border border-border/50">
                     <Text className="text-xs font-bold text-foreground mb-1">Profit Formula:</Text>

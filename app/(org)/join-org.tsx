@@ -46,7 +46,7 @@ export default function JoinOrganizationScreen() {
 
     return (
         <SafeAreaView className="flex-1 bg-background">
-            <ScrollView contentContainerClassName="p-5">
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="p-5">
                 <Text variant="h3" className="mb-2 text-primary">Join Organization</Text>
                 <Text variant="muted" className="mb-6 font-medium">Select an organization to join.</Text>
 

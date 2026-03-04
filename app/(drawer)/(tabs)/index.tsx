@@ -174,7 +174,7 @@ export default function HomeScreen() {
       {refreshing && (
         <LoadingState fullPage title="Synchronizing" description="Updating your dashboard..." />
       )}
-      <ScrollView
+      <ScrollView keyboardShouldPersistTaps="handled"
         contentContainerClassName="p-4 pb-20"
         className="flex-1"
         refreshControl={

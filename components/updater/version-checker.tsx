@@ -218,7 +218,7 @@ export function VersionChecker() {
 
                             {showChangelog && (
                                 <View className="mb-6 p-4 bg-muted/30 rounded-2xl max-h-[140px] border border-border/30">
-                                    <ScrollView showsVerticalScrollIndicator={true}>
+                                    <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={true}>
                                         <Text className="text-xs leading-5 font-medium text-muted-foreground">
                                             {releaseNotes}
                                         </Text>

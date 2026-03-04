@@ -74,7 +74,7 @@ export default function DocPlacementsScreen() {
         <View className="flex-1 bg-background">
             <ScreenHeader title="DOC Placements" />
 
-            <ScrollView contentContainerClassName="p-4 pb-20" className="flex-1">
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="p-4 pb-20" className="flex-1">
                 <View className="flex-row items-center justify-between mb-6">
                     <View>
                         <Text className="text-3xl font-black text-foreground mb-1">DOC Placement Report</Text>
@@ -287,7 +287,7 @@ export default function DocPlacementsScreen() {
                 >
                     <View className="bg-card w-full rounded-[2rem] p-6 border border-border/50">
                         <Text className="text-lg font-black uppercase tracking-tight mb-4 ml-1">Select Month</Text>
-                        <ScrollView className="max-h-96">
+                        <ScrollView className="max-h-96" keyboardShouldPersistTaps="handled">
                             <View className="flex-row flex-wrap gap-2">
                                 {MONTHS.map((m, i) => (
                                     <Button

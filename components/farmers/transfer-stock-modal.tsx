@@ -201,10 +201,9 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                                     </View>
                                 </View>
                                 {/* Farmer list */}
-                                <ScrollView
+                                <ScrollView keyboardShouldPersistTaps="handled"
                                     nestedScrollEnabled
                                     style={{ maxHeight: 200 }}
-                                    keyboardShouldPersistTaps="handled"
                                 >
                                     {availableFarmers.length > 0 ? (
                                         availableFarmers.map((farmer: any) => {
