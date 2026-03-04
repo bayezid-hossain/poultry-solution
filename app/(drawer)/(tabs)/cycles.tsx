@@ -4,8 +4,8 @@ import { BulkImportModal } from "@/components/cycles/bulk-import-modal";
 import { CorrectAgeModal } from "@/components/cycles/correct-age-modal";
 import { CorrectDocModal } from "@/components/cycles/correct-doc-modal";
 import { CorrectMortalityModal } from "@/components/cycles/correct-mortality-modal";
-import { CreateCycleModal } from "@/components/cycles/create-cycle-modal";
 import { CycleAction, CycleCard } from "@/components/cycles/cycle-card";
+import { CycleModal } from "@/components/cycles/cycle-modal";
 import { DeleteCycleModal } from "@/components/cycles/delete-cycle-modal";
 import { EndCycleModal } from "@/components/cycles/end-cycle-modal";
 import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
@@ -517,7 +517,7 @@ export default function CyclesScreen() {
                 }}
             />
 
-            <CreateCycleModal
+            <CycleModal
                 open={isCreateCycleOpen}
                 onOpenChange={setIsCreateCycleOpen}
                 orgId={membership?.orgId ?? ""}

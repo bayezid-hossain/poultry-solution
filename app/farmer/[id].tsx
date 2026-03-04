@@ -4,6 +4,7 @@ import { CorrectAgeModal } from "@/components/cycles/correct-age-modal";
 import { CorrectDocModal } from "@/components/cycles/correct-doc-modal";
 import { CorrectMortalityModal } from "@/components/cycles/correct-mortality-modal";
 import { CycleAction, CycleCard } from "@/components/cycles/cycle-card";
+import { CycleModal } from "@/components/cycles/cycle-modal";
 import { CycleRowAccordion } from "@/components/cycles/cycle-row-accordion";
 import { DeleteCycleModal } from "@/components/cycles/delete-cycle-modal";
 import { EndCycleModal } from "@/components/cycles/end-cycle-modal";
@@ -14,7 +15,6 @@ import { EditFarmerModal } from "@/components/farmers/edit-farmer-modal";
 import { ProblematicFeedModal } from "@/components/farmers/problematic-feed-modal";
 import { RestockModal } from "@/components/farmers/restock-modal";
 import { SecurityMoneyModal } from "@/components/farmers/security-money-modal";
-import { StartCycleModal } from "@/components/farmers/start-cycle-modal";
 import { StockCorrectionModal } from "@/components/farmers/stock-correction-modal";
 import { TransferStockModal } from "@/components/farmers/transfer-stock-modal";
 import { ProAccessModal } from "@/components/pro-access-modal";
@@ -702,10 +702,11 @@ export default function FarmerDetailScreen() {
                     utils.management.stock.getAllFarmersStock.invalidate();
                 }}
             />
-            <StartCycleModal
+            <CycleModal
                 open={isStartCycleOpen}
                 onOpenChange={setIsStartCycleOpen}
-                farmer={farmer}
+                orgId={membership?.orgId || ""}
+                initialFarmer={farmer}
                 onSuccess={() => {
                     refetchAll(); utils.officer.stock.getAllFarmersStock.invalidate();
                     utils.management.stock.getAllFarmersStock.invalidate();
