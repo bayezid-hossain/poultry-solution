@@ -8,7 +8,7 @@ import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
 import { toast } from "sonner-native";
 import { ConfirmModal } from "../cycles/confirm-modal";
-import { AppModal } from "../ui/app-modal";
+import { BottomSheetModal } from "../ui/bottom-sheet-modal";
 
 interface ParsedItem {
     id: string; // Internal ID
@@ -43,6 +43,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [pendingUpdates, setPendingUpdates] = useState<ParsedItem[]>([]);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [driverNameError, setDriverNameError] = useState(false);
 
     const trpcContext = trpc.useUtils();
 
@@ -283,6 +284,13 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
     const handleSubmit = async () => {
         const validItems = parsedData.filter(p => p.matchedFarmerId && p.amount > 0);
 
+        if (!driverName.trim()) {
+            setDriverNameError(true);
+            toast.error("Driver name is required.");
+            return;
+        }
+        setDriverNameError(false);
+
         if (validItems.length === 0) {
             toast.error("No valid matches found to import.");
             return;
@@ -340,306 +348,301 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
     };
 
     return (
-        <AppModal
-            visible={open}
-            transparent
-            animationType="slide"
-            onRequestClose={() => onOpenChange(false)}
-        >
-            <View className="flex-1 bg-black/60">
-                <Pressable className="flex-1" onPress={() => onOpenChange(false)} />
-                <View className="bg-background w-full h-[90%] rounded-t-[40px] overflow-hidden border-t border-border shadow-2xl">
-                    {/* Header */}
-                    <View className="p-6 border-b border-border flex-row justify-between items-center bg-card">
-                        <View className="flex-row items-center gap-4">
-                            <View className="p-2.5 bg-primary/10 rounded-2xl border border-primary/20">
-                                <Icon as={Sparkles} size={22} className="text-primary" />
+        <BottomSheetModal open={open} onOpenChange={onOpenChange} fullScreen>
+            {/* Header */}
+            <View className="p-6 border-b border-border flex-row justify-between items-center bg-card">
+                <View className="flex-row items-center gap-4">
+                    <View className="p-2.5 bg-primary/10 rounded-2xl border border-primary/20">
+                        <Icon as={Sparkles} size={22} className="text-primary" />
+                    </View>
+                    <View>
+                        <Text className="text-xl font-black text-foreground uppercase tracking-tight">Bulk Stock Import</Text>
+                        <View className="flex-row items-center gap-1.5">
+                            <View className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">AI Powered Extraction</Text>
+                        </View>
+                    </View>
+                </View>
+                <Pressable
+                    onPress={() => onOpenChange(false)}
+                    className="h-10 w-10 items-center justify-center rounded-full bg-muted/50 active:scale-90 transition-all"
+                >
+                    <Icon as={X} size={20} className="text-muted-foreground" />
+                </Pressable>
+            </View>
+
+            <View className="flex-1">
+                {step === "INPUT" ? (
+                    <View className="flex-1 p-6">
+                        <View className="flex-1 bg-muted/30 border border-border rounded-3xl p-5 mb-6 shadow-inner relative">
+                            <View className="flex flex-row gap-2 w-full items-end justify-end">
+                                {inputText.length > 0 && (
+                                    <Pressable onPress={() => setInputText("")} className="bg-background/80 flex-row items-center gap-1.5 px-3 py-2 rounded-xl border border-border active:opacity-70">
+                                        <Icon as={X} size={14} className="text-muted-foreground" />
+                                        <Text className="text-xs font-bold text-muted-foreground">Clear</Text>
+                                    </Pressable>
+                                )}
+                                <Pressable onPress={async () => { const text = await ExpoClipboard.getStringAsync(); setInputText(text); }} className="bg-background/80 flex-row items-center gap-1.5 px-3 py-2 rounded-xl border border-border active:opacity-70">
+                                    <Icon as={History} size={14} className="text-foreground" />
+                                    <Text className="text-xs font-bold text-foreground">Paste</Text>
+                                </Pressable>
                             </View>
-                            <View>
-                                <Text className="text-xl font-black text-foreground uppercase tracking-tight">Bulk Stock Import</Text>
-                                <View className="flex-row items-center gap-1.5">
-                                    <View className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                    <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">AI Powered Extraction</Text>
+                            <TextInput
+                                multiline
+                                placeholder={`Paste daily stock reports here...\n\nExample:\nFarm 01\nHashem Ali\n20 Bags\nLoc: Gazipur\nPh: 017...`}
+                                className="flex-1 text-foreground text-sm leading-relaxed font-medium pb-12"
+                                style={{ textAlignVertical: 'top' }}
+                                value={inputText}
+                                onChangeText={setInputText}
+                                placeholderTextColor="rgba(128,128,128,0.5)"
+                            />
+
+                        </View>
+                        <Button
+                            onPress={handleExtract}
+                            disabled={isExtracting}
+                            className="h-16 rounded-2xl bg-primary shadow-lg shadow-primary/20 flex-row items-center justify-center gap-3 overflow-hidden"
+                        >
+                            {isExtracting ? (
+                                <ActivityIndicator color={"#ffffff"} />
+                            ) : (
+                                <>
+                                    <Icon as={Sparkles} size={20} className="text-white" />
+                                    <Text className="text-white font-black text-base uppercase tracking-widest">Analyze Report</Text>
+                                </>
+                            )}
+                        </Button>
+                    </View>
+                ) : (
+                    <View className="flex-1">
+                        <ScrollView className="flex-1 p-5" contentContainerStyle={{ paddingBottom: 40 }}>
+                            {/* Sub-header with Stats */}
+                            <View className="flex-row items-center justify-between mb-6 px-1">
+                                <View>
+                                    <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Extraction Result</Text>
+                                    <Text className="text-xs font-bold text-foreground mt-1">Review and confirm data</Text>
+                                </View>
+                                <View className="bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
+                                    <Text className="text-[10px] font-black text-primary uppercase">{parsedData.length} Items</Text>
                                 </View>
                             </View>
-                        </View>
-                        <Pressable
-                            onPress={() => onOpenChange(false)}
-                            className="h-10 w-10 items-center justify-center rounded-full bg-muted/50 active:scale-90 transition-all"
-                        >
-                            <Icon as={X} size={20} className="text-muted-foreground" />
-                        </Pressable>
-                    </View>
 
-                    <View className="flex-1">
-                        {step === "INPUT" ? (
-                            <View className="flex-1 p-6">
-                                <View className="flex-1 bg-muted/30 border border-border rounded-3xl p-5 mb-6 shadow-inner relative">
-                                    <View className="flex flex-row gap-2 w-full items-end justify-end">
-                                        {inputText.length > 0 && (
-                                            <Pressable onPress={() => setInputText("")} className="bg-background/80 flex-row items-center gap-1.5 px-3 py-2 rounded-xl border border-border active:opacity-70">
-                                                <Icon as={X} size={14} className="text-muted-foreground" />
-                                                <Text className="text-xs font-bold text-muted-foreground">Clear</Text>
-                                            </Pressable>
-                                        )}
-                                        <Pressable onPress={async () => { const text = await ExpoClipboard.getStringAsync(); setInputText(text); }} className="bg-background/80 flex-row items-center gap-1.5 px-3 py-2 rounded-xl border border-border active:opacity-70">
-                                            <Icon as={History} size={14} className="text-foreground" />
-                                            <Text className="text-xs font-bold text-foreground">Paste</Text>
-                                        </Pressable>
-                                    </View>
+                            {/* Driver Name Input */}
+                            <View className="mb-6">
+                                <View className="flex-row items-center justify-between mb-2 ml-1">
+                                    <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Driver Name / Reference</Text>
+                                    <Text className="text-[10px] font-black text-destructive uppercase">Required *</Text>
+                                </View>
+                                <View className={`flex-row items-center bg-card border rounded-2xl px-4 h-14 ${driverNameError ? 'border-destructive' : 'border-border'}`}>
+                                    <Icon as={Truck} size={18} className="text-muted-foreground mr-3" />
                                     <TextInput
-                                        multiline
-                                        placeholder={`Paste daily stock reports here...\n\nExample:\nFarm 01\nHashem Ali\n20 Bags\nLoc: Gazipur\nPh: 017...`}
-                                        className="flex-1 text-foreground text-sm leading-relaxed font-medium pb-12"
-                                        style={{ textAlignVertical: 'top' }}
-                                        value={inputText}
-                                        onChangeText={setInputText}
+                                        placeholder="Enter driver name..."
+                                        value={driverName}
+                                        onChangeText={(text) => { setDriverName(text); if (text.trim()) setDriverNameError(false); }}
+                                        className="flex-1 text-foreground text-sm font-bold"
                                         placeholderTextColor="rgba(128,128,128,0.5)"
                                     />
-
                                 </View>
-                                <Button
-                                    onPress={handleExtract}
-                                    disabled={isExtracting}
-                                    className="h-16 rounded-2xl bg-primary shadow-lg shadow-primary/20 flex-row items-center justify-center gap-3 overflow-hidden"
-                                >
-                                    {isExtracting ? (
-                                        <ActivityIndicator color={"#ffffff"} />
-                                    ) : (
-                                        <>
-                                            <Icon as={Sparkles} size={20} className="text-white" />
-                                            <Text className="text-white font-black text-base uppercase tracking-widest">Analyze Report</Text>
-                                        </>
-                                    )}
-                                </Button>
+                                {driverNameError && (
+                                    <Text className="text-destructive text-xs ml-1 mt-1 font-medium">Driver name is required</Text>
+                                )}
                             </View>
-                        ) : (
-                            <View className="flex-1">
-                                <ScrollView className="flex-1 p-5" contentContainerStyle={{ paddingBottom: 40 }}>
-                                    {/* Sub-header with Stats */}
-                                    <View className="flex-row items-center justify-between mb-6 px-1">
-                                        <View>
-                                            <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Extraction Result</Text>
-                                            <Text className="text-xs font-bold text-foreground mt-1">Review and confirm data</Text>
-                                        </View>
-                                        <View className="bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
-                                            <Text className="text-[10px] font-black text-primary uppercase">{parsedData.length} Items</Text>
-                                        </View>
-                                    </View>
 
-                                    {/* Driver Name Input */}
-                                    <View className="mb-6">
-                                        <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 ml-1">Driver Name / Reference</Text>
-                                        <View className="flex-row items-center bg-card border border-border rounded-2xl px-4 h-14">
-                                            <Icon as={Truck} size={18} className="text-muted-foreground mr-3" />
-                                            <TextInput
-                                                placeholder="Driver Name (Optional)"
-                                                value={driverName}
-                                                onChangeText={setDriverName}
-                                                className="flex-1 text-foreground text-sm font-bold"
-                                                placeholderTextColor="rgba(128,128,128,0.5)"
-                                            />
-                                        </View>
-                                    </View>
-
-                                    <View className="gap-4">
-                                        {parsedData.map((item) => (
-                                            <View
-                                                key={item.id}
-                                                className={`
+                            <View className="gap-4">
+                                {parsedData.map((item) => (
+                                    <View
+                                        key={item.id}
+                                        className={`
                                                     relative overflow-hidden rounded-[32px] border
                                                     ${item.matchedFarmerId
-                                                        ? 'bg-card border-emerald-500/20'
-                                                        : 'bg-amber-500/5 border-amber-500/20'
-                                                    }
+                                                ? 'bg-card border-emerald-500/20'
+                                                : 'bg-amber-500/5 border-amber-500/20'
+                                            }
                                                     ${item.isDuplicate ? 'border-destructive/30' : ''}
                                                 `}
-                                            >
-                                                {/* Header / Name */}
-                                                <View className="p-5 flex-row justify-between items-start">
-                                                    <View className="flex-1">
-                                                        {editingId === item.id ? (
-                                                            <View className="gap-3 pr-4">
-                                                                <TextInput
-                                                                    value={item.cleanName}
-                                                                    onChangeText={(text) => handleNameEdit(item.id, text)}
-                                                                    className="bg-muted text-foreground px-3 py-2 rounded-xl border border-border text-base font-bold"
-                                                                    placeholder="Farmer Name"
-                                                                    placeholderTextColor="rgba(128,128,128,0.5)"
-                                                                    autoFocus
-                                                                />
-                                                                <View className="flex-row gap-2">
-                                                                    <TextInput
-                                                                        value={item.location || ""}
-                                                                        onChangeText={(text) => handleLocationEdit(item.id, text)}
-                                                                        className="flex-1 bg-muted text-foreground px-3 py-2 rounded-xl border border-border text-xs"
-                                                                        placeholder="Location"
-                                                                        placeholderTextColor="rgba(128,128,128,0.5)"
-                                                                    />
-                                                                    <TextInput
-                                                                        value={item.mobile || ""}
-                                                                        onChangeText={(text) => handleMobileEdit(item.id, text)}
-                                                                        className="flex-1 bg-muted text-foreground px-3 py-2 rounded-xl border border-border text-xs"
-                                                                        placeholder="Mobile"
-                                                                        placeholderTextColor="rgba(128,128,128,0.5)"
-                                                                        keyboardType="phone-pad"
-                                                                    />
-                                                                </View>
-                                                                <Button size="sm" variant="secondary" className="h-8 rounded-lg" onPress={() => setEditingId(null)}>
-                                                                    <Text className="text-[10px] font-black uppercase">Done</Text>
-                                                                </Button>
-                                                            </View>
-                                                        ) : (
-                                                            <View>
-                                                                <View className="flex-row items-center gap-2 mb-1">
-                                                                    <Text className="text-foreground font-black text-lg tracking-tight leading-6">{item.cleanName}</Text>
-                                                                    {item.matchedFarmerId && <Icon as={CheckCircle2} size={14} className="text-emerald-500" />}
-                                                                    <Pressable onPress={() => setEditingId(item.id)} className="p-1 opacity-40">
-                                                                        <Icon as={Edit2} size={12} className="text-foreground" />
-                                                                    </Pressable>
-                                                                </View>
+                                    >
+                                        {/* Header / Name */}
+                                        <View className="p-5 flex-row justify-between items-start">
+                                            <View className="flex-1">
+                                                {editingId === item.id ? (
+                                                    <View className="gap-3 pr-4">
+                                                        <TextInput
+                                                            value={item.cleanName}
+                                                            onChangeText={(text) => handleNameEdit(item.id, text)}
+                                                            className="bg-muted text-foreground px-3 py-2 rounded-xl border border-border text-base font-bold"
+                                                            placeholder="Farmer Name"
+                                                            placeholderTextColor="rgba(128,128,128,0.5)"
+                                                            autoFocus
+                                                        />
+                                                        <View className="flex-row gap-2">
+                                                            <TextInput
+                                                                value={item.location || ""}
+                                                                onChangeText={(text) => handleLocationEdit(item.id, text)}
+                                                                className="flex-1 bg-muted text-foreground px-3 py-2 rounded-xl border border-border text-xs"
+                                                                placeholder="Location"
+                                                                placeholderTextColor="rgba(128,128,128,0.5)"
+                                                            />
+                                                            <TextInput
+                                                                value={item.mobile || ""}
+                                                                onChangeText={(text) => handleMobileEdit(item.id, text)}
+                                                                className="flex-1 bg-muted text-foreground px-3 py-2 rounded-xl border border-border text-xs"
+                                                                placeholder="Mobile"
+                                                                placeholderTextColor="rgba(128,128,128,0.5)"
+                                                                keyboardType="phone-pad"
+                                                            />
+                                                        </View>
+                                                        <Button size="sm" variant="secondary" className="h-8 rounded-lg" onPress={() => setEditingId(null)}>
+                                                            <Text className="text-[10px] font-black uppercase">Done</Text>
+                                                        </Button>
+                                                    </View>
+                                                ) : (
+                                                    <View>
+                                                        <View className="flex-row items-center gap-2 mb-1">
+                                                            <Text className="text-foreground font-black text-lg tracking-tight leading-6">{item.cleanName}</Text>
+                                                            {item.matchedFarmerId && <Icon as={CheckCircle2} size={14} className="text-emerald-500" />}
+                                                            <Pressable onPress={() => setEditingId(item.id)} className="p-1 opacity-40">
+                                                                <Icon as={Edit2} size={12} className="text-foreground" />
+                                                            </Pressable>
+                                                        </View>
 
-                                                                {(item.location || item.mobile) && (
-                                                                    <View className="gap-0.5 mt-1">
-                                                                        {item.location && (
-                                                                            <Text className="text-xs font-medium text-muted-foreground" numberOfLines={1}>
-                                                                                📍 {item.location}
-                                                                            </Text>
-                                                                        )}
-                                                                        {item.mobile && (
-                                                                            <Text className="text-xs font-medium text-muted-foreground" numberOfLines={1}>
-                                                                                📞 {item.mobile}
-                                                                            </Text>
-                                                                        )}
-                                                                    </View>
+                                                        {(item.location || item.mobile) && (
+                                                            <View className="gap-0.5 mt-1">
+                                                                {item.location && (
+                                                                    <Text className="text-xs font-medium text-muted-foreground" numberOfLines={1}>
+                                                                        📍 {item.location}
+                                                                    </Text>
+                                                                )}
+                                                                {item.mobile && (
+                                                                    <Text className="text-xs font-medium text-muted-foreground" numberOfLines={1}>
+                                                                        📞 {item.mobile}
+                                                                    </Text>
                                                                 )}
                                                             </View>
                                                         )}
                                                     </View>
-
-                                                    <Pressable
-                                                        onPress={() => handleRemove(item.id)}
-                                                        className="h-8 w-8 items-center justify-center rounded-full bg-muted/50"
-                                                    >
-                                                        <Icon as={Trash2} size={14} className="text-destructive/60" color={"red"} />
-                                                    </Pressable>
-                                                </View>
-
-                                                {/* Footer / Match Info */}
-                                                <View className="px-5 py-4 bg-muted/30 flex-row items-center justify-between border-t border-border">
-                                                    <View className="flex-row items-center gap-2 flex-1 flex-wrap">
-                                                        {item.matchedFarmerId ? (
-                                                            <View className="flex-row items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
-                                                                <Text className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">READY: {item.matchedName}</Text>
-                                                            </View>
-                                                        ) : (
-                                                            <View className="flex-row items-center gap-2">
-                                                                <View className="flex-row items-center gap-1.5 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">
-                                                                    <Icon as={AlertTriangle} size={10} className="text-amber-600 dark:text-amber-500" />
-                                                                    <Text className="text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-wider">NO MATCH</Text>
-                                                                </View>
-                                                                <Pressable
-                                                                    onPress={() => handleCreateClick(item)}
-                                                                    disabled={loadingRowIds.has(item.id)}
-                                                                    className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-xl ${loadingRowIds.has(item.id) ? 'bg-blue-500/20' : 'bg-blue-600 active:scale-95'}`}
-                                                                >
-                                                                    {loadingRowIds.has(item.id) ? (
-                                                                        <ActivityIndicator size={10} color="#fff" />
-                                                                    ) : (
-                                                                        <Icon as={Plus} size={12} className="text-white" />
-                                                                    )}
-                                                                    <Text className="text-[9px] font-black text-white uppercase tracking-wider">Create</Text>
-                                                                </Pressable>
-                                                            </View>
-                                                        )}
-
-                                                        {item.isDuplicate && (
-                                                            <View className="bg-destructive/10 px-3 py-1.5 rounded-xl border border-destructive/20">
-                                                                <Text className="text-[9px] font-black text-destructive uppercase tracking-wider">Duplicate</Text>
-                                                            </View>
-                                                        )}
-
-                                                        {!item.matchedFarmerId && item.suggestions && item.suggestions.length > 0 && (
-                                                            <View className="w-full mt-3 pt-3 border-t border-border">
-                                                                <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-2">Suggestions</Text>
-                                                                <View className="flex-row flex-wrap gap-2">
-                                                                    {item.suggestions.map(s => (
-                                                                        <Pressable
-                                                                            key={s.id}
-                                                                            onPress={() => handleSuggestionClick(item.id, s)}
-                                                                            className="bg-muted px-3 py-1.5 rounded-lg border border-border active:opacity-70"
-                                                                        >
-                                                                            <Text className="text-[10px] font-bold text-foreground">{s.name}</Text>
-                                                                        </Pressable>
-                                                                    ))}
-                                                                </View>
-                                                            </View>
-                                                        )}
-                                                    </View>
-
-                                                    <View className="items-end ml-4">
-                                                        <TextInput
-                                                            value={String(item.amount)}
-                                                            onChangeText={(text) => handleAmountEdit(item.id, text)}
-                                                            keyboardType="numeric"
-                                                            className="text-2xl font-black text-foreground tracking-tight p-0"
-                                                        />
-                                                        <Text className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.1em] -mt-1">Bags</Text>
-                                                    </View>
-                                                </View>
-                                            </View>
-                                        ))}
-                                    </View>
-                                </ScrollView>
-
-                                {/* Review Actions */}
-                                <View className="p-6 border-t border-border bg-card">
-                                    <View className="flex-row gap-3">
-                                        <Button
-                                            variant="outline"
-                                            onPress={() => setStep("INPUT")}
-                                            className="w-14 h-16 rounded-2xl"
-                                        >
-                                            <Icon as={X} size={20} className="text-foreground" />
-                                        </Button>
-
-                                        {parsedData.some(p => !p.matchedFarmerId) && (
-                                            <Button
-                                                onPress={handleCreateAllFarmers}
-                                                disabled={isCreatingAll}
-                                                className="flex-1 h-16 rounded-2xl bg-secondary border border-border flex-row gap-2"
-                                            >
-                                                {isCreatingAll ? (
-                                                    <ActivityIndicator className="text-foreground" />) : (
-                                                    <>
-                                                        <Icon as={Plus} size={18} className="text-primary" />
-                                                        <Text className="text-primary font-black text-xs uppercase tracking-widest">Create All</Text>
-                                                    </>
                                                 )}
-                                            </Button>
-                                        )}
+                                            </View>
 
-                                        <Button
-                                            onPress={handleSubmit}
-                                            disabled={bulkAddMutation.isPending || isUpdatingProfiles || parsedData.filter(p => p.matchedFarmerId).length === 0}
-                                            className="flex-[2] h-16 rounded-2xl bg-primary shadow-lg shadow-primary/20"
-                                        >
-                                            {bulkAddMutation.isPending || isUpdatingProfiles ? (
-                                                <ActivityIndicator color={"#ffffff"} />
-                                            ) : (
-                                                <Text className="text-white font-black text-base uppercase tracking-widest">
-                                                    Import to {parsedData.filter(p => p.matchedFarmerId).length} Farmers
-                                                </Text>
-                                            )}
-                                        </Button>
+                                            <Pressable
+                                                onPress={() => handleRemove(item.id)}
+                                                className="h-8 w-8 items-center justify-center rounded-full bg-muted/50"
+                                            >
+                                                <Icon as={Trash2} size={14} className="text-destructive/60" color={"red"} />
+                                            </Pressable>
+                                        </View>
+
+                                        {/* Footer / Match Info */}
+                                        <View className="px-5 py-4 bg-muted/30 flex-row items-center justify-between border-t border-border">
+                                            <View className="flex-row items-center gap-2 flex-1 flex-wrap">
+                                                {item.matchedFarmerId ? (
+                                                    <View className="flex-row items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
+                                                        <Text className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">READY: {item.matchedName}</Text>
+                                                    </View>
+                                                ) : (
+                                                    <View className="flex-row items-center gap-2">
+                                                        <View className="flex-row items-center gap-1.5 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">
+                                                            <Icon as={AlertTriangle} size={10} className="text-amber-600 dark:text-amber-500" />
+                                                            <Text className="text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-wider">NO MATCH</Text>
+                                                        </View>
+                                                        <Pressable
+                                                            onPress={() => handleCreateClick(item)}
+                                                            disabled={loadingRowIds.has(item.id)}
+                                                            className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-xl ${loadingRowIds.has(item.id) ? 'bg-blue-500/20' : 'bg-blue-600 active:scale-95'}`}
+                                                        >
+                                                            {loadingRowIds.has(item.id) ? (
+                                                                <ActivityIndicator size={10} color="#fff" />
+                                                            ) : (
+                                                                <Icon as={Plus} size={12} className="text-white" />
+                                                            )}
+                                                            <Text className="text-[9px] font-black text-white uppercase tracking-wider">Create</Text>
+                                                        </Pressable>
+                                                    </View>
+                                                )}
+
+                                                {item.isDuplicate && (
+                                                    <View className="bg-destructive/10 px-3 py-1.5 rounded-xl border border-destructive/20">
+                                                        <Text className="text-[9px] font-black text-destructive uppercase tracking-wider">Duplicate</Text>
+                                                    </View>
+                                                )}
+
+                                                {!item.matchedFarmerId && item.suggestions && item.suggestions.length > 0 && (
+                                                    <View className="w-full mt-3 pt-3 border-t border-border">
+                                                        <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-2">Suggestions</Text>
+                                                        <View className="flex-row flex-wrap gap-2">
+                                                            {item.suggestions.map(s => (
+                                                                <Pressable
+                                                                    key={s.id}
+                                                                    onPress={() => handleSuggestionClick(item.id, s)}
+                                                                    className="bg-muted px-3 py-1.5 rounded-lg border border-border active:opacity-70"
+                                                                >
+                                                                    <Text className="text-[10px] font-bold text-foreground">{s.name}</Text>
+                                                                </Pressable>
+                                                            ))}
+                                                        </View>
+                                                    </View>
+                                                )}
+                                            </View>
+
+                                            <View className="items-end ml-4">
+                                                <TextInput
+                                                    value={String(item.amount)}
+                                                    onChangeText={(text) => handleAmountEdit(item.id, text)}
+                                                    keyboardType="numeric"
+                                                    className="text-2xl font-black text-foreground tracking-tight p-0"
+                                                />
+                                                <Text className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.1em] -mt-1">Bags</Text>
+                                            </View>
+                                        </View>
                                     </View>
-                                </View>
+                                ))}
                             </View>
-                        )}
-                    </View>
-                </View>
-            </View>
+                        </ScrollView>
 
+                        {/* Review Actions */}
+                        <View className="p-6 border-t border-border bg-card">
+                            <View className="flex-row gap-3">
+                                <Button
+                                    variant="outline"
+                                    onPress={() => setStep("INPUT")}
+                                    className="w-14 h-16 rounded-2xl"
+                                >
+                                    <Icon as={X} size={20} className="text-foreground" />
+                                </Button>
+
+                                {parsedData.some(p => !p.matchedFarmerId) && (
+                                    <Button
+                                        onPress={handleCreateAllFarmers}
+                                        disabled={isCreatingAll}
+                                        className="flex-1 h-16 rounded-2xl bg-secondary border border-border flex-row gap-2"
+                                    >
+                                        {isCreatingAll ? (
+                                            <ActivityIndicator className="text-foreground" />) : (
+                                            <>
+                                                <Icon as={Plus} size={18} className="text-primary" />
+                                                <Text className="text-primary font-black text-xs uppercase tracking-widest">Create All</Text>
+                                            </>
+                                        )}
+                                    </Button>
+                                )}
+
+                                <Button
+                                    onPress={handleSubmit}
+                                    disabled={bulkAddMutation.isPending || isUpdatingProfiles || parsedData.filter(p => p.matchedFarmerId).length === 0}
+                                    className="flex-[2] h-16 rounded-2xl bg-primary shadow-lg shadow-primary/20"
+                                >
+                                    {bulkAddMutation.isPending || isUpdatingProfiles ? (
+                                        <ActivityIndicator color={"#ffffff"} />
+                                    ) : (
+                                        <Text className="text-white font-black text-base uppercase tracking-widest">
+                                            Import to {parsedData.filter(p => p.matchedFarmerId).length} Farmers
+                                        </Text>
+                                    )}
+                                </Button>
+                            </View>
+                        </View>
+                    </View>
+                )}
+            </View>
             <ConfirmModal
                 visible={showConfirmModal}
                 title="Update Profiles?"
@@ -649,6 +652,6 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                 onConfirm={() => handleConfirmUpdate(true)}
                 onCancel={() => handleConfirmUpdate(false)}
             />
-        </AppModal>
+        </BottomSheetModal>
     );
 }

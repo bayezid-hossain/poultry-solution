@@ -8,10 +8,10 @@ import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
 import { Bird, Calendar as CalendarIcon, CheckCircle2, ChevronDown, Copy, Edit2, MapPin, Plus, Search, Trash2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Switch, View } from "react-native";
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
-import { AppModal } from "../ui/app-modal";
+import { BottomSheetModal } from "../ui/bottom-sheet-modal";
 
 interface CreateDocOrderModalProps {
     open: boolean;
@@ -329,9 +329,9 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
 
     if (isSearchOpen) {
         return (
-            <Modal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setIsSearchOpen(false)}>
+            <BottomSheetModal open={open} onOpenChange={() => setIsSearchOpen(false)} fullScreen>
 
-                <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+                <View className="flex-1 bg-background">
                     <View className="px-4 py-4 border-b border-border/50 flex-row gap-2 items-center">
                         <View className="flex-1 relative justify-center">
                             <View className="absolute left-3 z-10 w-5 h-5 justify-center items-center">
@@ -382,16 +382,16 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                         />
                     )}
                 </View>
-            </Modal>
+            </BottomSheetModal>
         );
     }
 
     return (
         <>
-            <AppModal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => !isSubmitting && onOpenChange(false)}>
+            <BottomSheetModal open={open} onOpenChange={(v) => !isSubmitting && onOpenChange(v)} fullScreen>
 
 
-                <View className="flex-1 bg-background" style={{ paddingBottom: insets.bottom }}>
+                <View className="flex-1 bg-background">
                     {/* Header */}
                     <View className="px-4 py-4 border-b border-border/50 flex-row justify-between items-center bg-card">
                         <View className="flex-row items-center gap-2">
@@ -575,70 +575,53 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
                         </Button>
                     </View>
                 </View>
-            </AppModal>
+            </BottomSheetModal>
 
-            <Modal
-                transparent
-                visible={!!birdTypePickerItemId}
-                animationType="fade"
-                onRequestClose={() => setBirdTypePickerItemId(null)}
-            >
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : "padding"}
-                    className="flex-1"
-                >
-                    <Pressable className="flex-1 bg-black/50 justify-end" onPress={() => setBirdTypePickerItemId(null)}>
-                        <Pressable className="bg-card rounded-t-3xl pb-8 overflow-hidden border-t border-border/50" onPress={(e) => e.stopPropagation()}>
-                            <View className="items-center py-4">
-                                <View className="w-12 h-1.5 bg-muted rounded-full" />
-                            </View>
-                            <View className="px-6 pb-2">
-                                <Text className="text-lg font-black text-foreground mb-4">Select Bird Type</Text>
-                                <FlatList
-                                    data={birdTypes || []}
-                                    keyExtractor={(bt: any) => bt.id || bt.name}
-                                    renderItem={({ item: bt }) => (
-                                        <Pressable
-                                            className="flex-row items-center py-3.5 border-b border-border/30 active:bg-muted/50"
-                                            onPress={() => {
-                                                if (birdTypePickerItemId) {
-                                                    handleUpdateBatch(birdTypePickerItemId.itemId, birdTypePickerItemId.batchId, 'birdType', bt.name);
-                                                }
-                                                setBirdTypePickerItemId(null);
-                                            }}
-                                        >
-                                            <Icon as={Bird} size={18} className="text-primary mr-3" />
-                                            <Text className="text-base font-medium text-foreground">{bt.name}</Text>
-                                        </Pressable>
-                                    )}
-                                    ListEmptyComponent={() => (
-                                        <Text className="text-muted-foreground py-4 text-center">No bird types found</Text>
-                                    )}
-                                    style={{ maxHeight: 300 }}
-                                />
+            <BottomSheetModal open={!!birdTypePickerItemId} onOpenChange={() => setBirdTypePickerItemId(null)}>
+                <View className="px-6 pb-6">
+                    <Text className="text-lg font-black text-foreground mb-4">Select Bird Type</Text>
+                    <FlatList
+                        data={birdTypes || []}
+                        keyExtractor={(bt: any) => bt.id || bt.name}
+                        renderItem={({ item: bt }) => (
+                            <Pressable
+                                className="flex-row items-center py-3.5 border-b border-border/30 active:bg-muted/50"
+                                onPress={() => {
+                                    if (birdTypePickerItemId) {
+                                        handleUpdateBatch(birdTypePickerItemId.itemId, birdTypePickerItemId.batchId, 'birdType', bt.name);
+                                    }
+                                    setBirdTypePickerItemId(null);
+                                }}
+                            >
+                                <Icon as={Bird} size={18} className="text-primary mr-3" />
+                                <Text className="text-base font-medium text-foreground">{bt.name}</Text>
+                            </Pressable>
+                        )}
+                        ListEmptyComponent={() => (
+                            <Text className="text-muted-foreground py-4 text-center">No bird types found</Text>
+                        )}
+                        style={{ maxHeight: 300 }}
+                    />
 
-                                <View className="mt-4 pt-4 border-t border-border/20 flex-row gap-2 items-center">
-                                    <Input
-                                        className="flex-1 h-12 bg-muted/30"
-                                        placeholder="New bird type..."
-                                        value={newBirdType}
-                                        onChangeText={setNewBirdType}
-                                    />
-                                    <Button
-                                        onPress={() => createBirdTypeMutation.mutate({ name: newBirdType.trim() })}
-                                        disabled={!newBirdType.trim() || createBirdTypeMutation.isPending}
-                                        className="h-12 px-6 bg-primary"
-                                    >
-                                        <Text className="text-primary-foreground font-bold">
-                                            {createBirdTypeMutation.isPending ? "Adding..." : "Add"}
-                                        </Text>
-                                    </Button>
-                                </View>
-                            </View>
-                        </Pressable>
-                    </Pressable>
-                </KeyboardAvoidingView>
-            </Modal>
+                    <View className="mt-4 pt-4 border-t border-border/20 flex-row gap-2 items-center">
+                        <Input
+                            className="flex-1 h-12 bg-muted/30"
+                            placeholder="New bird type..."
+                            value={newBirdType}
+                            onChangeText={setNewBirdType}
+                        />
+                        <Button
+                            onPress={() => createBirdTypeMutation.mutate({ name: newBirdType.trim() })}
+                            disabled={!newBirdType.trim() || createBirdTypeMutation.isPending}
+                            className="h-12 px-6 bg-primary"
+                        >
+                            <Text className="text-primary-foreground font-bold">
+                                {createBirdTypeMutation.isPending ? "Adding..." : "Add"}
+                            </Text>
+                        </Button>
+                    </View>
+                </View>
+            </BottomSheetModal>
         </>
     );
 }

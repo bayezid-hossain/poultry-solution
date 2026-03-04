@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
-import { AppModal } from "../ui/app-modal";
+import { BottomSheetModal } from "../ui/bottom-sheet-modal";
 
 interface CreateFeedOrderModalProps {
     open: boolean;
@@ -303,9 +303,9 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
 
     if (isSearchOpen) {
         return (
-            <AppModal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setIsSearchOpen(false)}>
+            <BottomSheetModal open={open} onOpenChange={() => setIsSearchOpen(false)} fullScreen>
 
-                <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+                <View className="flex-1 bg-background">
                     <View className="px-4 py-4 border-b border-border/50 flex-row gap-2 items-center">
                         <View className="flex-1 relative justify-center">
                             <View className="absolute left-3 z-10 w-5 h-5 justify-center items-center">
@@ -356,14 +356,14 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                         />
                     )}
                 </View>
-            </AppModal>
+            </BottomSheetModal>
         );
     }
 
     return (
-        <AppModal visible={open} animationType="slide" presentationStyle="formSheet" onRequestClose={() => !isSubmitting && onOpenChange(false)}>
+        <BottomSheetModal open={open} onOpenChange={(v) => !isSubmitting && onOpenChange(v)} fullScreen>
 
-            <View className="flex-1 bg-background" style={{ paddingBottom: insets.bottom }}>
+            <View className="flex-1 bg-background">
                 {/* Header */}
                 <View className="px-4 py-4 border-b border-border/50 flex-row justify-between items-center bg-card">
                     <View className="flex-row items-center gap-2">
@@ -561,6 +561,6 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
                     </Button>
                 </View>
             </View>
-        </AppModal>
+        </BottomSheetModal>
     );
 }

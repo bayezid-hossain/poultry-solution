@@ -1,3 +1,4 @@
+import { BottomSheetModal } from "@/components/ui/bottom-sheet-modal";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
@@ -5,11 +6,11 @@ import { Text } from "@/components/ui/text";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRightLeft, ChevronDown, Search, X } from "lucide-react-native";
+import { ArrowRight, CheckCircle2, ChevronDown, Package, Search, User, X } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, TouchableOpacity, View } from "react-native";
+import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { toast } from "sonner-native";
 import { z } from "zod";
 
@@ -47,11 +48,11 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
         },
     });
 
-    const searchRef = useRef<TextInput>(null);
     const amountRef = useRef<TextInput>(null);
     const noteRef = useRef<TextInput>(null);
 
     const targetFarmerId = watch("targetFarmerId");
+    const amountValue = watch("amount");
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
 
@@ -59,7 +60,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
     const farmersProcedure = isManagement ? trpc.management.farmers.getMany : trpc.officer.farmers.getMany;
     const { data: farmersData, isLoading: isLoadingFarmers } = (farmersProcedure as any).useQuery({
         orgId: (membership?.orgId ?? "") as string,
-        pageSize: 100, // Fetch more for searchable list
+        pageSize: 100,
         sortBy: "name",
         sortOrder: "asc"
     }, {
@@ -114,180 +115,225 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
         });
     };
 
+    const isOverLimit = amountValue && !isNaN(parseFloat(amountValue)) && parseFloat(amountValue) > availableStock;
+
     return (
-        <Modal
-            animationType="fade"
-            transparent={true}
-            visible={open}
-            onRequestClose={() => onOpenChange(false)}
-        >
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "padding"}
-                className="flex-1"
-            >
-                <Pressable
-                    className="flex-1 bg-black/60 items-center justify-center p-4"
-                    onPress={() => onOpenChange(false)}
-                >
-                    <Pressable
-                        className="w-full max-w-sm bg-card rounded-3xl overflow-hidden"
-                        onPress={(e) => e.stopPropagation()}
-                    >
-                        {/* Header */}
-                        <View className="p-6 pb-2 flex-row justify-between items-center">
-                            <View className="flex-row items-center gap-3">
-                                <View className="w-10 h-10 rounded-full bg-blue-500/10 items-center justify-center">
-                                    <Icon as={ArrowRightLeft} size={20} className="text-blue-500" />
-                                </View>
-                                <View>
-                                    <Text className="text-xl font-bold text-foreground">Transfer Stock</Text>
-                                    <Text className="text-xs text-muted-foreground mt-0.5">
-                                        From {sourceFarmerName}
-                                    </Text>
-                                </View>
-                            </View>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onPress={() => onOpenChange(false)}>
-                                <Icon as={X} size={18} className="text-muted-foreground" />
-                            </Button>
+        <BottomSheetModal open={open} onOpenChange={onOpenChange}>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                {/* Header */}
+                <View className="px-6 pt-6 pb-4">
+                    <View className="flex-row items-center justify-between">
+                        <Text className="text-2xl font-black text-foreground">Transfer Stock</Text>
+                        <Pressable
+                            onPress={() => onOpenChange(false)}
+                            className="h-9 w-9 items-center justify-center rounded-full bg-muted/50 active:scale-90"
+                        >
+                            <Icon as={X} size={18} className="text-muted-foreground" />
+                        </Pressable>
+                    </View>
+
+                    {/* From → To indicator */}
+                    <View className="flex-row items-center gap-2 mt-3">
+                        <View className="bg-blue-500/10 border border-blue-500/20 rounded-xl px-3 py-2 flex-row items-center gap-2 flex-1">
+                            <Icon as={User} size={14} className="text-blue-500" />
+                            <Text className="text-xs font-bold text-blue-600 flex-1" numberOfLines={1}>{sourceFarmerName}</Text>
+                        </View>
+                        <Icon as={ArrowRight} size={16} className="text-muted-foreground" />
+                        <View className={`border rounded-xl px-3 py-2 flex-row items-center gap-2 flex-1 ${selectedFarmer ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-muted/20 border-border/50'}`}>
+                            <Icon as={User} size={14} className={selectedFarmer ? "text-emerald-500" : "text-muted-foreground"} />
+                            <Text className={`text-xs font-bold flex-1 ${selectedFarmer ? 'text-emerald-600' : 'text-muted-foreground'}`} numberOfLines={1}>
+                                {selectedFarmer ? selectedFarmer.name : "Select..."}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Available stock badge */}
+                    <View className="flex-row items-center gap-2 mt-3 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
+                        <Icon as={Package} size={14} className="text-amber-600" />
+                        <Text className="text-xs font-bold text-amber-700">Available: {availableStock} bags</Text>
+                    </View>
+                </View>
+
+                <View className="px-6 pb-6 gap-5">
+                    {/* Section 1: Target Farmer */}
+                    <View>
+                        <View className="flex-row items-center justify-between mb-2 ml-1">
+                            <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Transfer To</Text>
+                            <Text className="text-[10px] font-black text-destructive uppercase">Required *</Text>
                         </View>
 
-                        <View className="p-6 space-y-4">
-                            {/* Target Farmer Searchable Dropdown */}
-                            <View className="space-y-2">
-                                <Text className="text-sm font-bold text-foreground ml-1">Select Target Farmer</Text>
-
-                                <TouchableOpacity
-                                    onPress={() => setIsDropdownOpen(!isDropdownOpen)}
-                                    className={`flex-row items-center justify-between h-12 px-4 bg-muted/30 border border-border/50 rounded-xl ${isDropdownOpen ? 'border-blue-500/50' : ''}`}
-                                >
-                                    <Text className={`text-sm ${selectedFarmer ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                                        {selectedFarmer ? selectedFarmer.name : "Choose farmer..."}
-                                    </Text>
-                                    <Icon as={ChevronDown} size={18} className={`text-muted-foreground ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                                </TouchableOpacity>
-
-                                {isDropdownOpen && (
-                                    <View className="border border-border/50 rounded-2xl overflow-hidden mt-1 bg-muted/20 max-h-60">
-                                        <View className="p-2 border-b border-border/10">
-                                            <View className="relative">
-                                                <View className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
-                                                    <Icon as={Search} size={14} className="text-muted-foreground" />
-                                                </View>
-                                                <Input
-                                                    ref={searchRef}
-                                                    placeholder="Search..."
-                                                    value={searchTerm}
-                                                    onChangeText={setSearchTerm}
-                                                    className="pl-9 h-10 bg-card/50 border-0 text-sm"
-                                                    autoFocus
-                                                    returnKeyType="next"
-                                                    onSubmitEditing={() => amountRef.current?.focus()}
-                                                />
-                                            </View>
-                                        </View>
-                                        <ScrollView
-                                            nestedScrollEnabled
-                                            className="max-h-48"
-                                            keyboardShouldPersistTaps="handled"
-                                        >
-                                            {availableFarmers.length > 0 ? (
-                                                availableFarmers.map((farmer: any) => (
-                                                    <TouchableOpacity
-                                                        key={farmer.id}
-                                                        onPress={() => {
-                                                            setValue("targetFarmerId", farmer.id);
-                                                            setIsDropdownOpen(false);
-                                                            setSearchTerm("");
-                                                        }}
-                                                        className={`p-3 border-b border-border/50 flex-row items-center justify-between ${targetFarmerId === farmer.id ? "bg-blue-500/10" : "bg-transparent"}`}
-                                                    >
-                                                        <Text className={`font-medium text-sm ${targetFarmerId === farmer.id ? "text-blue-500" : "text-foreground"}`}>
-                                                            {farmer.name}
-                                                        </Text>
-                                                        {targetFarmerId === farmer.id && (
-                                                            <Icon as={ArrowRightLeft} size={14} className="text-blue-500" />
-                                                        )}
-                                                    </TouchableOpacity>
-                                                ))
-                                            ) : (
-                                                <View className="p-4 items-center">
-                                                    <Text className="text-xs text-muted-foreground italic">{isLoadingFarmers ? "Loading farmers..." : "No farmers found"}</Text>
-                                                </View>
-                                            )}
-                                        </ScrollView>
+                        <Pressable
+                            onPress={() => setIsDropdownOpen(!isDropdownOpen)}
+                            className={`flex-row items-center justify-between h-14 px-4 bg-card border-2 rounded-2xl ${errors.targetFarmerId ? 'border-destructive' : isDropdownOpen ? 'border-blue-500' : selectedFarmer ? 'border-emerald-500/50' : 'border-border'}`}
+                        >
+                            <View className="flex-row items-center gap-3 flex-1">
+                                {selectedFarmer ? (
+                                    <View className="w-8 h-8 rounded-full bg-emerald-500/10 items-center justify-center">
+                                        <Icon as={CheckCircle2} size={16} className="text-emerald-500" />
+                                    </View>
+                                ) : (
+                                    <View className="w-8 h-8 rounded-full bg-muted/50 items-center justify-center">
+                                        <Icon as={User} size={16} className="text-muted-foreground" />
                                     </View>
                                 )}
-
-                                {errors.targetFarmerId && !isDropdownOpen && (
-                                    <Text className="text-destructive text-xs ml-1 font-medium">{errors.targetFarmerId?.message as string}</Text>
-                                )}
+                                <Text className={`text-base flex-1 ${selectedFarmer ? 'text-foreground font-bold' : 'text-muted-foreground font-medium'}`} numberOfLines={1}>
+                                    {selectedFarmer ? selectedFarmer.name : "Choose target farmer..."}
+                                </Text>
                             </View>
+                            <Icon as={ChevronDown} size={20} className={`text-muted-foreground ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                        </Pressable>
 
-                            <View className="gap-2">
-                                <Text className="text-sm font-bold text-foreground ml-1">Amount (Bags)</Text>
-                                <Controller
-                                    control={control}
-                                    name="amount"
-                                    render={({ field: { onChange, value } }) => (
+                        {isDropdownOpen && (
+                            <View className="border-2 border-blue-500/30 rounded-2xl overflow-hidden mt-2 bg-card">
+                                {/* Search */}
+                                <View className="p-3 border-b border-border/30 bg-muted/10">
+                                    <View className="flex-row items-center bg-background border border-border rounded-xl px-3 h-11">
+                                        <Icon as={Search} size={16} className="text-muted-foreground mr-2" />
                                         <Input
-                                            ref={amountRef}
-                                            placeholder="0"
-                                            value={value}
-                                            onChangeText={onChange}
-                                            keyboardType="numeric"
-                                            className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
+                                            placeholder="Search farmers..."
+                                            value={searchTerm}
+                                            onChangeText={setSearchTerm}
+                                            className="flex-1 h-10 border-0 bg-transparent text-sm p-0"
+                                            autoFocus
                                             returnKeyType="next"
-                                            onSubmitEditing={() => noteRef.current?.focus()}
+                                            onSubmitEditing={() => amountRef.current?.focus()}
                                         />
-                                    )}
-                                />
-                                {errors.amount && (
-                                    <Text className="text-destructive text-xs ml-1 font-medium">{errors.amount?.message as string}</Text>
-                                )}
-                            </View>
-
-                            <View className="gap-2">
-                                <Text className="text-sm font-bold text-foreground ml-1">Note (Optional)</Text>
-                                <Controller
-                                    control={control}
-                                    name="note"
-                                    render={({ field: { onChange, value } }) => (
-                                        <Textarea
-                                            ref={noteRef as any}
-                                            placeholder="Reason for transfer..."
-                                            placeholderTextColor={colorScheme === "dark" ? "#FFFFFF" : "#000000"}
-                                            value={value}
-                                            onChangeText={onChange}
-                                            numberOfLines={2}
-                                            className="bg-muted/30 border-border/50 text-sm h-20 text-foreground"
-                                            onSubmitEditing={handleSubmit(onSubmit)}
-                                        />
-                                    )}
-                                />
-                            </View>
-
-                            <View className="flex-row gap-3 pt-2">
-                                <Button
-                                    variant="outline"
-                                    className="flex-1 h-12 rounded-xl border-border/50"
-                                    onPress={() => onOpenChange(false)}
+                                    </View>
+                                </View>
+                                {/* Farmer list */}
+                                <ScrollView
+                                    nestedScrollEnabled
+                                    style={{ maxHeight: 200 }}
+                                    keyboardShouldPersistTaps="handled"
                                 >
-                                    <Text className="font-bold">Cancel</Text>
-                                </Button>
-                                <Button
-                                    className="flex-1 h-12 bg-blue-600 rounded-xl shadow-none"
-                                    onPress={handleSubmit(onSubmit)}
-                                    disabled={mutation.isPending}
-                                >
-                                    <Text className="text-white font-bold">
-                                        {mutation.isPending ? "Pending..." : "Transfer"}
-                                    </Text>
-                                </Button>
+                                    {availableFarmers.length > 0 ? (
+                                        availableFarmers.map((farmer: any) => {
+                                            const isSelected = targetFarmerId === farmer.id;
+                                            return (
+                                                <Pressable
+                                                    key={farmer.id}
+                                                    onPress={() => {
+                                                        setValue("targetFarmerId", farmer.id);
+                                                        setIsDropdownOpen(false);
+                                                        setSearchTerm("");
+                                                    }}
+                                                    className={`px-4 py-3.5 border-b border-border/20 flex-row items-center justify-between active:bg-muted/30 ${isSelected ? "bg-blue-500/5" : ""}`}
+                                                >
+                                                    <View className="flex-row items-center gap-3 flex-1">
+                                                        <View className={`w-7 h-7 rounded-full items-center justify-center ${isSelected ? 'bg-blue-500' : 'bg-muted/50'}`}>
+                                                            <Text className={`text-xs font-black ${isSelected ? 'text-white' : 'text-muted-foreground'}`}>
+                                                                {farmer.name?.charAt(0)?.toUpperCase()}
+                                                            </Text>
+                                                        </View>
+                                                        <View className="flex-1">
+                                                            <Text className={`font-bold text-sm ${isSelected ? "text-blue-600" : "text-foreground"}`} numberOfLines={1}>
+                                                                {farmer.name}
+                                                            </Text>
+                                                            {farmer.location && (
+                                                                <Text className="text-[10px] text-muted-foreground" numberOfLines={1}>{farmer.location}</Text>
+                                                            )}
+                                                        </View>
+                                                    </View>
+                                                    {isSelected && (
+                                                        <Icon as={CheckCircle2} size={18} className="text-blue-500" />
+                                                    )}
+                                                </Pressable>
+                                            );
+                                        })
+                                    ) : (
+                                        <View className="p-6 items-center">
+                                            <Text className="text-xs text-muted-foreground italic">{isLoadingFarmers ? "Loading farmers..." : "No farmers found"}</Text>
+                                        </View>
+                                    )}
+                                </ScrollView>
                             </View>
+                        )}
+
+                        {errors.targetFarmerId && !isDropdownOpen && (
+                            <Text className="text-destructive text-xs ml-1 mt-1.5 font-medium">{errors.targetFarmerId?.message as string}</Text>
+                        )}
+                    </View>
+
+                    {/* Section 2: Amount */}
+                    <View>
+                        <View className="flex-row items-center justify-between mb-2 ml-1">
+                            <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Amount (Bags)</Text>
+                            <Text className={`text-[10px] font-black uppercase ${isOverLimit ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                Max: {availableStock}
+                            </Text>
                         </View>
-                    </Pressable>
-                </Pressable>
-            </KeyboardAvoidingView>
-        </Modal>
+                        <Controller
+                            control={control}
+                            name="amount"
+                            render={({ field: { onChange, value } }) => (
+                                <View className={`flex-row items-center bg-card border-2 rounded-2xl px-4 h-14 ${errors.amount || isOverLimit ? 'border-destructive' : 'border-border'}`}>
+                                    <Icon as={Package} size={18} className="text-muted-foreground mr-3" />
+                                    <Input
+                                        ref={amountRef}
+                                        placeholder="Enter amount..."
+                                        value={value}
+                                        onChangeText={onChange}
+                                        keyboardType="numeric"
+                                        className="flex-1 h-12 border-0 bg-transparent text-lg font-bold p-0"
+                                        returnKeyType="next"
+                                        onSubmitEditing={() => noteRef.current?.focus()}
+                                    />
+                                </View>
+                            )}
+                        />
+                        {errors.amount && (
+                            <Text className="text-destructive text-xs ml-1 mt-1.5 font-medium">{errors.amount?.message as string}</Text>
+                        )}
+                        {!errors.amount && isOverLimit && (
+                            <Text className="text-destructive text-xs ml-1 mt-1.5 font-medium">Cannot exceed available stock ({availableStock} bags)</Text>
+                        )}
+                    </View>
+
+                    {/* Section 3: Note */}
+                    <View>
+                        <View className="flex-row items-center justify-between mb-2 ml-1">
+                            <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Note</Text>
+                            <Text className="text-[10px] font-bold text-muted-foreground/50 uppercase">Optional</Text>
+                        </View>
+                        <Controller
+                            control={control}
+                            name="note"
+                            render={({ field: { onChange, value } }) => (
+                                <Textarea
+                                    ref={noteRef as any}
+                                    placeholder="Reason for transfer..."
+                                    placeholderTextColor={colorScheme === "dark" ? "#666" : "#999"}
+                                    value={value}
+                                    onChangeText={onChange}
+                                    numberOfLines={2}
+                                    className="bg-card border-2 border-border rounded-2xl text-sm h-20 text-foreground px-4"
+                                    onSubmitEditing={handleSubmit(onSubmit)}
+                                />
+                            )}
+                        />
+                    </View>
+
+                    {/* Actions */}
+                    <View className="flex-row gap-3 pt-1 pb-4">
+                        <Button
+                            variant="outline"
+                            className="flex-1 h-14 rounded-2xl border-2 border-border/50"
+                            onPress={() => onOpenChange(false)}
+                        >
+                            <Text className="font-bold">Cancel</Text>
+                        </Button>
+                        <Button
+                            className="flex-1 h-14 bg-blue-600 rounded-2xl shadow-none"
+                            onPress={handleSubmit(onSubmit)}
+                            disabled={mutation.isPending || !!isOverLimit}
+                        >
+                            <Text className="text-white font-black text-base">
+                                {mutation.isPending ? "Transferring..." : "Transfer"}
+                            </Text>
+                        </Button>
+                    </View>
+                </View>
+            </ScrollView>
+        </BottomSheetModal>
     );
 };
