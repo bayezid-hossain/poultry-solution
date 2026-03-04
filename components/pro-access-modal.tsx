@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Lock, X } from "lucide-react-native";
 import { Pressable, View } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 import { toast } from "sonner-native";
 
 interface ProAccessModalProps {
@@ -44,7 +45,7 @@ export function ProAccessModal({
 
     return (
         <BottomSheetModal open={open} onOpenChange={onOpenChange}>
-            <View className="p-6 pb-10 items-center">
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="p-6 pb-10 items-center">
                 <Pressable
                     onPress={() => onOpenChange(false)}
                     className="absolute right-4 top-4 w-8 h-8 rounded-full bg-muted items-center justify-center active:bg-muted/80 z-10"
@@ -94,7 +95,7 @@ export function ProAccessModal({
                         </Button>
                     )}
                 </View>
-            </View>
+            </ScrollView>
         </BottomSheetModal>
     );
 }

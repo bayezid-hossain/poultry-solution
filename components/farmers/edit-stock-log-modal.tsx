@@ -6,7 +6,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Pencil, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 
 interface EditStockLogModalProps {
     log: {
@@ -63,65 +63,67 @@ export function EditStockLogModal({
 
     return (
         <BottomSheetModal open={open} onOpenChange={onOpenChange}>
-            <View className="p-6 pb-2 flex-row justify-between items-center">
-                <View className="flex-row items-center gap-3">
-                    <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
-                        <Icon as={Pencil} size={20} className="text-primary" />
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pb-10">
+                <View className="p-6 pb-2 flex-row justify-between items-center">
+                    <View className="flex-row items-center gap-3">
+                        <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
+                            <Icon as={Pencil} size={20} className="text-primary" />
+                        </View>
+                        <View>
+                            <Text className="text-xl font-bold text-foreground">Edit Transaction</Text>
+                            <Text className="text-xs text-muted-foreground mt-0.5">
+                                Correct count or notes
+                            </Text>
+                        </View>
                     </View>
-                    <View>
-                        <Text className="text-xl font-bold text-foreground">Edit Transaction</Text>
-                        <Text className="text-xs text-muted-foreground mt-0.5">
-                            Correct count or notes
-                        </Text>
-                    </View>
-                </View>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onPress={() => onOpenChange(false)}>
-                    <Icon as={X} size={18} className="text-muted-foreground" />
-                </Button>
-            </View>
-
-            <View className="p-6 space-y-4">
-                <View className="gap-2">
-                    <View className="flex-row justify-between items-center ml-1">
-                        <Text className="text-sm font-bold text-foreground">Amount (Bags)</Text>
-                        <Text className="text-[10px] text-muted-foreground">Original: {log.amount}</Text>
-                    </View>
-                    <Input
-                        placeholder="0.00"
-                        keyboardType="numeric"
-                        value={amount}
-                        onChangeText={setAmount}
-                        className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
-                    />
-                </View>
-
-                <View className="gap-2">
-                    <Text className="text-sm font-bold text-foreground ml-1">Correction Note</Text>
-                    <Input
-                        placeholder="Reason for change..."
-                        value={note}
-                        onChangeText={setNote}
-                        className="h-12 bg-muted/30 border-border/50"
-                    />
-                </View>
-
-                {error && (
-                    <View className="bg-destructive/10 p-3 rounded-lg border border-destructive/20">
-                        <Text className="text-destructive text-xs text-center font-medium">{error}</Text>
-                    </View>
-                )}
-
-                <View className="flex-row gap-3 pt-2">
-                    <Button variant="outline" className="flex-1 h-12 rounded-xl" onPress={() => onOpenChange(false)}>
-                        <Text className="font-bold">Cancel</Text>
-                    </Button>
-                    <Button className="flex-1 h-12 bg-primary rounded-xl shadow-none" onPress={handleSubmit} disabled={mutation.isPending}>
-                        <Text className="text-primary-foreground font-bold">
-                            {mutation.isPending ? "Saving..." : "Save Changes"}
-                        </Text>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onPress={() => onOpenChange(false)}>
+                        <Icon as={X} size={18} className="text-muted-foreground" />
                     </Button>
                 </View>
-            </View>
+
+                <View className="p-6 space-y-4">
+                    <View className="gap-2">
+                        <View className="flex-row justify-between items-center ml-1">
+                            <Text className="text-sm font-bold text-foreground">Amount (Bags)</Text>
+                            <Text className="text-[10px] text-muted-foreground">Original: {log.amount}</Text>
+                        </View>
+                        <Input
+                            placeholder="0.00"
+                            keyboardType="numeric"
+                            value={amount}
+                            onChangeText={setAmount}
+                            className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
+                        />
+                    </View>
+
+                    <View className="gap-2">
+                        <Text className="text-sm font-bold text-foreground ml-1">Correction Note</Text>
+                        <Input
+                            placeholder="Reason for change..."
+                            value={note}
+                            onChangeText={setNote}
+                            className="h-12 bg-muted/30 border-border/50"
+                        />
+                    </View>
+
+                    {error && (
+                        <View className="bg-destructive/10 p-3 rounded-lg border border-destructive/20">
+                            <Text className="text-destructive text-xs text-center font-medium">{error}</Text>
+                        </View>
+                    )}
+
+                    <View className="flex-row gap-3 pt-2">
+                        <Button variant="outline" className="flex-1 h-12 rounded-xl" onPress={() => onOpenChange(false)}>
+                            <Text className="font-bold">Cancel</Text>
+                        </Button>
+                        <Button className="flex-1 h-12 bg-primary rounded-xl shadow-none" onPress={handleSubmit} disabled={mutation.isPending}>
+                            <Text className="text-primary-foreground font-bold">
+                                {mutation.isPending ? "Saving..." : "Save Changes"}
+                            </Text>
+                        </Button>
+                    </View>
+                </View>
+            </ScrollView>
         </BottomSheetModal>
     );
 }

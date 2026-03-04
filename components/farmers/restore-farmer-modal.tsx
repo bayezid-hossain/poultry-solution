@@ -7,7 +7,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { RotateCcw } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, ScrollView, View } from "react-native";
 
 interface RestoreFarmerModalProps {
     open: boolean;
@@ -53,53 +53,55 @@ export function RestoreFarmerModal({
 
     return (
         <BottomSheetModal open={open} onOpenChange={onOpenChange}>
-            <View className="flex-row items-center justify-between p-4 border-b border-border/50">
-                <View className="flex-row items-center gap-2">
-                    <View className="w-8 h-8 rounded-full bg-emerald-500/10 items-center justify-center">
-                        <Icon as={RotateCcw} size={16} className="text-emerald-500" />
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pb-10">
+                <View className="flex-row items-center justify-between p-4 border-b border-border/50">
+                    <View className="flex-row items-center gap-2">
+                        <View className="w-8 h-8 rounded-full bg-emerald-500/10 items-center justify-center">
+                            <Icon as={RotateCcw} size={16} className="text-emerald-500" />
+                        </View>
+                        <Text className="text-lg font-bold text-foreground">Restore Farmer</Text>
                     </View>
-                    <Text className="text-lg font-bold text-foreground">Restore Farmer</Text>
                 </View>
-            </View>
 
-            <View className="p-4">
-                <Text className="text-sm text-muted-foreground mb-4">
-                    Restoring <Text className="font-bold text-foreground">{farmerName}</Text> to active status.
-                    You can optionally change the name.
-                </Text>
+                <View className="p-4">
+                    <Text className="text-sm text-muted-foreground mb-4">
+                        Restoring <Text className="font-bold text-foreground">{farmerName}</Text> to active status.
+                        You can optionally change the name.
+                    </Text>
 
-                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Farmer Name</Text>
-                <Input
-                    value={newName}
-                    onChangeText={(text) => {
-                        setNewName(text);
-                        setError(null);
-                    }}
-                    placeholder="Enter farmer name"
-                    className="mb-4"
-                />
+                    <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Farmer Name</Text>
+                    <Input
+                        value={newName}
+                        onChangeText={(text) => {
+                            setNewName(text);
+                            setError(null);
+                        }}
+                        placeholder="Enter farmer name"
+                        className="mb-4"
+                    />
 
-                {error && (
-                    <Card className="mb-4 border-destructive/30 bg-destructive/5">
-                        <CardContent className="p-3">
-                            <Text className="text-xs text-destructive">{error}</Text>
-                        </CardContent>
-                    </Card>
-                )}
-
-                <Button
-                    className="h-12 rounded-xl bg-emerald-500 flex-row items-center justify-center gap-2"
-                    onPress={handleRestore}
-                    disabled={restoreMutation.isPending || !newName.trim()}
-                >
-                    {restoreMutation.isPending ? (
-                        <ActivityIndicator color={"#ffffff"} />
-                    ) : (
-                        <Icon as={RotateCcw} size={18} className="text-white" />
+                    {error && (
+                        <Card className="mb-4 border-destructive/30 bg-destructive/5">
+                            <CardContent className="p-3">
+                                <Text className="text-xs text-destructive">{error}</Text>
+                            </CardContent>
+                        </Card>
                     )}
-                    <Text className="text-white font-bold">Restore Farmer</Text>
-                </Button>
-            </View>
+
+                    <Button
+                        className="h-12 rounded-xl bg-emerald-500 flex-row items-center justify-center gap-2"
+                        onPress={handleRestore}
+                        disabled={restoreMutation.isPending || !newName.trim()}
+                    >
+                        {restoreMutation.isPending ? (
+                            <ActivityIndicator color={"#ffffff"} />
+                        ) : (
+                            <Icon as={RotateCcw} size={18} className="text-white" />
+                        )}
+                        <Text className="text-white font-bold">Restore Farmer</Text>
+                    </Button>
+                </View>
+            </ScrollView>
         </BottomSheetModal>
     );
 }

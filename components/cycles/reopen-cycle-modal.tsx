@@ -4,7 +4,7 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Info, RotateCcw } from "lucide-react-native";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, ScrollView, View } from "react-native";
 import { toast } from "sonner-native";
 
 interface ReopenCycleModalProps {
@@ -29,46 +29,48 @@ export const ReopenCycleModal = ({ historyId, cycleName, open, onOpenChange, onS
 
     return (
         <BottomSheetModal open={open} onOpenChange={onOpenChange}>
-            <View className="p-6">
-                <View className="w-12 h-12 rounded-full bg-amber-500/10 items-center justify-center mb-4">
-                    <Icon as={RotateCcw} size={24} className="text-amber-600" />
-                </View>
-                <Text className="text-xl font-bold mb-2">Reopen Cycle</Text>
-                <Text className="text-muted-foreground mb-4 leading-5">
-                    Are you sure you want to reopen "{cycleName}"?
-                </Text>
-
-                <View className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl mb-6">
-                    <View className="flex-row items-center gap-2 mb-2">
-                        <Icon as={Info} size={16} className="text-amber-600" />
-                        <Text className="font-bold text-amber-600">Important Notes:</Text>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pb-10">
+                <View className="p-6">
+                    <View className="w-12 h-12 rounded-full bg-amber-500/10 items-center justify-center mb-4">
+                        <Icon as={RotateCcw} size={24} className="text-amber-600" />
                     </View>
-                    <Text className="text-amber-700/80 text-sm mb-1">• This will restore the cycle to "Active" status.</Text>
-                    <Text className="text-amber-700/80 text-sm mb-1">• The feed consumption recorded at end of cycle will be added back to the farmer's main stock.</Text>
-                    <Text className="text-amber-700/80 text-sm">• Audit logs will track this reopening.</Text>
-                </View>
+                    <Text className="text-xl font-bold mb-2">Reopen Cycle</Text>
+                    <Text className="text-muted-foreground mb-4 leading-5">
+                        Are you sure you want to reopen "{cycleName}"?
+                    </Text>
 
-                <View className="flex-row gap-3">
-                    <Button
-                        variant="outline"
-                        className="flex-1 h-12"
-                        onPress={() => onOpenChange(false)}
-                    >
-                        <Text className="font-bold">Cancel</Text>
-                    </Button>
-                    <Button
-                        className="flex-1 h-12 bg-amber-600 active:bg-amber-700"
-                        onPress={() => mutation.mutate({ historyId })}
-                        disabled={mutation.isPending}
-                    >
-                        {mutation.isPending ? (
-                            <ActivityIndicator color={"#ffffff"} />
-                        ) : (
-                            <Text className="text-white font-bold">Reopen</Text>
-                        )}
-                    </Button>
+                    <View className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl mb-6">
+                        <View className="flex-row items-center gap-2 mb-2">
+                            <Icon as={Info} size={16} className="text-amber-600" />
+                            <Text className="font-bold text-amber-600">Important Notes:</Text>
+                        </View>
+                        <Text className="text-amber-700/80 text-sm mb-1">• This will restore the cycle to "Active" status.</Text>
+                        <Text className="text-amber-700/80 text-sm mb-1">• The feed consumption recorded at end of cycle will be added back to the farmer's main stock.</Text>
+                        <Text className="text-amber-700/80 text-sm">• Audit logs will track this reopening.</Text>
+                    </View>
+
+                    <View className="flex-row gap-3">
+                        <Button
+                            variant="outline"
+                            className="flex-1 h-12"
+                            onPress={() => onOpenChange(false)}
+                        >
+                            <Text className="font-bold">Cancel</Text>
+                        </Button>
+                        <Button
+                            className="flex-1 h-12 bg-amber-600 active:bg-amber-700"
+                            onPress={() => mutation.mutate({ historyId })}
+                            disabled={mutation.isPending}
+                        >
+                            {mutation.isPending ? (
+                                <ActivityIndicator color={"#ffffff"} />
+                            ) : (
+                                <Text className="text-white font-bold">Reopen</Text>
+                            )}
+                        </Button>
+                    </View>
                 </View>
-            </View>
+            </ScrollView>
         </BottomSheetModal>
     );
 };

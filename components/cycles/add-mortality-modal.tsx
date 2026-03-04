@@ -8,7 +8,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, X } from "lucide-react-native";
 import { useRef, useState } from "react";
-import { Platform, Pressable, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 import { toast } from "sonner-native";
 
 interface AddMortalityModalProps {
@@ -79,77 +79,79 @@ export function AddMortalityModal({
 
     return (
         <BottomSheetModal open={open} onOpenChange={onOpenChange}>
-            {/* Header */}
-            <View className="p-6 pb-2 flex-row justify-between items-center">
-                <View>
-                    <Text className="text-xl font-bold text-foreground">Add Mortality</Text>
-                    <Text className="text-xs text-muted-foreground mt-1">
-                        Record birds death for {farmerName}
-                    </Text>
-                </View>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onPress={() => onOpenChange(false)}>
-                    <Icon as={X} size={18} className="text-muted-foreground" />
-                </Button>
-            </View>
-
-            {/* Form */}
-            <View className="p-6 space-y-4">
-                <View className="gap-2">
-                    <Text className="text-sm font-bold text-foreground ml-1">Number of Birds</Text>
-                    <Input
-                        ref={amountRef}
-                        placeholder="0"
-                        keyboardType="numeric"
-                        value={amount}
-                        onChangeText={setAmount}
-                        className="h-12 bg-muted/30 border-border/50"
-                        returnKeyType="next"
-                        onSubmitEditing={handleSubmit}
-                    />
-                </View>
-
-                <View className="gap-2">
-                    <Text className="text-sm font-bold text-foreground ml-1">Date of Death</Text>
-                    <Pressable
-                        onPress={() => setShowDatePicker(true)}
-                        className="h-12 bg-muted/30 border border-border/50 rounded-md px-3 flex-row items-center justify-between active:bg-muted/50"
-                    >
-                        <Text className="text-sm text-foreground">
-                            {format(date, "PPPP")}
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pb-10">
+                {/* Header */}
+                <View className="p-6 pb-2 flex-row justify-between items-center">
+                    <View>
+                        <Text className="text-xl font-bold text-foreground">Add Mortality</Text>
+                        <Text className="text-xs text-muted-foreground mt-1">
+                            Record birds death for {farmerName}
                         </Text>
-                        <Icon as={CalendarIcon} size={16} className="text-muted-foreground" />
-                    </Pressable>
-                    <Text className="text-[10px] text-muted-foreground ml-1">
-                        * Default to today. Backdating supported in details.
-                    </Text>
-                </View>
-
-                {showDatePicker && (
-                    <DateTimePicker
-                        value={date}
-                        mode="date"
-                        display="default"
-                        onChange={onDateChange}
-                        maximumDate={new Date()}
-                        minimumDate={startDate ? new Date(startDate) : undefined}
-                    />
-                )}
-
-                <View className="flex-row gap-3 pt-2">
-                    <Button variant="outline" className="flex-1 h-12 rounded-xl" onPress={() => onOpenChange(false)}>
-                        <Text className="font-bold">Cancel</Text>
-                    </Button>
-                    <Button
-                        className="flex-1 h-12 bg-destructive rounded-xl shadow-none"
-                        onPress={handleSubmit}
-                        disabled={mutation.isPending}
-                    >
-                        <Text className="text-white font-bold">
-                            {mutation.isPending ? "Recording..." : "Record"}
-                        </Text>
+                    </View>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onPress={() => onOpenChange(false)}>
+                        <Icon as={X} size={18} className="text-muted-foreground" />
                     </Button>
                 </View>
-            </View>
+
+                {/* Form */}
+                <View className="p-6 space-y-4">
+                    <View className="gap-2">
+                        <Text className="text-sm font-bold text-foreground ml-1">Number of Birds</Text>
+                        <Input
+                            ref={amountRef}
+                            placeholder="0"
+                            keyboardType="numeric"
+                            value={amount}
+                            onChangeText={setAmount}
+                            className="h-12 bg-muted/30 border-border/50"
+                            returnKeyType="next"
+                            onSubmitEditing={handleSubmit}
+                        />
+                    </View>
+
+                    <View className="gap-2">
+                        <Text className="text-sm font-bold text-foreground ml-1">Date of Death</Text>
+                        <Pressable
+                            onPress={() => setShowDatePicker(true)}
+                            className="h-12 bg-muted/30 border border-border/50 rounded-md px-3 flex-row items-center justify-between active:bg-muted/50"
+                        >
+                            <Text className="text-sm text-foreground">
+                                {format(date, "PPPP")}
+                            </Text>
+                            <Icon as={CalendarIcon} size={16} className="text-muted-foreground" />
+                        </Pressable>
+                        <Text className="text-[10px] text-muted-foreground ml-1">
+                            * Default to today. Backdating supported in details.
+                        </Text>
+                    </View>
+
+                    {showDatePicker && (
+                        <DateTimePicker
+                            value={date}
+                            mode="date"
+                            display="default"
+                            onChange={onDateChange}
+                            maximumDate={new Date()}
+                            minimumDate={startDate ? new Date(startDate) : undefined}
+                        />
+                    )}
+
+                    <View className="flex-row gap-3 pt-2">
+                        <Button variant="outline" className="flex-1 h-12 rounded-xl" onPress={() => onOpenChange(false)}>
+                            <Text className="font-bold">Cancel</Text>
+                        </Button>
+                        <Button
+                            className="flex-1 h-12 bg-destructive rounded-xl shadow-none"
+                            onPress={handleSubmit}
+                            disabled={mutation.isPending}
+                        >
+                            <Text className="text-white font-bold">
+                                {mutation.isPending ? "Recording..." : "Record"}
+                            </Text>
+                        </Button>
+                    </View>
+                </View>
+            </ScrollView>
         </BottomSheetModal>
     );
 }

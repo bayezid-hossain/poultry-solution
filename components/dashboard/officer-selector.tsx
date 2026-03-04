@@ -1,5 +1,6 @@
 import { BottomSheetModal } from "@/components/ui/bottom-sheet-modal";
 import { Icon } from "@/components/ui/icon";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
@@ -26,7 +27,7 @@ export function OfficerSelector({ orgId, onOfficerChange, disableGlobal = false,
     }, []);
     const { selectedOfficerId, selectedOfficerName, setSelectedOfficer } = useGlobalFilter();
 
-    const { data: officers } = trpc.management.officers.getAll.useQuery(
+    const { data: officers, isLoading } = trpc.management.officers.getAll.useQuery(
         { orgId: orgId ?? "" },
         { enabled: !!orgId }
     );
@@ -139,47 +140,56 @@ export function OfficerSelector({ orgId, onOfficerChange, disableGlobal = false,
 
                         {/* Individual Officers */}
                         <View className="gap-3">
-                            {filteredOfficers.map((officer: any) => {
-                                const isActive = selectedOfficerId === officer.id;
-                                return (
-                                    <Pressable
-                                        key={officer.id}
-                                        className={`flex-row items-center p-4 rounded-2xl border active:opacity-80 ${isActive
-                                            ? 'bg-primary/10 border-primary/20'
-                                            : 'bg-muted/20 border-border/30'
-                                            }`}
-                                        onPress={() => handleSelect(officer.id, officer.name, officer.branchName, officer.mobile)}
-                                    >
-                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${getAvatarColor(officer.id)}`}>
-                                            <Text className="text-white font-black text-sm">{getInitials(officer.name)}</Text>
-                                        </View>
-                                        <View className="flex-1">
-                                            <Text className={`text-base font-black ${isActive ? 'text-primary' : 'text-foreground'}`}>
-                                                {officer.name}
-                                            </Text>
-                                            <View className="flex-row items-center gap-1.5 mt-0.5">
-                                                <View className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-primary/60' : 'bg-muted-foreground/30'}`} />
-                                                <Text className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">
-                                                    {officer.role}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                        {isActive && (
-                                            <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
-                                                <View className="w-2 h-2 rounded-full bg-primary-foreground" />
-                                            </View>
-                                        )}
-                                    </Pressable>
-                                );
-                            })}
-
-                            {filteredOfficers.length === 0 && (
+                            {isLoading ? (
                                 <View className="py-20 items-center">
-                                    <View className="w-16 h-16 rounded-full bg-muted/20 items-center justify-center mb-4">
-                                        <Icon as={Search} size={24} className="text-muted-foreground/40" />
-                                    </View>
-                                    <Text className="text-muted-foreground font-black uppercase tracking-tight text-xs">No officers found</Text>
+                                    <BirdyLoader size={36} />
+                                    <Text className="mt-4 text-muted-foreground font-black uppercase tracking-tight text-xs">Loading officers...</Text>
                                 </View>
+                            ) : (
+                                <>
+                                    {filteredOfficers.map((officer: any) => {
+                                        const isActive = selectedOfficerId === officer.id;
+                                        return (
+                                            <Pressable
+                                                key={officer.id}
+                                                className={`flex-row items-center p-4 rounded-2xl border active:opacity-80 ${isActive
+                                                    ? 'bg-primary/10 border-primary/20'
+                                                    : 'bg-muted/20 border-border/30'
+                                                    }`}
+                                                onPress={() => handleSelect(officer.id, officer.name, officer.branchName, officer.mobile)}
+                                            >
+                                                <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${getAvatarColor(officer.id)}`}>
+                                                    <Text className="text-white font-black text-sm">{getInitials(officer.name)}</Text>
+                                                </View>
+                                                <View className="flex-1">
+                                                    <Text className={`text-base font-black ${isActive ? 'text-primary' : 'text-foreground'}`}>
+                                                        {officer.name}
+                                                    </Text>
+                                                    <View className="flex-row items-center gap-1.5 mt-0.5">
+                                                        <View className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-primary/60' : 'bg-muted-foreground/30'}`} />
+                                                        <Text className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">
+                                                            {officer.role}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                                {isActive && (
+                                                    <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
+                                                        <View className="w-2 h-2 rounded-full bg-primary-foreground" />
+                                                    </View>
+                                                )}
+                                            </Pressable>
+                                        );
+                                    })}
+
+                                    {filteredOfficers.length === 0 && (
+                                        <View className="py-20 items-center">
+                                            <View className="w-16 h-16 rounded-full bg-muted/20 items-center justify-center mb-4">
+                                                <Icon as={Search} size={24} className="text-muted-foreground/40" />
+                                            </View>
+                                            <Text className="text-muted-foreground font-black uppercase tracking-tight text-xs">No officers found</Text>
+                                        </View>
+                                    )}
+                                </>
                             )}
                         </View>
                     </ScrollView>

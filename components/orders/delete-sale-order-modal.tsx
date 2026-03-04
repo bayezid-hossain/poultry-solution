@@ -4,7 +4,7 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Trash2 } from "lucide-react-native";
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { toast } from "sonner-native";
 
 interface DeleteSaleOrderModalProps {
@@ -32,7 +32,7 @@ export function DeleteSaleOrderModal({ open, onOpenChange, saleOrderId, onSucces
 
     return (
         <BottomSheetModal open={open} onOpenChange={(v) => !deleteMutation.isPending && onOpenChange(v)}>
-            <View className="p-6 pb-10">
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="p-6 pb-10">
                 <View className="w-12 h-12 rounded-full bg-destructive/10 items-center justify-center mb-4">
                     <Icon as={Trash2} size={24} className="text-destructive" />
                 </View>
@@ -60,7 +60,7 @@ export function DeleteSaleOrderModal({ open, onOpenChange, saleOrderId, onSucces
                         <Text>{deleteMutation.isPending ? "Deleting..." : "Delete"}</Text>
                     </Button>
                 </View>
-            </View>
+            </ScrollView>
         </BottomSheetModal>
     );
 }

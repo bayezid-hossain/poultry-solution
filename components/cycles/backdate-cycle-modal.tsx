@@ -8,7 +8,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Rewind, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { Platform, Pressable, View } from "react-native";
+import { Platform, Pressable, ScrollView, View } from "react-native";
 import { toast } from "sonner-native";
 import { ProAccessModal } from "../pro-access-modal";
 import { ConfirmModal } from "./confirm-modal";
@@ -178,113 +178,115 @@ export function BackdateCycleModal({
                 destructive
             />
             <BottomSheetModal open={open} onOpenChange={onOpenChange}>
-                {/* Header */}
-                <View className="p-6 pb-2 flex-row justify-between items-center">
-                    <View className="flex-row items-center gap-3">
-                        <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
-                            <Icon as={Rewind} size={20} className="text-primary" />
+                <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pb-10">
+                    {/* Header */}
+                    <View className="p-6 pb-2 flex-row justify-between items-center">
+                        <View className="flex-row items-center gap-3">
+                            <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
+                                <Icon as={Rewind} size={20} className="text-primary" />
+                            </View>
+                            <View>
+                                <Text className="text-xl font-bold text-foreground">Backdate Cycle</Text>
+                                <Text className="text-xs text-muted-foreground mt-0.5" numberOfLines={1}>
+                                    {farmerName}
+                                </Text>
+                            </View>
                         </View>
-                        <View>
-                            <Text className="text-xl font-bold text-foreground">Backdate Cycle</Text>
-                            <Text className="text-xs text-muted-foreground mt-0.5" numberOfLines={1}>
-                                {farmerName}
-                            </Text>
-                        </View>
-                    </View>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onPress={() => onOpenChange(false)}>
-                        <Icon as={X} size={18} className="text-muted-foreground" />
-                    </Button>
-                </View>
-
-                {/* Form */}
-                <View className="p-6 space-y-4">
-                    <View className="gap-2">
-                        <Text className="text-sm font-bold text-foreground ml-1">Days to Backdate</Text>
-                        <Input
-                            placeholder="e.g. 60"
-                            keyboardType="numeric"
-                            value={days}
-                            onChangeText={handleDaysChange}
-                            className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
-                            returnKeyType="done"
-                            onSubmitEditing={handleSubmit}
-                        />
-                        <Text className="text-[10px] text-muted-foreground ml-1">
-                            All cycle dates (mortality, sales, etc.) will shift backward.
-                        </Text>
-                    </View>
-
-                    <View className="gap-2">
-                        <Text className="text-sm font-bold text-foreground ml-1">Start Date</Text>
-                        <Pressable
-                            onPress={() => setShowStartPicker(true)}
-                            className="h-12 bg-muted/30 border border-border/50 rounded-md px-3 flex-row items-center justify-between active:bg-muted/50"
-                        >
-                            <Text className={`text-sm ${isValid ? 'text-primary font-bold' : 'text-foreground'}`}>
-                                {format(startDate, "dd MMM yyyy")}
-                            </Text>
-                            <Icon as={CalendarIcon} size={16} className="text-muted-foreground" />
-                        </Pressable>
-                        {isValid && (
-                            <Text className="text-[10px] text-muted-foreground ml-1">
-                                was {format(originalStart, "dd MMM yyyy")}
-                            </Text>
-                        )}
-                    </View>
-
-                    {showStartPicker && (
-                        <DateTimePicker
-                            value={startDate}
-                            mode="date"
-                            display="default"
-                            onChange={onStartDateChange}
-                            maximumDate={originalStart}
-                        />
-                    )}
-
-                    <View className="gap-2">
-                        <Text className="text-sm font-bold text-foreground ml-1">End Date</Text>
-                        <Pressable
-                            onPress={() => setShowEndPicker(true)}
-                            className="h-12 bg-muted/30 border border-border/50 rounded-md px-3 flex-row items-center justify-between active:bg-muted/50"
-                        >
-                            <Text className={`text-sm ${isValid ? 'text-primary font-bold' : 'text-foreground'}`}>
-                                {format(endDate, "dd MMM yyyy")}
-                            </Text>
-                            <Icon as={CalendarIcon} size={16} className="text-muted-foreground" />
-                        </Pressable>
-                        {isValid && (
-                            <Text className="text-[10px] text-muted-foreground ml-1">
-                                was {format(originalEnd, "dd MMM yyyy")}
-                            </Text>
-                        )}
-                    </View>
-
-                    {showEndPicker && (
-                        <DateTimePicker
-                            value={endDate}
-                            mode="date"
-                            display="default"
-                            onChange={onEndDateChange}
-                            maximumDate={originalEnd}
-                        />
-                    )}
-
-                    <View className="flex-row gap-3 pt-2">
-                        <Button variant="outline" className="flex-1 h-12 rounded-xl" onPress={() => onOpenChange(false)}>
-                            <Text className="font-bold">Cancel</Text>
-                        </Button>
-                        <Button
-                            className="flex-1 h-12 bg-primary rounded-xl shadow-none"
-                            onPress={handleSubmit}
-                            disabled={mutation.isPending || !isValid}
-                        >
-                            <Text className="text-primary-foreground font-bold">
-                                {mutation.isPending ? "Backdating..." : "Backdate"}
-                            </Text>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onPress={() => onOpenChange(false)}>
+                            <Icon as={X} size={18} className="text-muted-foreground" />
                         </Button>
                     </View>
-                </View>
+
+                    {/* Form */}
+                    <View className="p-6 space-y-4">
+                        <View className="gap-2">
+                            <Text className="text-sm font-bold text-foreground ml-1">Days to Backdate</Text>
+                            <Input
+                                placeholder="e.g. 60"
+                                keyboardType="numeric"
+                                value={days}
+                                onChangeText={handleDaysChange}
+                                className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
+                                returnKeyType="done"
+                                onSubmitEditing={handleSubmit}
+                            />
+                            <Text className="text-[10px] text-muted-foreground ml-1">
+                                All cycle dates (mortality, sales, etc.) will shift backward.
+                            </Text>
+                        </View>
+
+                        <View className="gap-2">
+                            <Text className="text-sm font-bold text-foreground ml-1">Start Date</Text>
+                            <Pressable
+                                onPress={() => setShowStartPicker(true)}
+                                className="h-12 bg-muted/30 border border-border/50 rounded-md px-3 flex-row items-center justify-between active:bg-muted/50"
+                            >
+                                <Text className={`text-sm ${isValid ? 'text-primary font-bold' : 'text-foreground'}`}>
+                                    {format(startDate, "dd MMM yyyy")}
+                                </Text>
+                                <Icon as={CalendarIcon} size={16} className="text-muted-foreground" />
+                            </Pressable>
+                            {isValid && (
+                                <Text className="text-[10px] text-muted-foreground ml-1">
+                                    was {format(originalStart, "dd MMM yyyy")}
+                                </Text>
+                            )}
+                        </View>
+
+                        {showStartPicker && (
+                            <DateTimePicker
+                                value={startDate}
+                                mode="date"
+                                display="default"
+                                onChange={onStartDateChange}
+                                maximumDate={originalStart}
+                            />
+                        )}
+
+                        <View className="gap-2">
+                            <Text className="text-sm font-bold text-foreground ml-1">End Date</Text>
+                            <Pressable
+                                onPress={() => setShowEndPicker(true)}
+                                className="h-12 bg-muted/30 border border-border/50 rounded-md px-3 flex-row items-center justify-between active:bg-muted/50"
+                            >
+                                <Text className={`text-sm ${isValid ? 'text-primary font-bold' : 'text-foreground'}`}>
+                                    {format(endDate, "dd MMM yyyy")}
+                                </Text>
+                                <Icon as={CalendarIcon} size={16} className="text-muted-foreground" />
+                            </Pressable>
+                            {isValid && (
+                                <Text className="text-[10px] text-muted-foreground ml-1">
+                                    was {format(originalEnd, "dd MMM yyyy")}
+                                </Text>
+                            )}
+                        </View>
+
+                        {showEndPicker && (
+                            <DateTimePicker
+                                value={endDate}
+                                mode="date"
+                                display="default"
+                                onChange={onEndDateChange}
+                                maximumDate={originalEnd}
+                            />
+                        )}
+
+                        <View className="flex-row gap-3 pt-2">
+                            <Button variant="outline" className="flex-1 h-12 rounded-xl" onPress={() => onOpenChange(false)}>
+                                <Text className="font-bold">Cancel</Text>
+                            </Button>
+                            <Button
+                                className="flex-1 h-12 bg-primary rounded-xl shadow-none"
+                                onPress={handleSubmit}
+                                disabled={mutation.isPending || !isValid}
+                            >
+                                <Text className="text-primary-foreground font-bold">
+                                    {mutation.isPending ? "Backdating..." : "Backdate"}
+                                </Text>
+                            </Button>
+                        </View>
+                    </View>
+                </ScrollView>
             </BottomSheetModal>
         </>
     );

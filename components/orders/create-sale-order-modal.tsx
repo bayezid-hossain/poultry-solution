@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
+import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -289,7 +290,8 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
 
                     {isSearching && !searchResults ? (
                         <View className="flex-1 items-center justify-center">
-                            <Text className="text-muted-foreground">Searching...</Text>
+                            <BirdyLoader size={36} />
+                            <Text className="mt-4 text-muted-foreground font-black uppercase tracking-tight text-xs">Searching farmers...</Text>
                         </View>
                     ) : (
                         <FlatList
