@@ -8,8 +8,8 @@ import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Check, Clock, Shield, ShieldOff, User, UserCheck, UserMinus, X } from "lucide-react-native";
-import { useState } from "react";
-import { Alert, Pressable, ScrollView, View } from "react-native";
+import { useCallback, useState } from "react";
+import { Alert, Pressable, RefreshControl, ScrollView, View } from "react-native";
 
 export default function MembersScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -63,6 +63,12 @@ export default function MembersScreen() {
         );
     };
 
+    const [refreshing, setRefreshing] = useState(false);
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        refetch().finally(() => setRefreshing(false));
+    }, [refetch]);
+
     const anyPending = approveMutation.isPending || updateRoleMutation.isPending ||
         updateAccessMutation.isPending || updateStatusMutation.isPending || removeMutation.isPending;
 
@@ -90,7 +96,12 @@ export default function MembersScreen() {
                     <Text className="mt-4 text-muted-foreground font-medium">Loading members...</Text>
                 </View>
             ) : (
-                <ScrollView contentContainerClassName="p-4 pb-20" className="flex-1" keyboardShouldPersistTaps="handled">
+                <ScrollView
+                    contentContainerClassName="p-4 pb-20"
+                    className="flex-1"
+                    keyboardShouldPersistTaps="handled"
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                >
 
                     {/* Pending Approvals */}
                     {pendingMembers.length > 0 && (
@@ -198,7 +209,7 @@ export default function MembersScreen() {
                                                         size="sm"
                                                         className={`flex-1 h-9 rounded-lg ${m.role === role ? "" : "border-border/50"}`}
                                                         onPress={() => handleUpdateRole(m.id, role)}
-                                                        disabled={anyPending || m.role === "OWNER"}
+                                                        disabled={anyPending || m.role === "OWNER" || membership?.role !== "OWNER"}
                                                     >
                                                         <Text className={`text-xs font-bold ${m.role === role ? "text-primary-foreground" : "text-foreground"}`}>
                                                             {role}
@@ -208,23 +219,27 @@ export default function MembersScreen() {
                                             </View>
 
                                             {/* Access Level */}
-                                            <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Access</Text>
-                                            <View className="flex-row gap-2 mb-4">
-                                                {(["VIEW", "EDIT"] as const).map(level => (
-                                                    <Button
-                                                        key={level}
-                                                        variant={m.accessLevel === level ? "default" : "outline"}
-                                                        size="sm"
-                                                        className={`flex-1 h-9 rounded-lg ${m.accessLevel === level ? "" : "border-border/50"}`}
-                                                        onPress={() => handleUpdateAccess(m.id, level)}
-                                                        disabled={anyPending}
-                                                    >
-                                                        <Text className={`text-xs font-bold ${m.accessLevel === level ? "text-primary-foreground" : "text-foreground"}`}>
-                                                            {level}
-                                                        </Text>
-                                                    </Button>
-                                                ))}
-                                            </View>
+                                            {m.role !== "OFFICER" && (
+                                                <>
+                                                    <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Access</Text>
+                                                    <View className="flex-row gap-2 mb-4">
+                                                        {(["VIEW", "EDIT"] as const).map(level => (
+                                                            <Button
+                                                                key={level}
+                                                                variant={m.accessLevel === level ? "default" : "outline"}
+                                                                size="sm"
+                                                                className={`flex-1 h-9 rounded-lg ${m.accessLevel === level ? "" : "border-border/50"}`}
+                                                                onPress={() => handleUpdateAccess(m.id, level)}
+                                                                disabled={anyPending || membership?.role !== "OWNER"}
+                                                            >
+                                                                <Text className={`text-xs font-bold ${m.accessLevel === level ? "text-primary-foreground" : "text-foreground"}`}>
+                                                                    {level}
+                                                                </Text>
+                                                            </Button>
+                                                        ))}
+                                                    </View>
+                                                </>
+                                            )}
 
                                             {/* Actions */}
                                             <View className="flex-row gap-2">

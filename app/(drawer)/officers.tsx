@@ -8,16 +8,23 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { router } from "expo-router";
 import { ChevronRight, Shield, User } from "lucide-react-native";
-import { Pressable, ScrollView, View } from "react-native";
+import { useCallback, useState } from "react";
+import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
 export default function OfficersScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const orgId = membership?.orgId ?? "";
 
-    const { data: officers, isLoading } = trpc.management.officers.getAll.useQuery(
+    const { data: officers, isLoading, refetch } = trpc.management.officers.getAll.useQuery(
         { orgId },
         { enabled: !!orgId }
     );
+
+    const [refreshing, setRefreshing] = useState(false);
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        refetch().finally(() => setRefreshing(false));
+    }, [refetch]);
 
     const roleColors: Record<string, { border: string; bg: string; text: string }> = {
         OWNER: { border: "border-violet-500/40", bg: "bg-violet-500/10", text: "text-violet-600" },
@@ -35,7 +42,12 @@ export default function OfficersScreen() {
                     <Text className="mt-4 text-muted-foreground font-medium">Loading officers...</Text>
                 </View>
             ) : (
-                <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="p-4 pb-20" className="flex-1">
+                <ScrollView
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerClassName="p-4 pb-20"
+                    className="flex-1"
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                >
                     {/* Header */}
                     <View className="flex-row items-center gap-3 mb-6">
                         <View className="w-10 h-10 rounded-2xl bg-primary/10 items-center justify-center">

@@ -10,22 +10,28 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { router } from "expo-router";
 import { Activity, Bird, Building2, ChevronDown, ChevronRight, ChevronUp, Users, Wheat } from "lucide-react-native";
-import { useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { useCallback, useState } from "react";
+import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
 export default function OverviewScreen() {
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const orgId = membership?.orgId ?? "";
 
-    const { data: stats, isLoading: statsLoading } = trpc.management.analytics.getDashboardStats.useQuery(
+    const { data: stats, isLoading: statsLoading, refetch: refetchStats } = trpc.management.analytics.getDashboardStats.useQuery(
         { orgId },
         { enabled: !!orgId }
     );
 
-    const { data: productionTree, isLoading: treeLoading } = trpc.management.officers.getProductionTree.useQuery(
+    const { data: productionTree, isLoading: treeLoading, refetch: refetchTree } = trpc.management.officers.getProductionTree.useQuery(
         { orgId },
         { enabled: !!orgId }
     );
+
+    const [refreshing, setRefreshing] = useState(false);
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        Promise.all([refetchStats(), refetchTree()]).finally(() => setRefreshing(false));
+    }, [refetchStats, refetchTree]);
 
     const [expandedOfficers, setExpandedOfficers] = useState<Set<string>>(new Set());
 
@@ -68,9 +74,11 @@ export default function OverviewScreen() {
         <View className="flex-1 bg-background">
             <ScreenHeader title="Management" />
 
-            <ScrollView keyboardShouldPersistTaps="handled"
+            <ScrollView
+                keyboardShouldPersistTaps="handled"
                 contentContainerClassName="p-4 pb-20"
                 className="flex-1"
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             >
                 {/* Header */}
                 <View className="flex-row items-center gap-3 mb-6">
