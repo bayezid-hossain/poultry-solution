@@ -234,7 +234,7 @@ export default function MembersScreen() {
                                                         size="sm"
                                                         className={`flex-1 h-9 rounded-lg ${m.role === role ? "" : "border-border/50"}`}
                                                         onPress={() => handleUpdateRole(m.id, role)}
-                                                        disabled={anyPending || m.role === "OWNER" || membership?.role !== "OWNER"}
+                                                        disabled={anyPending || m.role === "OWNER" || (membership?.role !== "OWNER" && membership?.role !== "MANAGER")}
                                                     >
                                                         <Text className={`text-xs font-bold ${m.role === role ? "text-primary-foreground" : "text-foreground"}`}>
                                                             {role}
@@ -255,7 +255,7 @@ export default function MembersScreen() {
                                                                 size="sm"
                                                                 className={`flex-1 h-9 rounded-lg ${m.accessLevel === level ? "" : "border-border/50"}`}
                                                                 onPress={() => handleUpdateAccess(m.id, level)}
-                                                                disabled={anyPending || membership?.role !== "OWNER"}
+                                                                disabled={anyPending || (membership?.role !== "OWNER" && membership?.role !== "MANAGER")}
                                                             >
                                                                 <Text className={`text-xs font-bold ${m.accessLevel === level ? "text-primary-foreground" : "text-foreground"}`}>
                                                                     {level}
