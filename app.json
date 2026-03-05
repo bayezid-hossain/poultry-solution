@@ -46,6 +46,7 @@
           }
         }
       ],
+      "./plugins/withTransparentSplashIconFix.js",
       "@react-native-community/datetimepicker",
       "@react-native-firebase/app"
     ],
