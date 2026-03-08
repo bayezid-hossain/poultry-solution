@@ -54,6 +54,7 @@ const formSchema = z.object({
     recoveryPrice: z.number().positive().optional(),
     feedPricePerBag: z.number().positive().optional(),
     docPricePerBird: z.number().positive().optional(),
+    officialInputDate: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -74,6 +75,7 @@ interface SellModalProps {
     onOpenChange: (open: boolean) => void;
     onSuccess?: () => void;
     startDate?: Date; // Optional for now
+    officialInputDate?: Date | string | null;
 }
 
 export const SellModal = ({
@@ -91,7 +93,8 @@ export const SellModal = ({
     open,
     onOpenChange,
     onSuccess,
-    startDate
+    startDate,
+    officialInputDate
 }: SellModalProps) => {
     // Initial remaining birds for default value calculation
     const initialRemainingBirds = doc - mortality - birdsSold;
@@ -120,6 +123,7 @@ export const SellModal = ({
             recoveryPrice: undefined,
             feedPricePerBag: undefined,
             docPricePerBird: undefined,
+            officialInputDate: officialInputDate ? format(new Date(officialInputDate), "yyyy-MM-dd") : (startDate ? format(new Date(startDate), "yyyy-MM-dd") : undefined),
         },
     });
 
@@ -137,7 +141,9 @@ export const SellModal = ({
     const feedPriceRef = useRef<TextInput>(null);
     const docPriceRef = useRef<TextInput>(null);
 
-    const { data: previousSales } = trpc.officer.sales.getSaleEvents.useQuery(
+    const hasInitializedRef = useRef(false);
+
+    const { data: previousSales, isLoading: isPreviousSalesLoading } = trpc.officer.sales.getSaleEvents.useQuery(
         { cycleId },
         { enabled: open }
     );
@@ -147,6 +153,14 @@ export const SellModal = ({
     const [previewData, setPreviewData] = useState<any>(null);
     const [isAgeModalOpen, setIsAgeModalOpen] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showOfficialDatePicker, setShowOfficialDatePicker] = useState(false);
+
+    const onOfficialDateChange = (event: any, selectedDate?: Date) => {
+        setShowOfficialDatePicker(Platform.OS === 'ios');
+        if (selectedDate) {
+            form.setValue('officialInputDate', format(selectedDate, 'yyyy-MM-dd'));
+        }
+    };
 
     const onSaleDateChange = (event: any, selectedDate?: Date) => {
         setShowDatePicker(Platform.OS === 'ios');
@@ -158,11 +172,19 @@ export const SellModal = ({
     const router = useRouter();
     const utils = trpc.useUtils();
 
-    // Reset form with new defaults when modal opens or key props change
+    // Reset basic state when modal opens
     useEffect(() => {
         if (open) {
             setStep("form");
             setPreviewData(null);
+            hasInitializedRef.current = false;
+        }
+    }, [open]);
+
+    // Initialize form with defaults ONLY ONCE when data is ready
+    useEffect(() => {
+        if (open && !isPreviousSalesLoading && !hasInitializedRef.current) {
+            hasInitializedRef.current = true;
             const currentRemainingBirds = doc - mortality - birdsSold;
 
             // Auto-fill feed from previous sale if available, otherwise use default
@@ -194,9 +216,10 @@ export const SellModal = ({
                 recoveryPrice: undefined,
                 feedPricePerBag: undefined,
                 docPricePerBird: undefined,
+                officialInputDate: officialInputDate ? format(new Date(officialInputDate), "yyyy-MM-dd") : (startDate ? format(new Date(startDate), "yyyy-MM-dd") : undefined),
             });
         }
-    }, [open, doc, mortality, birdsSold, intake, farmerLocation, farmerMobile, form, lastSale]);
+    }, [open, isPreviousSalesLoading, lastSale, doc, mortality, birdsSold, intake, farmerLocation, farmerMobile, form, officialInputDate, startDate]);
 
     const feedConsumedArray = useFieldArray({
         control: form.control,
@@ -228,6 +251,8 @@ export const SellModal = ({
             toast.error(error.message);
         },
     });
+
+    const updateOfficialDateMutation = trpc.officer.cycles.updateOfficialInputDate.useMutation();
 
     const previewMutation = trpc.officer.sales.previewSale.useMutation({
         onSuccess: (data) => {
@@ -273,10 +298,26 @@ export const SellModal = ({
         }
     };
 
-    const onSubmit = form.handleSubmit((values: FormValues) => {
+    const onSubmit = form.handleSubmit(async (values: FormValues) => {
         const now = new Date();
         const saleDateWithTime = new Date(values.saleDate);
         saleDateWithTime.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+
+        if (values.officialInputDate) {
+            const currentFormatted = officialInputDate
+                ? format(new Date(officialInputDate), "yyyy-MM-dd")
+                : (startDate ? format(new Date(startDate), "yyyy-MM-dd") : undefined);
+            if (values.officialInputDate !== currentFormatted) {
+                try {
+                    await updateOfficialDateMutation.mutateAsync({
+                        id: cycleId,
+                        officialInputDate: new Date(values.officialInputDate),
+                    });
+                } catch (e) {
+                    toast.error("Failed to update official input date");
+                }
+            }
+        }
 
         // Needs to match TRPC schema precisely
         mutation.mutate({
@@ -456,458 +497,501 @@ export const SellModal = ({
                     </View>
                 ) : (
                     <View className="flex-1">
-                        <ScrollView className="flex-1" contentContainerClassName="p-4 gap-6 pb-20" keyboardShouldPersistTaps="handled">
-                            {/* SECTION 1: FARMER INFO */}
-                            <View className="space-y-4 gap-y-2">
-                                <FarmerInfoHeader
-                                    farmerName={farmerName}
-                                    farmerLocation={farmerLocation}
-                                    farmerMobile={farmerMobile}
-                                    cycleAge={cycleAge}
-                                    colorScheme="blue"
-                                    onEditAgePress={() => setIsAgeModalOpen(true)}
-                                />
-
-                                <View className="flex-row items-center gap-2 mt-2 ml-1">
-                                    <Icon as={Truck} size={16} className="text-muted-foreground" />
-                                    <Text className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Sale Basics</Text>
-                                </View>
-
-                                {/* Date & Mobile */}
-                                <View className="flex-row gap-4 px-1">
-                                    <View className="flex-1">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Date</Text>
-                                        <Controller
-                                            control={form.control}
-                                            name="saleDate"
-                                            render={({ field: { value } }) => (
-                                                <Pressable
-                                                    onPress={() => setShowDatePicker(true)}
-                                                    className={`h-12 bg-muted/40 border border-border/50 rounded-md px-3 flex-row items-center justify-between active:bg-muted/50 ${hasError("saleDate") ? "border-destructive/50" : ""}`}
-                                                >
-                                                    <Text className="text-sm text-foreground">
-                                                        {value ? format(new Date(value), "PPP") : "Select date"}
-                                                    </Text>
-                                                    <Icon as={CalendarIcon} size={16} className="text-muted-foreground" />
-                                                </Pressable>
-                                            )}
+                        {isPreviousSalesLoading ? (
+                            <View className="flex-1 items-center justify-center p-10">
+                                <ActivityIndicator size="large" color="#3b82f6" />
+                                <Text className="mt-4 text-muted-foreground font-medium">Preparing Sale Form...</Text>
+                                <Text className="text-xs text-muted-foreground/60 text-center mt-2 px-6">
+                                    We're fetching the most recent sale context to pre-fill your defaults.
+                                </Text>
+                            </View>
+                        ) : (
+                            <>
+                                <ScrollView className="flex-1" contentContainerClassName="p-4 gap-6 pb-20" keyboardShouldPersistTaps="handled">
+                                    {/* SECTION 1: FARMER INFO */}
+                                    <View className="space-y-4 gap-y-2">
+                                        <FarmerInfoHeader
+                                            farmerName={farmerName}
+                                            farmerLocation={farmerLocation}
+                                            farmerMobile={farmerMobile}
+                                            cycleAge={cycleAge}
+                                            colorScheme="blue"
+                                            onEditAgePress={() => setIsAgeModalOpen(true)}
                                         />
-                                        {showDatePicker && (
-                                            <DateTimePicker
-                                                value={form.getValues('saleDate') ? new Date(form.getValues('saleDate')) : new Date()}
-                                                mode="date"
-                                                display="default"
-                                                onChange={onSaleDateChange}
-                                                maximumDate={new Date()}
-                                                minimumDate={startDate ? new Date(startDate) : undefined}
-                                            />
-                                        )}
-                                        {hasError("saleDate") && <Text className="text-[10px] text-destructive ml-1 mt-1">{getError("saleDate")}</Text>}
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Farmer Mobile</Text>
-                                        <Controller
-                                            control={form.control}
-                                            name="farmerMobile"
-                                            render={({ field: { onChange, value } }) => (
-                                                <Input
-                                                    ref={farmerMobileRef}
-                                                    value={value}
-                                                    onChangeText={onChange}
-                                                    placeholder="01XXXXXXXXX"
-                                                    keyboardType="phone-pad"
-                                                    className="h-12 bg-muted/40 border-border/50 text-base"
-                                                    returnKeyType="next"
-                                                    onSubmitEditing={() => locationRef.current?.focus()}
-                                                />
-                                            )}
-                                        />
-                                    </View>
-                                </View>
 
-                                {/* Location & Party */}
-                                <View className="flex-row gap-4 px-1">
-                                    <View className="flex-1">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Sale Location</Text>
-                                        <Controller
-                                            control={form.control}
-                                            name="location"
-                                            render={({ field: { onChange, value } }) => (
-                                                <Input
-                                                    ref={locationRef}
-                                                    value={value}
-                                                    onChangeText={onChange}
-                                                    placeholder="e.g. Bhaluka"
-                                                    className={`h-12 bg-muted/40 border-border/50 text-base ${hasError("location") ? "border-destructive/50" : ""}`}
-                                                    returnKeyType="next"
-                                                    onSubmitEditing={() => partyRef.current?.focus()}
-                                                />
-                                            )}
-                                        />
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Party Name</Text>
-                                        <Controller
-                                            control={form.control}
-                                            name="party"
-                                            render={({ field: { onChange, value } }) => (
-                                                <Input
-                                                    ref={partyRef}
-                                                    value={value}
-                                                    onChangeText={onChange}
-                                                    placeholder="e.g. Habibur"
-                                                    className="h-12 bg-muted/40 border-border/50 text-base"
-                                                    returnKeyType="next"
-                                                    onSubmitEditing={() => birdsSoldRef.current?.focus()}
-                                                />
-                                            )}
-                                        />
-                                    </View>
-                                </View>
-
-                                {/* Birds Sale Details */}
-                                <View className="flex-row gap-3 px-1 mt-2">
-                                    <View className="flex-1">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">House Birds</Text>
-                                        <View className="h-12 bg-muted/40 border border-border/50 rounded-xl items-center justify-center">
-                                            <Text className="font-mono font-bold text-xl text-foreground">{birdsInHouse}</Text>
+                                        <View className="flex-row items-center gap-2 mt-2 ml-1">
+                                            <Icon as={Truck} size={16} className="text-muted-foreground" />
+                                            <Text className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Sale Basics</Text>
                                         </View>
-                                    </View>
 
-                                    <View className="flex-[1.5]">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Birds Sold</Text>
-                                        <Controller
-                                            control={form.control}
-                                            name="birdsSold"
-                                            render={({ field: { onChange, value } }) => (
-                                                <Input
-                                                    ref={birdsSoldRef}
-                                                    value={value?.toString() || ""}
-                                                    onChangeText={(t) => onChange(parseInt(t, 10) || 0)}
-                                                    keyboardType="number-pad"
-                                                    className={`h-12 bg-muted/40 border-border/50 font-mono text-xl text-center ${hasError("birdsSold") ? "border-destructive/50" : ""}`}
-                                                    returnKeyType="next"
-                                                    onSubmitEditing={() => mortalityChangeRef.current?.focus()}
-                                                />
-                                            )}
-                                        />
-                                    </View>
-
-                                    <View className="flex-[1.5]">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Total Mortality</Text>
-                                        <Controller
-                                            control={form.control}
-                                            name="mortalityChange"
-                                            render={({ field: { onChange, value } }) => {
-                                                const currentTotal = mortality + (value || 0);
-                                                const [localText, setLocalText] = useState(currentTotal.toString());
-
-                                                // Sync local text when form value changes externally
-                                                useEffect(() => {
-                                                    const total = mortality + (value || 0);
-                                                    setLocalText(total.toString());
-                                                }, [mortality]);
-
-                                                return (
-                                                    <View>
-                                                        <Input
-                                                            ref={mortalityChangeRef}
-                                                            value={localText}
-                                                            onChangeText={(t) => {
-                                                                setLocalText(t);
-                                                                if (t === "") {
-                                                                    // Allow empty, treat as 0 delta temporarily
-                                                                    return;
-                                                                }
-                                                                const newTotal = parseInt(t, 10);
-                                                                if (!isNaN(newTotal)) {
-                                                                    const delta = newTotal - mortality;
-                                                                    onChange(delta);
-                                                                }
-                                                            }}
-                                                            onBlur={() => {
-                                                                // On blur, if empty, reset to current mortality
-                                                                if (localText === "") {
-                                                                    setLocalText(mortality.toString());
-                                                                    onChange(0);
-                                                                }
-                                                            }}
-                                                            keyboardType="number-pad"
-                                                            placeholder={`Current: ${mortality}`}
-                                                            className={`h-12 bg-muted/40 border-border/50 font-mono text-xl text-center ${hasError("mortalityChange") ? "border-destructive/50" : ""}`}
-                                                            returnKeyType="next"
-                                                            onSubmitEditing={() => totalWeightRef.current?.focus()}
-                                                        />
-                                                        {value !== 0 && (
-                                                            <Text className={`text-[10px] font-medium mt-1 ml-1 ${value > 0 ? "text-destructive" : "text-amber-600"}`}>
-                                                                {value > 0 ? `+${value} new deaths` : `${localText == "" ? -mortality : value} correction`}
+                                        {/* Date & Mobile */}
+                                        <View className="flex-row gap-4 px-1">
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Date</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="saleDate"
+                                                    render={({ field: { value } }) => (
+                                                        <Pressable
+                                                            onPress={() => setShowDatePicker(true)}
+                                                            className={`h-12 bg-muted/40 border border-border/50 rounded-md px-3 flex-row items-center justify-between active:bg-muted/50 ${hasError("saleDate") ? "border-destructive/50" : ""}`}
+                                                        >
+                                                            <Text className="text-sm text-foreground">
+                                                                {value ? format(new Date(value), "PPP") : "Select date"}
                                                             </Text>
-                                                        )}
-                                                    </View>
-                                                );
-                                            }}
-                                        />
-                                    </View>
-                                </View>
-
-                                <View className="flex-row items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl mt-1">
-                                    <Icon as={Bird} size={20} className="text-blue-500" />
-                                    <View>
-                                        <Text className="font-bold text-blue-700 dark:text-blue-300">Remaining Birds</Text>
-                                        <Text className="text-xs text-blue-600/80 dark:text-blue-400">After this sale: {remainingBirdsAfterTransaction}</Text>
-                                    </View>
-                                </View>
-                            </View>
-
-                            <View className="h-[1px] bg-border/50" />
-
-                            {/* SECTION 2: FINANCIALS */}
-                            <View className="space-y-4">
-                                <View className="flex-row items-center gap-2 ml-1">
-                                    <Icon as={Banknote} size={16} className="text-muted-foreground" />
-                                    <Text className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Financials</Text>
-                                </View>
-
-                                {/* Weight & Price */}
-                                <View className="flex-row gap-4 px-1">
-                                    <View className="flex-1">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Total Wt (kg)</Text>
-                                        <Controller
-                                            control={form.control}
-                                            name="totalWeight"
-                                            render={({ field: { onChange, value } }) => (
-                                                <Input
-                                                    ref={totalWeightRef}
-                                                    value={value?.toString() || ""}
-                                                    onChangeText={(t) => onChange(parseFloat(t) || 0)}
-                                                    keyboardType="decimal-pad"
-                                                    className={`h-12 bg-muted/40 border-border/50 font-mono text-lg ${hasError("totalWeight") ? "border-destructive/50" : ""}`}
-                                                    returnKeyType="next"
-                                                    onSubmitEditing={() => pricePerKgRef.current?.focus()}
-                                                />
-                                            )}
-                                        />
-                                        {hasError("totalWeight") && <Text className="text-[10px] text-destructive ml-1 mt-1">{getError("totalWeight")}</Text>}
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Price/kg (৳)</Text>
-                                        <Controller
-                                            control={form.control}
-                                            name="pricePerKg"
-                                            render={({ field: { onChange, value } }) => (
-                                                <Input
-                                                    ref={pricePerKgRef}
-                                                    value={value?.toString() || ""}
-                                                    onChangeText={(t) => onChange(parseFloat(t) || 0)}
-                                                    keyboardType="decimal-pad"
-                                                    className={`h-12 bg-muted/40 border-border/50 font-mono text-lg ${hasError("pricePerKg") ? "border-destructive/50" : ""}`}
-                                                    returnKeyType="next"
-                                                    onSubmitEditing={() => cashReceivedRef.current?.focus()}
-                                                />
-                                            )}
-                                        />
-                                        {hasError("pricePerKg") && <Text className="text-[10px] text-destructive ml-1 mt-1">{getError("pricePerKg")}</Text>}
-                                    </View>
-                                </View>
-
-                                <View className="mt-2">
-                                    <SaleMetricsBar avgWeight={avgWeight} totalAmount={totalAmount} />
-                                </View>
-
-                                {/* Payments */}
-                                <View className="flex-row gap-4 px-1 pt-2">
-                                    <View className="flex-1">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Cash Rcvd (৳)</Text>
-                                        <Controller
-                                            control={form.control}
-                                            name="cashReceived"
-                                            render={({ field: { onChange, value } }) => (
-                                                <Input
-                                                    ref={cashReceivedRef}
-                                                    value={value?.toString() || ""}
-                                                    onChangeText={(t) => onChange(parseFloat(t) || 0)}
-                                                    keyboardType="number-pad"
-                                                    className="h-12 bg-muted/40 border-border/50 font-mono text-lg"
-                                                    returnKeyType="next"
-                                                    onSubmitEditing={() => depositReceivedRef.current?.focus()}
-                                                />
-                                            )}
-                                        />
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Deposit (৳)</Text>
-                                        <Controller
-                                            control={form.control}
-                                            name="depositReceived"
-                                            render={({ field: { onChange, value } }) => (
-                                                <Input
-                                                    ref={depositReceivedRef}
-                                                    value={value?.toString() || ""}
-                                                    onChangeText={(t) => onChange(parseFloat(t) || 0)}
-                                                    keyboardType="number-pad"
-                                                    className="h-12 bg-muted/40 border-border/50 font-mono text-lg"
-                                                    returnKeyType="next"
-                                                />
-                                            )}
-                                        />
-                                    </View>
-                                </View>
-
-
-                            </View>
-
-                            <View className="h-[1px] bg-border/50" />
-
-                            {/* SECTION 3: INVENTORY */}
-                            <View className="space-y-4 gap-y-2">
-                                <View className="flex-row items-center gap-2 ml-1">
-                                    <Icon as={Box} size={16} className="text-muted-foreground" />
-                                    <Text className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Feed Inventory</Text>
-                                </View>
-
-                                {remainingBirdsAfterTransaction === 0 && (
-                                    <View className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-2">
-                                        <Text className="text-sm font-bold text-destructive mb-1">Cycle Closing Warning!</Text>
-                                        <Text className="text-xs text-destructive/80">
-                                            This is the last sale. Please enter the TOTAL feed consumed for the ENTIRE cycle.
-                                            This will override previous approximations.
-                                        </Text>
-                                    </View>
-                                )}
-
-                                <FeedFieldArray
-                                    control={form.control}
-                                    fieldArray={feedConsumedArray}
-                                    namePrefix="feedConsumed"
-                                    label={remainingBirdsAfterTransaction === 0 ? "TOTAL Consumed" : "Consumed So Far"}
-                                    description={remainingBirdsAfterTransaction === 0 ? "Total sacks eaten this full cycle." : "Document sacks eaten."}
-                                    onBagsChange={handleFeedAdjustment}
-                                />
-
-                                <View className="h-[1px] bg-border/50 my-2" />
-
-                                <FeedFieldArray
-                                    control={form.control}
-                                    fieldArray={feedStockArray}
-                                    namePrefix="feedStock"
-                                    label="Leftover Feed Return"
-                                    description="Inventory returned back to main stock."
-                                    showRemoveOnSingle
-                                />
-                            </View>
-
-                            {/* SECTION 4: CONSTANTS (ONLY IF CLOSING) */}
-                            {remainingBirdsAfterTransaction === 0 && (
-                                <View className="space-y-4 gap-y-2">
-                                    <View className="flex-row items-center gap-2 ml-1 mb-2">
-                                        <Icon as={Settings} size={16} className="text-muted-foreground" />
-                                        <Text className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Cycle Constants</Text>
-                                    </View>
-                                    <View className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-3">
-                                        <View className="grid grid-cols-3 gap-2">
-                                            <View className="flex-1">
-                                                <Text className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Rec. Price</Text>
-                                                <Controller
-                                                    control={form.control}
-                                                    name="recoveryPrice"
-                                                    render={({ field: { onChange, value } }) => (
-                                                        <Input
-                                                            ref={recoveryPriceRef}
-                                                            value={value?.toString() || ""}
-                                                            onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
-                                                            keyboardType="decimal-pad"
-                                                            placeholder="141"
-                                                            className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
-                                                        />
+                                                            <Icon as={CalendarIcon} size={16} className="text-muted-foreground" />
+                                                        </Pressable>
                                                     )}
                                                 />
+                                                {showDatePicker && (
+                                                    <DateTimePicker
+                                                        value={form.getValues('saleDate') ? new Date(form.getValues('saleDate')) : new Date()}
+                                                        mode="date"
+                                                        display="default"
+                                                        onChange={onSaleDateChange}
+                                                        maximumDate={new Date()}
+                                                        minimumDate={startDate ? new Date(startDate) : undefined}
+                                                    />
+                                                )}
+                                                {hasError("saleDate") && <Text className="text-[10px] text-destructive ml-1 mt-1">{getError("saleDate")}</Text>}
                                             </View>
                                             <View className="flex-1">
-                                                <Text className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Feed/Bag</Text>
+                                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Farmer Mobile</Text>
                                                 <Controller
                                                     control={form.control}
-                                                    name="feedPricePerBag"
+                                                    name="farmerMobile"
                                                     render={({ field: { onChange, value } }) => (
                                                         <Input
-                                                            ref={feedPriceRef}
-                                                            value={value?.toString() || ""}
-                                                            onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
-                                                            keyboardType="decimal-pad"
-                                                            placeholder="3220"
-                                                            className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
-                                                        />
-                                                    )}
-                                                />
-                                            </View>
-                                            <View className="flex-1">
-                                                <Text className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">DOC/Bird</Text>
-                                                <Controller
-                                                    control={form.control}
-                                                    name="docPricePerBird"
-                                                    render={({ field: { onChange, value } }) => (
-                                                        <Input
-                                                            ref={docPriceRef}
-                                                            value={value?.toString() || ""}
-                                                            onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
-                                                            keyboardType="decimal-pad"
-                                                            placeholder="41.5"
-                                                            className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
+                                                            ref={farmerMobileRef}
+                                                            value={value}
+                                                            onChangeText={onChange}
+                                                            placeholder="01XXXXXXXXX"
+                                                            keyboardType="phone-pad"
+                                                            className="h-12 bg-muted/40 border-border/50 text-base"
+                                                            returnKeyType="next"
+                                                            onSubmitEditing={() => locationRef.current?.focus()}
                                                         />
                                                     )}
                                                 />
                                             </View>
                                         </View>
-                                    </View>
-                                </View>
-                            )}
-                        </ScrollView>
 
-                        {/* Sticky Footer */}
-                        <View className="p-4 bg-card border-t border-border/50 gap-3">
-                            {isStockInsufficient && (
-                                <View className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-2 mb-2">
-                                    <View className="flex-row items-center gap-2">
-                                        <Icon as={AlertTriangle} size={16} className="text-amber-600" />
-                                        <Text className="text-sm font-bold text-amber-700 dark:text-amber-400">Insufficient Stock</Text>
+                                        {/* Official DOC Input Date */}
+                                        <View className="flex-row gap-4 px-1">
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Official DOC Date (Optional)</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="officialInputDate"
+                                                    render={({ field: { value } }) => (
+                                                        <Pressable
+                                                            onPress={() => setShowOfficialDatePicker(true)}
+                                                            className={`h-12 bg-muted/40 border border-border/50 rounded-md px-3 flex-row items-center justify-between active:bg-muted/50`}
+                                                        >
+                                                            <Text className="text-sm text-foreground">
+                                                                {value ? format(new Date(value), "PPP") : "Select date"}
+                                                            </Text>
+                                                            <Icon as={CalendarIcon} size={16} className="text-muted-foreground" />
+                                                        </Pressable>
+                                                    )}
+                                                />
+                                                {showOfficialDatePicker && (
+                                                    <DateTimePicker
+                                                        value={form.getValues('officialInputDate') ? new Date(form.getValues('officialInputDate')!) : new Date()}
+                                                        mode="date"
+                                                        display="default"
+                                                        onChange={onOfficialDateChange}
+                                                        maximumDate={new Date()}
+                                                    />
+                                                )}
+                                            </View>
+                                        </View>
+
+                                        {/* Location & Party */}
+                                        <View className="flex-row gap-4 px-1">
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Sale Location</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="location"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={locationRef}
+                                                            value={value}
+                                                            onChangeText={onChange}
+                                                            placeholder="e.g. Bhaluka"
+                                                            className={`h-12 bg-muted/40 border-border/50 text-base ${hasError("location") ? "border-destructive/50" : ""}`}
+                                                            returnKeyType="next"
+                                                            onSubmitEditing={() => partyRef.current?.focus()}
+                                                        />
+                                                    )}
+                                                />
+                                            </View>
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Party Name</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="party"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={partyRef}
+                                                            value={value}
+                                                            onChangeText={onChange}
+                                                            placeholder="e.g. Habibur"
+                                                            className="h-12 bg-muted/40 border-border/50 text-base"
+                                                            returnKeyType="next"
+                                                            onSubmitEditing={() => birdsSoldRef.current?.focus()}
+                                                        />
+                                                    )}
+                                                />
+                                            </View>
+                                        </View>
+
+                                        {/* Birds Sale Details */}
+                                        <View className="flex-row gap-3 px-1 mt-2">
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">House Birds</Text>
+                                                <View className="h-12 bg-muted/40 border border-border/50 rounded-xl items-center justify-center">
+                                                    <Text className="font-mono font-bold text-xl text-foreground">{birdsInHouse}</Text>
+                                                </View>
+                                            </View>
+
+                                            <View className="flex-[1.5]">
+                                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Birds Sold</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="birdsSold"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={birdsSoldRef}
+                                                            value={value?.toString() || ""}
+                                                            onChangeText={(t) => onChange(parseInt(t, 10) || 0)}
+                                                            keyboardType="number-pad"
+                                                            className={`h-12 bg-muted/40 border-border/50 font-mono text-xl text-center ${hasError("birdsSold") ? "border-destructive/50" : ""}`}
+                                                            returnKeyType="next"
+                                                            onSubmitEditing={() => mortalityChangeRef.current?.focus()}
+                                                        />
+                                                    )}
+                                                />
+                                            </View>
+
+                                            <View className="flex-[1.5]">
+                                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Total Mortality</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="mortalityChange"
+                                                    render={({ field: { onChange, value } }) => {
+                                                        const currentTotal = mortality + (value || 0);
+                                                        const [localText, setLocalText] = useState(currentTotal.toString());
+
+                                                        // Sync local text when form value changes externally
+                                                        useEffect(() => {
+                                                            const total = mortality + (value || 0);
+                                                            setLocalText(total.toString());
+                                                        }, [mortality]);
+
+                                                        return (
+                                                            <View>
+                                                                <Input
+                                                                    ref={mortalityChangeRef}
+                                                                    value={localText}
+                                                                    onChangeText={(t) => {
+                                                                        setLocalText(t);
+                                                                        if (t === "") {
+                                                                            // Allow empty, treat as 0 delta temporarily
+                                                                            return;
+                                                                        }
+                                                                        const newTotal = parseInt(t, 10);
+                                                                        if (!isNaN(newTotal)) {
+                                                                            const delta = newTotal - mortality;
+                                                                            onChange(delta);
+                                                                        }
+                                                                    }}
+                                                                    onBlur={() => {
+                                                                        // On blur, if empty, reset to current mortality
+                                                                        if (localText === "") {
+                                                                            setLocalText(mortality.toString());
+                                                                            onChange(0);
+                                                                        }
+                                                                    }}
+                                                                    keyboardType="number-pad"
+                                                                    placeholder={`Current: ${mortality}`}
+                                                                    className={`h-12 bg-muted/40 border-border/50 font-mono text-xl text-center ${hasError("mortalityChange") ? "border-destructive/50" : ""}`}
+                                                                    returnKeyType="next"
+                                                                    onSubmitEditing={() => totalWeightRef.current?.focus()}
+                                                                />
+                                                                {value !== 0 && (
+                                                                    <Text className={`text-[10px] font-medium mt-1 ml-1 ${value > 0 ? "text-destructive" : "text-amber-600"}`}>
+                                                                        {value > 0 ? `+${value} new deaths` : `${localText == "" ? -mortality : value} correction`}
+                                                                    </Text>
+                                                                )}
+                                                            </View>
+                                                        );
+                                                    }}
+                                                />
+                                            </View>
+                                        </View>
+
+                                        <View className="flex-row items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl mt-1">
+                                            <Icon as={Bird} size={20} className="text-blue-500" />
+                                            <View>
+                                                <Text className="font-bold text-blue-700 dark:text-blue-300">Remaining Birds</Text>
+                                                <Text className="text-xs text-blue-600/80 dark:text-blue-400">After this sale: {remainingBirdsAfterTransaction}</Text>
+                                            </View>
+                                        </View>
                                     </View>
-                                    <Text className="text-xs text-amber-700/80 dark:text-amber-500/80">
-                                        Trying to use {totalBagsNeeded} bags, but main stock only has {mainStock} bags.
-                                    </Text>
+
+                                    <View className="h-[1px] bg-border/50" />
+
+                                    {/* SECTION 2: FINANCIALS */}
+                                    <View className="space-y-4">
+                                        <View className="flex-row items-center gap-2 ml-1">
+                                            <Icon as={Banknote} size={16} className="text-muted-foreground" />
+                                            <Text className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Financials</Text>
+                                        </View>
+
+                                        {/* Weight & Price */}
+                                        <View className="flex-row gap-4 px-1">
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Total Wt (kg)</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="totalWeight"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={totalWeightRef}
+                                                            value={value?.toString() || ""}
+                                                            onChangeText={(t) => onChange(parseFloat(t) || 0)}
+                                                            keyboardType="decimal-pad"
+                                                            className={`h-12 bg-muted/40 border-border/50 font-mono text-lg ${hasError("totalWeight") ? "border-destructive/50" : ""}`}
+                                                            returnKeyType="next"
+                                                            onSubmitEditing={() => pricePerKgRef.current?.focus()}
+                                                        />
+                                                    )}
+                                                />
+                                                {hasError("totalWeight") && <Text className="text-[10px] text-destructive ml-1 mt-1">{getError("totalWeight")}</Text>}
+                                            </View>
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Price/kg (৳)</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="pricePerKg"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={pricePerKgRef}
+                                                            value={value?.toString() || ""}
+                                                            onChangeText={(t) => onChange(parseFloat(t) || 0)}
+                                                            keyboardType="decimal-pad"
+                                                            className={`h-12 bg-muted/40 border-border/50 font-mono text-lg ${hasError("pricePerKg") ? "border-destructive/50" : ""}`}
+                                                            returnKeyType="next"
+                                                            onSubmitEditing={() => cashReceivedRef.current?.focus()}
+                                                        />
+                                                    )}
+                                                />
+                                                {hasError("pricePerKg") && <Text className="text-[10px] text-destructive ml-1 mt-1">{getError("pricePerKg")}</Text>}
+                                            </View>
+                                        </View>
+
+                                        <View className="mt-2">
+                                            <SaleMetricsBar avgWeight={avgWeight} totalAmount={totalAmount} />
+                                        </View>
+
+                                        {/* Payments */}
+                                        <View className="flex-row gap-4 px-1 pt-2">
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Cash Rcvd (৳)</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="cashReceived"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={cashReceivedRef}
+                                                            value={value?.toString() || ""}
+                                                            onChangeText={(t) => onChange(parseFloat(t) || 0)}
+                                                            keyboardType="number-pad"
+                                                            className="h-12 bg-muted/40 border-border/50 font-mono text-lg"
+                                                            returnKeyType="next"
+                                                            onSubmitEditing={() => depositReceivedRef.current?.focus()}
+                                                        />
+                                                    )}
+                                                />
+                                            </View>
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Deposit (৳)</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="depositReceived"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={depositReceivedRef}
+                                                            value={value?.toString() || ""}
+                                                            onChangeText={(t) => onChange(parseFloat(t) || 0)}
+                                                            keyboardType="number-pad"
+                                                            className="h-12 bg-muted/40 border-border/50 font-mono text-lg"
+                                                            returnKeyType="next"
+                                                        />
+                                                    )}
+                                                />
+                                            </View>
+                                        </View>
+
+
+                                    </View>
+
+                                    <View className="h-[1px] bg-border/50" />
+
+                                    {/* SECTION 3: INVENTORY */}
+                                    <View className="space-y-4 gap-y-2">
+                                        <View className="flex-row items-center gap-2 ml-1">
+                                            <Icon as={Box} size={16} className="text-muted-foreground" />
+                                            <Text className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Feed Inventory</Text>
+                                        </View>
+
+                                        {remainingBirdsAfterTransaction === 0 && (
+                                            <View className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-2">
+                                                <Text className="text-sm font-bold text-destructive mb-1">Cycle Closing Warning!</Text>
+                                                <Text className="text-xs text-destructive/80">
+                                                    This is the last sale. Please enter the TOTAL feed consumed for the ENTIRE cycle.
+                                                    This will override previous approximations.
+                                                </Text>
+                                            </View>
+                                        )}
+
+                                        <FeedFieldArray
+                                            control={form.control}
+                                            fieldArray={feedConsumedArray}
+                                            namePrefix="feedConsumed"
+                                            label={remainingBirdsAfterTransaction === 0 ? "TOTAL Consumed" : "Consumed So Far"}
+                                            description={remainingBirdsAfterTransaction === 0 ? "Total sacks eaten this full cycle." : "Document sacks eaten."}
+                                            onBagsChange={handleFeedAdjustment}
+                                        />
+
+                                        <View className="h-[1px] bg-border/50 my-2" />
+
+                                        <FeedFieldArray
+                                            control={form.control}
+                                            fieldArray={feedStockArray}
+                                            namePrefix="feedStock"
+                                            label="Leftover Feed Return"
+                                            description="Inventory returned back to main stock."
+                                            showRemoveOnSingle
+                                        />
+                                    </View>
+
+                                    {/* SECTION 4: CONSTANTS (ONLY IF CLOSING) */}
+                                    {remainingBirdsAfterTransaction === 0 && (
+                                        <View className="space-y-4 gap-y-2">
+                                            <View className="flex-row items-center gap-2 ml-1 mb-2">
+                                                <Icon as={Settings} size={16} className="text-muted-foreground" />
+                                                <Text className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Cycle Constants</Text>
+                                            </View>
+                                            <View className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-3">
+                                                <View className="grid grid-cols-3 gap-2">
+                                                    <View className="flex-1">
+                                                        <Text className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Rec. Price</Text>
+                                                        <Controller
+                                                            control={form.control}
+                                                            name="recoveryPrice"
+                                                            render={({ field: { onChange, value } }) => (
+                                                                <Input
+                                                                    ref={recoveryPriceRef}
+                                                                    value={value?.toString() || ""}
+                                                                    onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                                    keyboardType="decimal-pad"
+                                                                    placeholder="141"
+                                                                    className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
+                                                                />
+                                                            )}
+                                                        />
+                                                    </View>
+                                                    <View className="flex-1">
+                                                        <Text className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Feed/Bag</Text>
+                                                        <Controller
+                                                            control={form.control}
+                                                            name="feedPricePerBag"
+                                                            render={({ field: { onChange, value } }) => (
+                                                                <Input
+                                                                    ref={feedPriceRef}
+                                                                    value={value?.toString() || ""}
+                                                                    onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                                    keyboardType="decimal-pad"
+                                                                    placeholder="3220"
+                                                                    className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
+                                                                />
+                                                            )}
+                                                        />
+                                                    </View>
+                                                    <View className="flex-1">
+                                                        <Text className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">DOC/Bird</Text>
+                                                        <Controller
+                                                            control={form.control}
+                                                            name="docPricePerBird"
+                                                            render={({ field: { onChange, value } }) => (
+                                                                <Input
+                                                                    ref={docPriceRef}
+                                                                    value={value?.toString() || ""}
+                                                                    onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                                    keyboardType="decimal-pad"
+                                                                    placeholder="41.5"
+                                                                    className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
+                                                                />
+                                                            )}
+                                                        />
+                                                    </View>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    )}
+                                </ScrollView>
+
+                                {/* Sticky Footer */}
+                                <View className="p-4 bg-card border-t border-border/50 gap-3">
+                                    {isStockInsufficient && (
+                                        <View className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-2 mb-2">
+                                            <View className="flex-row items-center gap-2">
+                                                <Icon as={AlertTriangle} size={16} className="text-amber-600" />
+                                                <Text className="text-sm font-bold text-amber-700 dark:text-amber-400">Insufficient Stock</Text>
+                                            </View>
+                                            <Text className="text-xs text-amber-700/80 dark:text-amber-500/80">
+                                                Trying to use {totalBagsNeeded} bags, but main stock only has {mainStock} bags.
+                                            </Text>
+                                            <Button
+                                                variant="outline"
+                                                className="h-10 mt-1 border-amber-500/30"
+                                                onPress={() => setShowRestockModal(true)}
+                                            >
+                                                <Text className="font-bold text-amber-700 dark:text-amber-400">Restock Now</Text>
+                                            </Button>
+                                        </View>
+                                    )}
                                     <Button
-                                        variant="outline"
-                                        className="h-10 mt-1 border-amber-500/30"
-                                        onPress={() => setShowRestockModal(true)}
+                                        className={`h-14 rounded-xl flex-row gap-2 shadow-none ${remainingBirdsAfterTransaction === 0 ? 'bg-destructive' : 'bg-primary'}`}
+                                        onPress={remainingBirdsAfterTransaction === 0 ? handlePreview : onSubmit}
+                                        disabled={(remainingBirdsAfterTransaction === 0 ? previewMutation.isPending : mutation.isPending) || isStockInsufficient || isPreviousSalesLoading}
                                     >
-                                        <Text className="font-bold text-amber-700 dark:text-amber-400">Restock Now</Text>
+                                        {remainingBirdsAfterTransaction === 0 ? (
+                                            <>
+                                                <Icon as={ShoppingCart} size={18} className="text-white" />
+                                                <Text className="text-white font-bold">
+                                                    {previewMutation.isPending ? "Calculating..." : "Preview & Close Cycle"}
+                                                </Text>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {mutation.isPending ? (
+                                                    <BirdyLoader size={24} color={"#ffffff"} />
+                                                ) : (
+                                                    <Icon as={Check} size={18} className="text-primary-foreground" />
+                                                )}
+                                                <Text className="text-primary-foreground font-bold">
+                                                    {mutation.isPending ? "Saving..." : "Confirm & Save"}
+                                                </Text>
+                                            </>
+                                        )}
                                     </Button>
                                 </View>
-                            )}
-                            <Button
-                                className={`h-14 rounded-xl flex-row gap-2 shadow-none ${remainingBirdsAfterTransaction === 0 ? 'bg-destructive' : 'bg-primary'}`}
-                                onPress={remainingBirdsAfterTransaction === 0 ? handlePreview : onSubmit}
-                                disabled={(remainingBirdsAfterTransaction === 0 ? previewMutation.isPending : mutation.isPending) || isStockInsufficient}
-                            >
-                                {remainingBirdsAfterTransaction === 0 ? (
-                                    <>
-                                        <Icon as={ShoppingCart} size={18} className="text-white" />
-                                        <Text className="text-white font-bold">
-                                            {previewMutation.isPending ? "Calculating..." : "Preview & Close Cycle"}
-                                        </Text>
-                                    </>
-                                ) : (
-                                    <>
-                                        {mutation.isPending ? (
-                                            <BirdyLoader size={24} color={"#ffffff"} />
-                                        ) : (
-                                            <Icon as={Check} size={18} className="text-primary-foreground" />
-                                        )}
-                                        <Text className="text-primary-foreground font-bold">
-                                            {mutation.isPending ? "Saving..." : "Confirm & Save"}
-                                        </Text>
-                                    </>
-                                )}
-                            </Button>
-                        </View>
+                            </>
+                        )}
                     </View>
                 )}
             </View>

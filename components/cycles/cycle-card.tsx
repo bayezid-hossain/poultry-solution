@@ -7,7 +7,7 @@ import { Bird, CalendarDays, CircleDashed, MoreHorizontal, Pencil, Power, Rewind
 import { useState } from "react";
 import { Pressable, TouchableOpacity, View } from "react-native";
 
-export type CycleAction = 'sell' | 'add_mortality' | 'edit_doc' | 'edit_age' | 'correct_mortality' | 'end_cycle' | 'reopen' | 'backdate' | 'delete';
+export type CycleAction = 'sell' | 'add_mortality' | 'edit_doc' | 'edit_age' | 'edit_official_date' | 'correct_mortality' | 'end_cycle' | 'reopen' | 'backdate' | 'delete';
 
 interface CycleCardProps {
     cycle: {
@@ -27,6 +27,7 @@ interface CycleCardProps {
         farmerId?: string;
         farmerMainStock?: number | null;
         farmerProblematicFeed?: number | null;
+        officialInputDate?: string | Date | null;
     };
     onPress?: () => void;
     onAction?: (action: CycleAction, cycle: any) => void;
@@ -152,12 +153,15 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                 <View className={`flex-row border-y border-border/50 -mx-3 px-3 gap-2 ${isGrouped ? 'py-1.5 mt-0' : 'py-2.5 mt-1'}`}>
 
                     {/* 1. Age */}
-                    <View className="flex-1 justify-center border-r border-border/20 pr-1">
+                    <View className="flex-[1.2] justify-center border-r border-border/20 pr-1">
                         <Text className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight leading-none mb-1">Age</Text>
                         <View className="flex-row items-baseline gap-0.5">
                             <Text className="text-sm font-bold text-foreground leading-none">{cycle.age}</Text>
                             <Text className="text-[9px] font-normal text-muted-foreground">d</Text>
                         </View>
+                        <Text className="text-[8px] text-muted-foreground mt-1 font-medium text-left leading-tight" numberOfLines={2}>
+                            In: {formatDate(cycle.officialInputDate || cycle.createdAt || (cycle as any).startDate)}
+                        </Text>
                     </View>
 
                     {/* 2. DOC */}
@@ -232,6 +236,10 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                             <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('edit_age')}>
                                 <View className="w-8 items-center justify-center mr-3"><Icon as={CalendarDays} size={20} className="text-foreground" /></View>
                                 <Text className="text-base font-medium text-foreground">Edit Age</Text>
+                            </Pressable>
+                            <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50`} onPress={() => handleAction('edit_official_date')}>
+                                <View className="w-8 items-center justify-center mr-3"><Icon as={CalendarDays} size={20} className="text-foreground" /></View>
+                                <Text className="text-base font-medium text-foreground">Edit Official Input Date</Text>
                             </Pressable>
                             <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('correct_mortality')}>
                                 <View className="w-8 items-center justify-center mr-3"><Icon as={Wrench} size={20} className="text-foreground" /></View>

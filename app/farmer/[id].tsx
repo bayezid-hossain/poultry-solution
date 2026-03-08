@@ -748,6 +748,7 @@ export default function FarmerDetailScreen() {
                         birdsSold={selectedCycle.birdsSold || 0}
                         intake={parseFloat(String(selectedCycle.intake || 0))}
                         startDate={selectedCycle.createdAt ? new Date(selectedCycle.createdAt) : new Date()}
+                        officialInputDate={selectedCycle.officialInputDate ? new Date(selectedCycle.officialInputDate) : undefined}
                         open={isSellOpen}
                         onOpenChange={setIsSellOpen}
                         onSuccess={refetchAll}

@@ -97,6 +97,33 @@ export const SaleDetailsContent = ({
             {/* Main Stats Grid */}
             <View className="flex-row gap-4">
                 <View className="flex-1 space-y-4">
+                    {/* NEW DATE DISPLAYS */}
+                    {(() => {
+                        const sDate = sale.saleDate || selectedReport?.saleDate;
+                        const docDate = sale.officialInputDate || sale.cycleContext?.officialInputDate || sale.cycleContext?.createdAt || sale.history?.startDate || sale.cycle?.createdAt;
+
+                        return (
+                            <>
+                                {sDate && (
+                                    <View className="flex-row justify-between items-baseline">
+                                        <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Sale Date</Text>
+                                        <Text className="font-bold text-foreground">
+                                            {new Date(sDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </Text>
+                                    </View>
+                                )}
+                                {docDate && (
+                                    <View className="flex-row justify-between items-baseline mb-1">
+                                        <Text className="text-muted-foreground text-[10px] uppercase tracking-tight font-bold opacity-70">DOC Date</Text>
+                                        <Text className="font-semibold text-muted-foreground opacity-80">
+                                            {new Date(docDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </Text>
+                                    </View>
+                                )}
+                            </>
+                        );
+                    })()}
+
                     {hasEndedCycleData ? (
                         <>
                             <View className="flex-row justify-between items-baseline">

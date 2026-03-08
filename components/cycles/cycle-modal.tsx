@@ -37,12 +37,15 @@ export function CycleModal({
     const [age, setAge] = useState("1");
     const [birdType, setBirdType] = useState("");
     const [hatchDate, setHatchDate] = useState(startOfDay(new Date()));
+    const [officialInputDate, setOfficialInputDate] = useState<Date | undefined>(startOfDay(new Date()));
+    const [isDocDateManuallySet, setIsDocDateManuallySet] = useState(false);
 
     // UI states
     const [isFarmerOpen, setIsFarmerOpen] = useState(false);
     const [isBirdTypeOpen, setIsBirdTypeOpen] = useState(false);
     const [newBirdType, setNewBirdType] = useState("");
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showOfficialDatePicker, setShowOfficialDatePicker] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const router = useRouter();
@@ -66,10 +69,13 @@ export function CycleModal({
             setDoc("");
             setAge("1");
             setHatchDate(startOfDay(new Date()));
+            setOfficialInputDate(startOfDay(new Date()));
+            setIsDocDateManuallySet(false);
             setError(null);
             setIsFarmerOpen(false);
             setIsBirdTypeOpen(false);
             setShowDatePicker(false);
+            setShowOfficialDatePicker(false);
         }
     }, [open, initialFarmer]);
 
@@ -112,10 +118,23 @@ export function CycleModal({
         if (sanitized) {
             const numAge = parseInt(sanitized, 10);
             if (numAge >= 1 && numAge <= 40) {
-                setHatchDate(subDays(startOfDay(new Date()), numAge - 1));
+                const newHatchDate = subDays(startOfDay(new Date()), numAge - 1);
+                setHatchDate(newHatchDate);
+                // If manually set, just clamp. If NOT manually set, strictly follow the hatch date.
+                if (!isDocDateManuallySet) {
+                    setOfficialInputDate(newHatchDate);
+                } else if (officialInputDate && officialInputDate > newHatchDate) {
+                    setOfficialInputDate(newHatchDate);
+                }
             }
         } else {
-            setHatchDate(startOfDay(new Date()));
+            const newHatchDate = startOfDay(new Date());
+            setHatchDate(newHatchDate);
+            if (!isDocDateManuallySet) {
+                setOfficialInputDate(newHatchDate);
+            } else if (officialInputDate && officialInputDate > newHatchDate) {
+                setOfficialInputDate(newHatchDate);
+            }
         }
     };
 
@@ -129,7 +148,23 @@ export function CycleModal({
             // Limit to 1-40
             const clampedDiff = Math.max(0, Math.min(39, diff));
             setAge((clampedDiff + 1).toString());
-            setHatchDate(subDays(today, clampedDiff));
+            const newHatchDate = subDays(today, clampedDiff);
+            setHatchDate(newHatchDate);
+
+            if (!isDocDateManuallySet) {
+                setOfficialInputDate(newHatchDate);
+            } else if (officialInputDate && officialInputDate > newHatchDate) {
+                setOfficialInputDate(newHatchDate);
+            }
+        }
+    };
+
+    const handleOfficialDateChange = (event: any, selectedDate?: Date) => {
+        setShowOfficialDatePicker(false);
+        if (selectedDate) {
+            const pickedDate = startOfDay(selectedDate);
+            setOfficialInputDate(pickedDate > hatchDate ? hatchDate : pickedDate);
+            setIsDocDateManuallySet(true);
         }
     };
 
@@ -163,6 +198,7 @@ export function CycleModal({
             age: numAge,
             birdType: birdType,
             name: farmerName,
+            officialInputDate: officialInputDate ? format(officialInputDate, 'yyyy-MM-dd') : undefined,
         });
     };
 
@@ -330,6 +366,32 @@ export function CycleModal({
                                     maximumDate={startOfDay(new Date())}
                                     minimumDate={subDays(startOfDay(new Date()), 39)}
                                     onChange={handleDateChange}
+                                />
+                            )}
+                        </View>
+                    </View>
+
+                    {/* Official DOC Date */}
+                    <View className="gap-2 z-40">
+                        <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Official DOC Date (Optional)</Text>
+                        <View className="relative">
+                            <Pressable
+                                onPress={() => setShowOfficialDatePicker(true)}
+                                className="h-14 bg-muted/30 border border-border/50 rounded-xl px-4 flex-row items-center justify-between active:bg-muted/50"
+                            >
+                                <Text className={`text-base font-medium ${officialInputDate ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                    {officialInputDate ? format(officialInputDate, "PPP") : "Select a date"}
+                                </Text>
+                                <Icon as={Calendar} size={20} className="text-muted-foreground" />
+                            </Pressable>
+
+                            {showOfficialDatePicker && (
+                                <DateTimePicker
+                                    value={officialInputDate || hatchDate}
+                                    mode="date"
+                                    display="default"
+                                    maximumDate={hatchDate}
+                                    onChange={handleOfficialDateChange}
                                 />
                             )}
                         </View>

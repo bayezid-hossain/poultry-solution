@@ -1,16 +1,16 @@
-import { CycleRowAccordion } from "@/components/cycles/cycle-row-accordion";
+import { SaleEventCard } from "@/components/cycles/sale-event-card";
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
 import { ProBlocker } from "@/components/pro-blocker";
 import { ScreenHeader } from "@/components/screen-header";
-import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
-import { useFocusEffect, useRouter } from "expo-router";
-import { ChevronDown, ChevronUp, FileText, Search, User, X } from "lucide-react-native";
+import { format } from "date-fns";
+import { useFocusEffect } from "expo-router";
+import { Calendar, ChevronDown, ChevronUp, FileText, Search, X } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
 
@@ -47,56 +47,66 @@ export default function SalesScreen() {
         }, [membership?.orgId, refetch])
     );
 
-    const groupedData = useMemo(() => {
-        if (!recentSales) return [];
+    const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
 
-        const farmers: Record<string, { id: string; name: string; cycles: Record<string, any> }> = {};
+    const isExpanded = (dateStr: string, index: number) => {
+        if (expandedDates[dateStr] !== undefined) return expandedDates[dateStr];
+        return index === 0;
+    };
+
+    const toggleDate = (dateStr: string, index: number) => {
+        setExpandedDates(prev => ({
+            ...prev,
+            [dateStr]: prev[dateStr] !== undefined ? !prev[dateStr] : !(index === 0)
+        }));
+    };
+
+    const { groupedData, latestSaleIds } = useMemo(() => {
+        if (!recentSales) return { groupedData: [], latestSaleIds: new Set() };
+
+        const dates: Record<string, { dateStr: string; dateObj: Date; sales: any[] }> = {};
+        const cycleLatestMap = new Map();
 
         recentSales.forEach((sale: any) => {
-            const fId = sale.cycle?.farmer?.id || sale.history?.farmer?.id || "unknown";
-            const fName = sale.farmerName || sale.cycle?.farmer?.name || sale.history?.farmer?.name || "Unknown Farmer";
-
-            if (!farmers[fId]) {
-                farmers[fId] = { id: fId, name: fName, cycles: {} };
-            }
-
+            // Find latest for each cycle
             const cKey = sale.cycleId || sale.historyId || "unknown";
-            const cName = sale.cycleName || "Unknown Cycle";
-
-            if (!farmers[fId].cycles[cKey]) {
-                farmers[fId].cycles[cKey] = {
-                    id: cKey,
-                    name: cName,
-                    sales: [sale],
-                    doc: sale.cycleContext?.doc || Number(sale.cycle?.doc) || 0,
-                    age: sale.cycleContext?.age || 0,
-                    totalSold: sale.cycleContext?.cumulativeBirdsSold || sale.birdsSold || 0,
-                    isEnded: !!sale.historyId
-                };
-            } else {
-                farmers[fId].cycles[cKey].sales.push(sale);
-                farmers[fId].cycles[cKey].totalSold = Math.max(
-                    farmers[fId].cycles[cKey].totalSold,
-                    sale.cycleContext?.cumulativeBirdsSold || 0
-                );
+            const sTime = new Date(sale.createdAt || sale.saleDate).getTime();
+            const current = cycleLatestMap.get(cKey);
+            if (!current || sTime > current.time) {
+                cycleLatestMap.set(cKey, { id: sale.id, time: sTime });
             }
+
+            // Group by Date
+            const dObj = new Date(sale.saleDate || sale.createdAt);
+            const dateStr = format(dObj, "yyyy-MM-dd");
+
+            if (!dates[dateStr]) {
+                dates[dateStr] = { dateStr, dateObj: dObj, sales: [] };
+            }
+            dates[dateStr].sales.push(sale);
         });
 
-        return Object.values(farmers).sort((a, b) => {
-            const getLatestSaleTime = (farmerCycles: Record<string, any>) => {
-                let maxTime = 0;
-                Object.values(farmerCycles).forEach((cycle) => {
-                    cycle.sales.forEach((sale: any) => {
-                        const t = new Date(sale.createdAt || sale.saleDate).getTime();
-                        if (t > maxTime) maxTime = t;
-                    });
-                });
-                return maxTime;
-            };
+        const latestSet = new Set(Array.from(cycleLatestMap.values()).map((v: any) => v.id));
 
-            return getLatestSaleTime(b.cycles) - getLatestSaleTime(a.cycles);
+        const sortedGroups = Object.values(dates).sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
+
+        // Sort sales inside each group
+        sortedGroups.forEach(group => {
+            group.sales.sort((a: any, b: any) => new Date(b.createdAt || b.saleDate).getTime() - new Date(a.createdAt || a.saleDate).getTime());
         });
+
+        return { groupedData: sortedGroups, latestSaleIds: latestSet };
     }, [recentSales]);
+
+    const stickyIndices = useMemo(() => {
+        const indices: number[] = [];
+        let currentIndex = 0;
+        groupedData.forEach((g, i) => {
+            indices.push(currentIndex);
+            currentIndex += isExpanded(g.dateStr, i) && g.sales.length > 0 ? 2 : 1;
+        });
+        return indices;
+    }, [groupedData, expandedDates]);
 
     if (!membership?.isPro) {
         return (
@@ -158,21 +168,54 @@ export default function SalesScreen() {
                     {refreshing && (
                         <LoadingState fullPage title="Synchronizing" description="Fetching latest sales..." />
                     )}
-                    <ScrollView keyboardShouldPersistTaps="handled"
-                        contentContainerClassName="p-4 pb-20 gap-4"
+                    <ScrollView
+                        keyboardShouldPersistTaps="handled"
+                        contentContainerClassName="p-4 pb-20"
                         className="flex-1"
                         refreshControl={
                             <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
                         }
+                        stickyHeaderIndices={stickyIndices}
                     >
                         {groupedData.length > 0 ? (
-                            groupedData.map((farmerGroup) => (
-                                <FarmerSalesAccordion
-                                    key={farmerGroup.id}
-                                    farmer={farmerGroup}
-                                    onRefresh={refetch}
-                                />
-                            ))
+                            groupedData.flatMap((g, i) => {
+                                const elements = [];
+                                // The Header
+                                elements.push(
+                                    <View key={`header-${g.dateStr}`} className="bg-background pt-2 pb-1" style={{ zIndex: 100, elevation: 10 }}>
+                                        <TouchableOpacity
+                                            activeOpacity={0.7}
+                                            onPress={() => toggleDate(g.dateStr, i)}
+                                            className="flex-row items-center justify-between px-3 py-3 bg-card border border-border/50 rounded-lg shadow-sm"
+                                        >
+                                            <View className="flex-row items-center gap-2">
+                                                <Icon as={Calendar} size={18} className="text-muted-foreground" />
+                                                <Text className="text-sm font-bold text-foreground uppercase tracking-widest">{format(g.dateObj, "dd MMM yyyy")}</Text>
+                                            </View>
+                                            <Icon as={isExpanded(g.dateStr, i) ? ChevronUp : ChevronDown} size={18} className="text-muted-foreground" />
+                                        </TouchableOpacity>
+                                    </View>
+                                );
+
+                                // The Content
+                                if (isExpanded(g.dateStr, i) && g.sales.length > 0) {
+                                    elements.push(
+                                        <View key={`content-${g.dateStr}`} className="gap-3 mt-2 mb-6">
+                                            {g.sales.map((item: any) => (
+                                                <View key={item.id}>
+                                                    <SaleEventCard
+                                                        sale={item}
+                                                        isLatest={latestSaleIds.has(item.id)}
+                                                        showFarmerName={true}
+                                                    />
+                                                </View>
+                                            ))}
+                                        </View>
+                                    );
+                                }
+
+                                return elements;
+                            })
                         ) : (
                             <View className="flex-1 items-center justify-center py-20 opacity-50">
                                 <Icon as={FileText} size={48} className="text-muted-foreground mb-4" />
@@ -183,57 +226,6 @@ export default function SalesScreen() {
                 </>
             )}
         </View>
-    );
-}
-
-function FarmerSalesAccordion({ farmer, onRefresh }: { farmer: any, onRefresh: () => void }) {
-    const router = useRouter();
-    const [isOpen, setIsOpen] = useState(true);
-    const cycleList = Object.values(farmer.cycles);
-
-    const sortedCycleList = [...cycleList].sort((a: any, b: any) => {
-        const getLatestTime = (sales: any[]) => {
-            return Math.max(...sales.map(s => new Date(s.createdAt || s.saleDate).getTime()));
-        };
-        return getLatestTime(b.sales) - getLatestTime(a.sales);
-    });
-
-    return (
-        <Card className="bg-card border-border/40 rounded-lg overflow-hidden">
-            <TouchableOpacity
-                activeOpacity={0.7}
-                className="p-3 flex-row items-center justify-between active:bg-muted/30 border-b border-border/10"
-                onPress={() => setIsOpen(!isOpen)}
-            >
-                <View className="flex-row items-center gap-3">
-                    <View className="h-10 w-10 rounded-full bg-muted items-center justify-center">
-                        <Icon as={User} size={20} className="text-foreground/70" />
-                    </View>
-                    <View>
-
-                        <Text className="text-sm font-bold text-foreground uppercase tracking-tight active:text-primary" onPress={(e) => {
-                            e.stopPropagation();
-                            router.push(`/farmer/${farmer.id}` as any);
-                        }}>{farmer.name}</Text>
-                        <Text className="text-xs text-muted-foreground font-medium">{cycleList.length} Cycles</Text>
-                    </View>
-                </View>
-                <Icon as={isOpen ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
-            </TouchableOpacity>
-
-            {isOpen && (
-                <View className="pb-1">
-                    {sortedCycleList.map((cycle: any, index: number) => (
-                        <CycleRowAccordion
-                            key={cycle.id}
-                            cycle={cycle}
-                            isLast={index === sortedCycleList.length - 1}
-                            onRefresh={onRefresh}
-                        />
-                    ))}
-                </View>
-            )}
-        </Card>
     );
 }
 

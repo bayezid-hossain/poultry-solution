@@ -611,6 +611,7 @@ export default function CycleDetailsScreen() {
                         birdsSold={selectedActionCycle?.birdsSold || cycle.birdsSold || 0}
                         intake={Number(selectedActionCycle?.intake || cycle.intake || 0)}
                         startDate={new Date(selectedActionCycle?.startDate || cycle.startDate)}
+                        officialInputDate={selectedActionCycle?.officialInputDate ? new Date(selectedActionCycle.officialInputDate) : (cycle.officialInputDate ? new Date(cycle.officialInputDate) : undefined)}
                     />
                 </>
             )}

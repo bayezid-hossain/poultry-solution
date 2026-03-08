@@ -72,12 +72,16 @@ export const generateReportText = (sale: any, report: any, isLatest: boolean): s
     const previousSold = sale.houseBirds - sale.remainingBirds - birdsSold - totalMortality;
     const ageText = `Age: ${saleAge} days`;
 
-    return `Date: ${format(new Date(sale.saleDate), "dd/MM/yyyy")}
+    const officialInputDate = sale.cycleContext?.officialInputDate || sale.cycleContext?.createdAt || sale.history?.startDate || sale.cycle?.createdAt;
+    const docInputDateStr = officialInputDate ? format(new Date(officialInputDate), "dd MMM yyyy") : "N/A";
+
+    return `Date: ${format(new Date(sale.saleDate), "dd MMM yyyy")}
 
 Farmer: ${sale.farmerName || "N/A"}
 Location: ${sale.location || "N/A"}
 ${sale.cycleContext?.birdType ? `\nBird Type: ${sale.cycleContext?.birdType}` : ""}
-${sale.houseBirds ? `${sale.cycleContext?.birdType ? "" : "\n"}House bird : ${sale.houseBirds}pcs` : ""}
+DOC Placement Date: ${docInputDateStr}
+${sale.houseBirds ? `House bird : ${sale.houseBirds}pcs` : ""}
 ${previousSold > 0 ? `Previously Sold: ${previousSold}pcs\n` : ""}Today's Sale : ${birdsSold}pcs
 Total Mortality: ${totalMortality} pcs
 ${(!isEnded || !isLatest) ? `\nRemaining Birds: ${sale.remainingBirds ?? 0} pcs` : ""}
@@ -104,9 +108,10 @@ ${!isEnded || !isLatest ? "\n--- Sale not complete ---" : ""}`;
 interface SaleEventCardProps {
     sale: any;
     isLatest?: boolean;
+    showFarmerName?: boolean;
 }
 
-export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
+export function SaleEventCard({ sale, isLatest = false, showFarmerName = false }: SaleEventCardProps) {
     const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
     const [showVersionPicker, setShowVersionPicker] = useState(false);
@@ -157,6 +162,7 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
                 utils.officer.sales.getSaleEvents.invalidate(),
                 utils.officer.sales.getRecentSales.invalidate(),
                 utils.officer.cycles.getDetails.invalidate(),
+                utils.officer.cycles.listActive.invalidate(),
                 utils.officer.cycles.listPast.invalidate(),
                 utils.officer.farmers.getDetails.invalidate(),
             ]);
@@ -198,11 +204,13 @@ export function SaleEventCard({ sale, isLatest = false }: SaleEventCardProps) {
         <Card className="mb-4 overflow-hidden border-border/50">
             <CardContent className="p-0">
                 {/* Header */}
-                <View className="px-4 py-3 bg-muted/30 border-b border-border/50 flex-row items-center justify-between">
-                    <View>
-                        <View className="flex-row items-center gap-2 mb-1">
-                            <Text className="font-bold text-base">
-                                {format(new Date(sale.saleDate), "dd MMM yyyy")}
+                <View className="gap-x-2 px-4 py-3 bg-muted/30 border-b border-border/50 flex-row items-start justify-between">
+                    <View className="flex-1 items-start justify-start gap-x-4">
+                        <View className="flex-row items-start justify-start gap-2 mb-1">
+                            <Text className="flex max-w-[85%] font-bold text-base flex-shrink " numberOfLines={2}>
+                                {showFarmerName
+                                    ? (sale.farmerName || sale.cycle?.farmer?.name || sale.history?.farmer?.name || "Unknown Farmer")
+                                    : format(new Date(sale.saleDate), "dd MMM yyyy")}
                             </Text>
                             {isLatest && (
                                 <Badge variant="outline" className="border-emerald-500 bg-emerald-500/10 py-0 h-5 px-1.5">

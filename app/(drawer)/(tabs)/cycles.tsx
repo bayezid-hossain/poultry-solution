@@ -7,6 +7,7 @@ import { CorrectMortalityModal } from "@/components/cycles/correct-mortality-mod
 import { CycleAction, CycleCard } from "@/components/cycles/cycle-card";
 import { CycleModal } from "@/components/cycles/cycle-modal";
 import { DeleteCycleModal } from "@/components/cycles/delete-cycle-modal";
+import { EditOfficialDateModal } from "@/components/cycles/edit-official-date-modal";
 import { EndCycleModal } from "@/components/cycles/end-cycle-modal";
 import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
 import { SellModal } from "@/components/cycles/sell-modal";
@@ -51,6 +52,7 @@ export default function CyclesScreen() {
     const [isCorrectMortalityOpen, setIsCorrectMortalityOpen] = useState(false);
     const [isEndCycleOpen, setIsEndCycleOpen] = useState(false);
     const [isBackdateOpen, setIsBackdateOpen] = useState(false);
+    const [isEditOfficialDateOpen, setIsEditOfficialDateOpen] = useState(false);
 
     // Group Layout Action Menu
     const [isGroupMenuOpen, setIsGroupMenuOpen] = useState(false);
@@ -75,6 +77,7 @@ export default function CyclesScreen() {
             case 'edit_doc': setIsEditDocOpen(true); break;
             case 'edit_age': setIsEditAgeOpen(true); break;
             case 'correct_mortality': setIsCorrectMortalityOpen(true); break;
+            case 'edit_official_date': setIsEditOfficialDateOpen(true); break;
             case 'end_cycle': setIsEndCycleOpen(true); break;
             case 'reopen': setIsReopenModalOpen(true); break;
             case 'backdate': setIsBackdateOpen(true); break;
@@ -425,6 +428,7 @@ export default function CyclesScreen() {
                             birdsSold={selectedCycle.birdsSold || 0}
                             intake={parseFloat(String(selectedCycle.intake || 0))}
                             startDate={selectedCycle.createdAt ? new Date(selectedCycle.createdAt) : new Date()}
+                            officialInputDate={selectedCycle.officialInputDate ? new Date(selectedCycle.officialInputDate) : undefined}
                             open={isSellOpen}
                             onOpenChange={setIsSellOpen}
                             onSuccess={activeQuery.refetch}
@@ -452,6 +456,14 @@ export default function CyclesScreen() {
                             currentAge={selectedCycle.age}
                             open={isEditAgeOpen}
                             onOpenChange={setIsEditAgeOpen}
+                            onSuccess={activeQuery.refetch}
+                        />
+
+                        <EditOfficialDateModal
+                            cycleId={selectedCycle.id}
+                            currentDate={selectedCycle.officialInputDate || selectedCycle.createdAt}
+                            open={isEditOfficialDateOpen}
+                            onOpenChange={setIsEditOfficialDateOpen}
                             onSuccess={activeQuery.refetch}
                         />
 
@@ -563,6 +575,10 @@ export default function CyclesScreen() {
                                         <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${(groupMenuCycle?.birdsSold || 0) > 0 ? 'opacity-50' : ''}`} onPress={() => { if ((groupMenuCycle?.birdsSold || 0) === 0) { setIsGroupMenuOpen(false); handleCycleAction('edit_age', groupMenuCycle); } }}>
                                             <View className="w-8 items-center justify-center mr-3"><Icon as={Activity} size={20} className="text-foreground" /></View>
                                             <Text className="text-base font-medium text-foreground">Edit Age</Text>
+                                        </Pressable>
+                                        <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50`} onPress={() => { setIsGroupMenuOpen(false); handleCycleAction('edit_official_date', groupMenuCycle); }}>
+                                            <View className="w-8 items-center justify-center mr-3"><Icon as={Activity} size={20} className="text-foreground" /></View>
+                                            <Text className="text-base font-medium text-foreground">Edit Official Input Date</Text>
                                         </Pressable>
                                         <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${(groupMenuCycle?.birdsSold || 0) > 0 ? 'opacity-50' : ''}`} onPress={() => { if ((groupMenuCycle?.birdsSold || 0) === 0) { setIsGroupMenuOpen(false); handleCycleAction('correct_mortality', groupMenuCycle); } }}>
                                             <View className="w-8 items-center justify-center mr-3"><Icon as={Pencil} size={20} className="text-foreground" /></View>
