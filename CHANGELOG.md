@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.32] - 2026-03-08
+
+### Fix
+- Sales group by date
+
+### Added
+- DOC input date added
+
 ## [v1.0.29] - 2026-03-05
 
 ### Added
