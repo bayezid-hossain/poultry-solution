@@ -509,16 +509,7 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false, 
                                 selectedReport={selectedReport}
                             />
                         </View>
-                        {isSwitchingVersion && (
-                            <View className="absolute inset-0 items-center justify-center z-10 bg-background/40" pointerEvents="none">
-                                <View className="bg-card px-5 py-3 rounded-2xl flex-row items-center justify-center gap-3 border border-border/50 shadow-xl">
-                                    <View className="bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/20">
-                                        <BirdyLoader size={16} color="#10b981" />
-                                    </View>
-                                    <Text className="text-[11px] font-black uppercase tracking-widest text-foreground/80 mt-0.5">Switching Version</Text>
-                                </View>
-                            </View>
-                        )}
+
                     </View>
                 )}
 
