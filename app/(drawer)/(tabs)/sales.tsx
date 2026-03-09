@@ -247,7 +247,7 @@ export default function SalesScreen() {
                                 </View>
                             </View>
                         }
-                        renderSectionHeader={({ section: { title, group, index } }) => (
+                        renderSectionHeader={({ section: { title, dateObj, index } }) => (
                             <View className="bg-background pt-1.5 pb-1" pointerEvents="box-none" style={{ zIndex: 10 }}>
                                 <Pressable
                                     onPress={() => toggleDate(title, index)}
@@ -261,7 +261,7 @@ export default function SalesScreen() {
                                         <View className="flex-row items-center gap-2">
                                             <Icon as={Calendar} size={16} className="text-muted-foreground" />
                                             <Text className="text-xs font-bold text-foreground uppercase tracking-widest">
-                                                {format(group.dateObj, "dd MMM yyyy")}
+                                                {format(dateObj, "dd MMM yyyy")}
                                             </Text>
                                         </View>
                                         <Icon as={isExpanded(title, index) ? ChevronUp : ChevronDown} size={18} className="text-muted-foreground" />
