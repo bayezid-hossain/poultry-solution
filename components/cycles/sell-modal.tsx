@@ -295,6 +295,7 @@ export const SellModal = ({
                 recoveryPrice: values.recoveryPrice,
                 feedPricePerBag: values.feedPricePerBag,
                 docPricePerBird: values.docPricePerBird,
+                officialInputDate: values.officialInputDate ? new Date(values.officialInputDate) : undefined,
             });
         } else {
             toast.error("Please fix form errors before continuing");
@@ -347,6 +348,7 @@ export const SellModal = ({
             recoveryPrice: values.recoveryPrice,
             feedPricePerBag: values.feedPricePerBag,
             docPricePerBird: values.docPricePerBird,
+            officialInputDate: values.officialInputDate ? new Date(values.officialInputDate) : undefined,
         });
     });
 
@@ -472,7 +474,7 @@ export const SellModal = ({
                                 displayAvgWeight={previewData.avgWeight}
                                 displayPricePerKg={(previewData.pricePerKg || 0).toFixed(2)}
                                 displayTotalAmount={previewData.totalAmount}
-                                displayMortality={previewData.mortalityChange}
+                                displayMortality={previewData.totalMortality}
                             />
                             <View className="h-20" />
                         </ScrollView>
@@ -974,25 +976,19 @@ export const SellModal = ({
                                     )}
                                     <Button
                                         className={`h-14 rounded-xl flex-row gap-2 shadow-none ${remainingBirdsAfterTransaction === 0 ? 'bg-destructive' : 'bg-primary'}`}
-                                        onPress={remainingBirdsAfterTransaction === 0 ? handlePreview : onSubmit}
-                                        disabled={isSubmitting || (remainingBirdsAfterTransaction === 0 ? previewMutation.isPending : mutation.isPending) || isStockInsufficient || isPreviousSalesLoading}
+                                        onPress={handlePreview}
+                                        disabled={isSubmitting || previewMutation.isPending || mutation.isPending || isStockInsufficient || isPreviousSalesLoading}
                                     >
-                                        {remainingBirdsAfterTransaction === 0 ? (
+                                        {previewMutation.isPending ? (
                                             <>
-                                                <Icon as={ShoppingCart} size={18} className="text-white" />
-                                                <Text className="text-white font-bold">
-                                                    {previewMutation.isPending ? "Calculating..." : "Preview & Close Cycle"}
-                                                </Text>
+                                                <BirdyLoader size={24} color={"#ffffff"} />
+                                                <Text className="text-white font-bold">Calculating...</Text>
                                             </>
                                         ) : (
                                             <>
-                                                {(isSubmitting || mutation.isPending) ? (
-                                                    <BirdyLoader size={24} color={"#ffffff"} />
-                                                ) : (
-                                                    <Icon as={Check} size={18} className="text-primary-foreground" />
-                                                )}
-                                                <Text className="text-primary-foreground font-bold">
-                                                    {(isSubmitting || mutation.isPending) ? "Saving..." : "Confirm & Save"}
+                                                <Icon as={ShoppingCart} size={18} className="text-white" />
+                                                <Text className="text-white font-bold">
+                                                    {remainingBirdsAfterTransaction === 0 ? "Preview & Close Cycle" : "Preview Sale"}
                                                 </Text>
                                             </>
                                         )}

@@ -15,6 +15,7 @@ import { z } from "zod";
 import { ConfirmModal } from "./confirm-modal";
 import { EditSaleAgeModal } from "./edit-sale-age-modal";
 import { SaleDetailsContent } from "./sale-details-content";
+import { SaleDiffModal } from "./sale-diff-modal";
 import { FarmerInfoHeader, FeedFieldArray, SaleMetricsBar } from "./sale-form-sections";
 
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -77,6 +78,8 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
     const [previewData, setPreviewData] = useState<any | null>(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [showEditAge, setShowEditAge] = useState(false);
+    const [showDateChangeWarning, setShowDateChangeWarning] = useState(false);
+    const [showDiffModal, setShowDiffModal] = useState(false);
 
     // Priority: explicit officialInputDate → cycle start date (startDate for history, createdAt for active)
     // cycleContext is canonical (backend-computed), with direct relations as defensive fallbacks
@@ -285,28 +288,13 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
             feedPricePerBag: values.feedPricePerBag,
             docPricePerBird: values.docPricePerBird,
             saleAge: values.saleAge,
+            officialInputDate: values.officialInputDate ? new Date(values.officialInputDate) : undefined,
         });
     };
 
     const updateOfficialDateMutation = trpc.officer.cycles.updateOfficialInputDate.useMutation();
 
     const onSubmit = async (values: FormValues) => {
-        if (values.officialInputDate) {
-            const currentFormatted = saleEvent.cycleContext?.officialInputDate
-                ? format(new Date(saleEvent.cycleContext.officialInputDate), "yyyy-MM-dd")
-                : (saleEvent.cycleContext?.createdAt ? format(new Date(saleEvent.cycleContext.createdAt), "yyyy-MM-dd") : undefined);
-            if (values.officialInputDate !== currentFormatted) {
-                try {
-                    await updateOfficialDateMutation.mutateAsync({
-                        id: saleEvent.cycleId || saleEvent.historyId || "",
-                        officialInputDate: new Date(values.officialInputDate),
-                    });
-                } catch (e) {
-                    toast.error("Failed to update official input date");
-                }
-            }
-        }
-
         const saleDateWithTime = new Date(values.saleDate);
         const now = new Date();
         saleDateWithTime.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
@@ -347,16 +335,47 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
     const handleConfirmClick = () => {
         form.handleSubmit((values: any) => {
             const v = values as FormValues;
-            if (saleEvent.historyId && remainingBirdsAfterAdjustment > 0) {
-                setShowConfirm(true);
+            // Check if sale date changed (compare against the version's own sale date, not just the parent event)
+            const baselineSaleDate = latestReport?.saleDate || saleEvent.saleDate;
+            const originalDate = baselineSaleDate ? format(new Date(baselineSaleDate), "yyyy-MM-dd") : "";
+            if (v.saleDate !== originalDate) {
+                setShowDateChangeWarning(true);
                 return;
             }
-            if (!saleEvent.historyId && remainingBirdsAfterAdjustment === 0) {
-                setShowConfirm(true);
-                return;
-            }
-            onSubmit(v);
+            proceedAfterDateCheck(v);
         })();
+    };
+
+    const proceedAfterDateCheck = (v: FormValues) => {
+        if (saleEvent.historyId && remainingBirdsAfterAdjustment > 0) {
+            setShowConfirm(true);
+            return;
+        }
+        if (!saleEvent.historyId && remainingBirdsAfterAdjustment === 0) {
+            setShowConfirm(true);
+            return;
+        }
+        // Show diff modal before final save
+        setShowDiffModal(true);
+    };
+
+    // Build diff fields comparing original values with current form values
+    const buildDiffFields = () => {
+        const baseline = latestReport || saleEvent;
+        const values = form.getValues();
+        const baselineSaleDate = baseline.saleDate || saleEvent.saleDate;
+        const baselineOfficialDate = baseline.officialInputDate || saleEvent.cycleContext?.officialInputDate;
+        return [
+            { label: "Birds Sold", before: baseline.birdsSold, after: values.birdsSold, type: "number" as const },
+            { label: "Mortality", before: baseline.totalMortality ?? saleEvent.totalMortality, after: values.totalMortality, type: "number" as const, invertColor: true },
+            { label: "Weight", before: parseFloat(baseline.totalWeight), after: values.totalWeight, type: "number" as const, unit: "kg" },
+            { label: "Price/kg", before: parseFloat(baseline.pricePerKg), after: values.pricePerKg, type: "number" as const, unit: "\u09f3" },
+            { label: "Total Amount", before: (parseFloat(baseline.totalWeight) * parseFloat(baseline.pricePerKg)).toFixed(0), after: (values.totalWeight * values.pricePerKg).toFixed(0), type: "number" as const, unit: "\u09f3" },
+            { label: "Sale Date", before: baselineSaleDate, after: values.saleDate, type: "date" as const },
+            { label: "DOC Date", before: baselineOfficialDate, after: values.officialInputDate, type: "date" as const },
+            { label: "Age", before: baseline.age ?? saleEvent.age, after: values.saleAge, type: "number" as const, unit: "days" },
+            { label: "Location", before: saleEvent.location, after: values.location, type: "text" as const },
+        ];
     };
 
     const isLatest = saleEvent.isLatestInCycle || false;
@@ -836,7 +855,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                     <View className="p-4 border-t border-border/50 bg-card">
                         <Button
                             className="h-14 flex-row gap-2 bg-emerald-600 active:bg-emerald-700"
-                            onPress={remainingBirdsAfterAdjustment === 0 ? handlePreview : handleConfirmClick}
+                            onPress={handlePreview}
                             disabled={generateReport.isPending || previewMutation.isPending || updateOfficialDateMutation.isPending}
                         >
                             {(generateReport.isPending || previewMutation.isPending || updateOfficialDateMutation.isPending) ? (
@@ -845,7 +864,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                 <Icon as={ShoppingCart} className="text-white" size={20} />
                             )}
                             <Text className="text-white font-bold text-lg">
-                                {generateReport.isPending ? "Saving..." : previewMutation.isPending ? "Loading Preview..." : remainingBirdsAfterAdjustment === 0 ? "Preview & Close Batch" : "Confirm Adjustment"}
+                                {generateReport.isPending ? "Saving..." : previewMutation.isPending ? "Loading Preview..." : "Preview Changes"}
                             </Text>
                         </Button>
                     </View>
@@ -874,6 +893,37 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                 open={showEditAge}
                 onOpenChange={setShowEditAge}
                 onSave={(newAge) => form.setValue("saleAge", newAge, { shouldValidate: true })}
+            />
+
+            {/* Sale Date Change Warning */}
+            <ConfirmModal
+                visible={showDateChangeWarning}
+                title="Sale Date Changed"
+                description={`You changed the sale date from ${saleEvent.saleDate ? format(new Date(saleEvent.saleDate), "dd MMM yyyy") : "N/A"} to ${form.getValues("saleDate") ? format(new Date(form.getValues("saleDate")), "dd MMM yyyy") : "N/A"}.\n\nThis sale will now appear under the new date group.`}
+                confirmText="Continue"
+                cancelText="Go Back"
+                onConfirm={() => {
+                    setShowDateChangeWarning(false);
+                    const v = form.getValues();
+                    proceedAfterDateCheck(v);
+                }}
+                onCancel={() => setShowDateChangeWarning(false)}
+            />
+
+            {/* Changes Diff Modal */}
+            <SaleDiffModal
+                visible={showDiffModal}
+                title="Confirm Changes"
+                description="Review all modifications before saving."
+                fields={buildDiffFields()}
+                confirmText="Save Changes"
+                cancelText="Go Back"
+                isLoading={generateReport.isPending}
+                onConfirm={() => {
+                    setShowDiffModal(false);
+                    form.handleSubmit((values: any) => onSubmit(values as FormValues))();
+                }}
+                onCancel={() => setShowDiffModal(false)}
             />
         </BottomSheetModal>
     );

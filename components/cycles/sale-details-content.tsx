@@ -97,11 +97,11 @@ export const SaleDetailsContent = ({
             {/* Main Stats Grid */}
             <View className="flex-row gap-4">
                 <View className="flex-1 space-y-4">
-                    {/* NEW DATE DISPLAYS */}
                     {(() => {
-                        const sDate = selectedReport?.saleDate || sale.saleDate;
-                        const docDate = selectedReport?.officialInputDate || sale.officialInputDate || sale.cycleContext?.officialInputDate || sale.cycleContext?.createdAt || sale.history?.startDate || sale.cycle?.createdAt;
+                        const sDate = selectedReport?.saleDate || (selectedReport ? selectedReport.createdAt : sale.saleDate);
 
+                        const docDate = selectedReport?.officialInputDate || sale.cycleContext?.officialInputDate || sale.cycleContext?.createdAt || sale.history?.startDate || sale.cycle?.createdAt;
+                        // console.log(selectedReport?.officialInputDate)
                         return (
                             <>
                                 {sDate && (
