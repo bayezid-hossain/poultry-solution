@@ -123,10 +123,15 @@ export default function CyclesScreen() {
     const activeQuery = isManagement ? mgmtActiveQuery : officerActiveQuery;
     const historyQuery = isManagement ? mgmtHistoryQuery : officerHistoryQuery;
 
+    const refetchAll = useCallback(() => {
+        activeQuery.refetch();
+        historyQuery.refetch();
+    }, [activeQuery, historyQuery]);
+
     const syncMutation = trpc.officer.cycles.syncFeed.useMutation({
         onSuccess: (data) => {
             Alert.alert("Success", `Synced feed for ${data.updatedCount} cycles.`);
-            activeQuery.refetch();
+            refetchAll();
         },
         onError: (error) => {
             Alert.alert("Error", error.message);
@@ -431,7 +436,7 @@ export default function CyclesScreen() {
                             officialInputDate={selectedCycle.officialInputDate ? new Date(selectedCycle.officialInputDate) : undefined}
                             open={isSellOpen}
                             onOpenChange={setIsSellOpen}
-                            onSuccess={activeQuery.refetch}
+                            onSuccess={refetchAll}
                         />
 
                         <AddMortalityModal
@@ -440,7 +445,7 @@ export default function CyclesScreen() {
                             farmerName={selectedCycle.farmerName || selectedCycle.name}
                             open={isAddMortalityOpen}
                             onOpenChange={setIsAddMortalityOpen}
-                            onSuccess={activeQuery.refetch}
+                            onSuccess={refetchAll}
                         />
 
                         <CorrectDocModal
@@ -448,7 +453,7 @@ export default function CyclesScreen() {
                             currentDoc={parseInt(String(selectedCycle.doc || 0))}
                             open={isEditDocOpen}
                             onOpenChange={setIsEditDocOpen}
-                            onSuccess={activeQuery.refetch}
+                            onSuccess={refetchAll}
                         />
 
                         <CorrectAgeModal
@@ -456,7 +461,7 @@ export default function CyclesScreen() {
                             currentAge={selectedCycle.age}
                             open={isEditAgeOpen}
                             onOpenChange={setIsEditAgeOpen}
-                            onSuccess={activeQuery.refetch}
+                            onSuccess={refetchAll}
                         />
 
                         <EditOfficialDateModal
@@ -464,14 +469,14 @@ export default function CyclesScreen() {
                             currentDate={selectedCycle.officialInputDate || selectedCycle.createdAt}
                             open={isEditOfficialDateOpen}
                             onOpenChange={setIsEditOfficialDateOpen}
-                            onSuccess={activeQuery.refetch}
+                            onSuccess={refetchAll}
                         />
 
                         <CorrectMortalityModal
                             cycleId={selectedCycle.id}
                             open={isCorrectMortalityOpen}
                             onOpenChange={setIsCorrectMortalityOpen}
-                            onSuccess={activeQuery.refetch}
+                            onSuccess={refetchAll}
                         />
 
                         <EndCycleModal
@@ -480,7 +485,7 @@ export default function CyclesScreen() {
                             open={isEndCycleOpen}
                             onOpenChange={setIsEndCycleOpen}
                             onRecordSale={() => setIsSellOpen(true)}
-                            onSuccess={activeQuery.refetch}
+                            onSuccess={refetchAll}
                         />
 
                         {/* History Modals */}

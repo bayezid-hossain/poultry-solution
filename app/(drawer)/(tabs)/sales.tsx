@@ -160,8 +160,10 @@ export default function SalesScreen() {
                 const group = rawGroups[sections[sectionIndex].index];
                 const itemIndex = group.sales.findIndex(s => s.id === highlightedSaleId);
 
-                // Auto-expand group
-                setExpandedDates(prev => ({ ...prev, [group.dateStr]: true }));
+                // Auto-expand group if not already expanded
+                if (!expandedDates[group.dateStr]) {
+                    setExpandedDates(prev => ({ ...prev, [group.dateStr]: true }));
+                }
 
                 if (itemIndex !== -1) {
                     const timer = setTimeout(() => {

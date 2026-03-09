@@ -260,6 +260,10 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                                 <View className="w-8 items-center justify-center mr-3"><Icon as={Rewind} size={20} className="text-foreground" /></View>
                                 <Text className="text-base font-medium text-foreground">Backdate Cycle</Text>
                             </Pressable>
+                            <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50`} onPress={() => handleAction('edit_official_date')}>
+                                <View className="w-8 items-center justify-center mr-3"><Icon as={CalendarDays} size={20} className="text-foreground" /></View>
+                                <Text className="text-base font-medium text-foreground">Edit Official Input Date</Text>
+                            </Pressable>
                             <Pressable className="flex-row items-center py-4 mt-2 active:bg-red-500/10 rounded-xl" onPress={() => handleAction('delete')}>
                                 <View className="w-8 items-center justify-center mr-3"><Icon as={Trash2} size={20} className="text-destructive" /></View>
                                 <Text className="text-base font-bold text-destructive">Delete Record</Text>

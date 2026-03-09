@@ -6,6 +6,7 @@ import { CorrectDocModal } from "@/components/cycles/correct-doc-modal";
 import { CorrectMortalityModal } from "@/components/cycles/correct-mortality-modal";
 import { CycleAction, CycleCard } from "@/components/cycles/cycle-card";
 import { DeleteCycleModal } from "@/components/cycles/delete-cycle-modal";
+import { EditOfficialDateModal } from "@/components/cycles/edit-official-date-modal";
 import { EndCycleModal } from "@/components/cycles/end-cycle-modal";
 import { LogsTimeline } from "@/components/cycles/logs-timeline";
 import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
@@ -21,7 +22,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { Activity, Archive, ArrowLeft, Bird, ChevronDown, ChevronUp, LineChart, MoreHorizontal, Package, Pencil, Power, Rewind, RotateCcw, ShoppingCart, Skull, Trash2, Wheat } from "lucide-react-native";
+import { Activity, Archive, ArrowLeft, Bird, CalendarDays, ChevronDown, ChevronUp, LineChart, MoreHorizontal, Package, Pencil, Power, Rewind, RotateCcw, ShoppingCart, Skull, Trash2, Wheat } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 
@@ -36,6 +37,7 @@ export default function CycleDetailsScreen() {
     const [isReopenModalOpen, setIsReopenModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isBackdateOpen, setIsBackdateOpen] = useState(false);
+    const [isEditOfficialDateOpen, setIsEditOfficialDateOpen] = useState(false);
     const [activeOtherTab, setActiveOtherTab] = useState<'active' | 'inactive'>('active');
     const [selectedActionCycle, setSelectedActionCycle] = useState<any>(null);
 
@@ -495,6 +497,12 @@ export default function CycleDetailsScreen() {
                                     </View>
                                     <Text className="font-bold text-destructive text-base flex-1">End Cycle</Text>
                                 </Pressable>
+                                <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => { setIsMenuOpen(false); setIsEditOfficialDateOpen(true); }}>
+                                    <View className="w-8 items-center justify-center mr-3">
+                                        <Icon as={CalendarDays} size={20} className="text-foreground" />
+                                    </View>
+                                    <Text className="font-medium text-foreground text-base flex-1">Edit Official Input Date</Text>
+                                </Pressable>
                             </View>
                         ) : (
                             <View className="">
@@ -509,6 +517,12 @@ export default function CycleDetailsScreen() {
                                         <Icon as={Rewind} size={20} className="text-foreground" />
                                     </View>
                                     <Text className="font-medium text-foreground text-base flex-1">Backdate Cycle</Text>
+                                </Pressable>
+                                <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => { setIsMenuOpen(false); setIsEditOfficialDateOpen(true); }}>
+                                    <View className="w-8 items-center justify-center mr-3">
+                                        <Icon as={CalendarDays} size={20} className="text-foreground" />
+                                    </View>
+                                    <Text className="font-medium text-foreground text-base flex-1">Edit Official Input Date</Text>
                                 </Pressable>
                                 <Pressable className="flex-row items-center py-4 mt-2 active:bg-red-500/10 rounded-xl" onPress={() => { setIsMenuOpen(false); setIsDeleteModalOpen(true); }}>
                                     <View className="w-8 items-center justify-center mr-3">
@@ -619,7 +633,7 @@ export default function CycleDetailsScreen() {
             {/* Modals — Available for both active and archived cycles */}
             <ReopenCycleModal
                 open={isReopenModalOpen}
-                onOpenChange={(open) => {
+                onOpenChange={(open: boolean) => {
                     setIsReopenModalOpen(open);
                     if (!open) setSelectedActionCycle(null);
                 }}
@@ -630,7 +644,7 @@ export default function CycleDetailsScreen() {
 
             <DeleteCycleModal
                 open={isDeleteModalOpen}
-                onOpenChange={(open) => {
+                onOpenChange={(open: boolean) => {
                     setIsDeleteModalOpen(open);
                     if (!open) setSelectedActionCycle(null);
                 }}
@@ -653,16 +667,27 @@ export default function CycleDetailsScreen() {
                 }}
                 farmerName={farmer.name}
                 open={isBackdateOpen}
-                onOpenChange={(open) => {
+                onOpenChange={(open: boolean) => {
                     setIsBackdateOpen(open);
                     if (!open) setSelectedActionCycle(null);
                 }}
                 onSuccess={() => refetch()}
             />
 
+            <EditOfficialDateModal
+                open={isEditOfficialDateOpen}
+                onOpenChange={(open: boolean) => {
+                    setIsEditOfficialDateOpen(open);
+                    if (!open) setSelectedActionCycle(null);
+                }}
+                cycleId={selectedActionCycle?.id || cycle.id}
+                currentDate={selectedActionCycle?.officialInputDate || cycle.officialInputDate || (cycle as any).startDate || cycle.createdAt}
+                onSuccess={() => refetch()}
+            />
+
             <ProAccessModal
                 open={proModal.open}
-                onOpenChange={(open) => setProModal(prev => ({ ...prev, open }))}
+                onOpenChange={(open: boolean) => setProModal(prev => ({ ...prev, open }))}
                 feature={proModal.feature}
             />
         </View>

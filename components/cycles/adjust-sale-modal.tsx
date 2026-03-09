@@ -322,6 +322,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
             saleAge: values.saleAge,
             saleDate: saleDateWithTime,
             officialInputDate: values.officialInputDate ? new Date(values.officialInputDate) : undefined,
+            historyId: saleEvent.historyId || null,
         });
     };
 
