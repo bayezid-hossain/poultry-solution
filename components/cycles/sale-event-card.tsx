@@ -6,12 +6,13 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
-import { Check, CheckCircle2, ChevronDown, ChevronUp, ClipboardCopy, Edit, Eye, EyeOff, History } from "lucide-react-native";
+import { Check, CheckCircle2, ChevronDown, ChevronUp, ClipboardCopy, Edit, Eye, EyeOff, History, Trash2 } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { toast } from "sonner-native";
 import { BirdyLoader } from "../ui/loading-state";
 import { AdjustSaleModal } from "./adjust-sale-modal";
+import { ConfirmModal } from "./confirm-modal";
 import { SaleDetailsContent } from "./sale-details-content";
 
 export const calculateTotalBags = (feedData: any) => {
@@ -113,6 +114,7 @@ interface SaleEventCardProps {
 
 export function SaleEventCard({ sale, isLatest = false, showFarmerName = false }: SaleEventCardProps) {
     const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
+    const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
     const [showVersionPicker, setShowVersionPicker] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -165,6 +167,10 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false }
                 utils.officer.cycles.listActive.invalidate(),
                 utils.officer.cycles.listPast.invalidate(),
                 utils.officer.farmers.getDetails.invalidate(),
+                utils.management.cycles.listActive.invalidate(),
+                utils.management.cycles.listPast.invalidate(),
+                utils.management.farmers.getDetails.invalidate(),
+                utils.management.sales.getRecentSales.invalidate(),
             ]);
             setIsSwitchingVersion(false);
         },
@@ -172,6 +178,31 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false }
             setIsSwitchingVersion(false);
         },
     });
+
+    const deleteMutation = trpc.officer.sales.delete.useMutation({
+        onSuccess: async () => {
+            await Promise.all([
+                utils.officer.sales.getSaleEvents.invalidate(),
+                utils.officer.sales.getRecentSales.invalidate(),
+                utils.officer.cycles.getDetails.invalidate(),
+                utils.officer.cycles.listActive.invalidate(),
+                utils.officer.cycles.listPast.invalidate(),
+                utils.officer.farmers.getDetails.invalidate(),
+            ]);
+            setIsConfirmDeleteOpen(false);
+            toast.success("Sales record deleted successfully");
+        },
+        onError: (err) => {
+            toast.error(err.message || "Failed to delete sales record");
+        }
+    });
+
+    const handleDelete = () => {
+        deleteMutation.mutate({
+            saleEventId: sale.id,
+            historyId: sale.historyId
+        });
+    };
 
     const handleSelectVersion = (reportId: string) => {
         setSelectedVersionId(reportId);
@@ -222,15 +253,31 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false }
                     </View>
 
                     {isLatest && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 px-3 border-amber-500/20 bg-amber-500/5 flex-row gap-1.5 active:bg-amber-500/10"
-                            onPress={() => setIsAdjustModalOpen(true)}
-                        >
-                            <Icon as={Edit} size={14} className="text-amber-600" />
-                            <Text className="text-amber-600 font-bold text-xs">Adjust</Text>
-                        </Button>
+                        <View className="flex-row gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-3 border-amber-500/20 bg-amber-500/5 flex-row gap-1.5 active:bg-amber-500/10"
+                                onPress={() => setIsAdjustModalOpen(true)}
+                                disabled={deleteMutation.isPending}
+                            >
+                                <Icon as={Edit} size={14} className="text-amber-600" />
+                                <Text className="text-amber-600 font-bold text-xs">Adjust</Text>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-8 p-0 border-destructive/20 bg-destructive/5 items-center justify-center active:bg-destructive/10"
+                                onPress={() => setIsConfirmDeleteOpen(true)}
+                                disabled={deleteMutation.isPending}
+                            >
+                                {deleteMutation.isPending ? (
+                                    <BirdyLoader size={12} color="#ef4444" />
+                                ) : (
+                                    <Icon as={Trash2} size={14} className="text-destructive" />
+                                )}
+                            </Button>
+                        </View>
                     )}
                 </View>
 
@@ -403,9 +450,26 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false }
                         open={isAdjustModalOpen}
                         onOpenChange={setIsAdjustModalOpen}
                         saleEvent={sale}
-                        latestReport={selectedReport}
+                        latestReport={sortedReports[0]}
+                        onSuccess={() => {
+                            utils.officer.sales.getSaleEvents.invalidate();
+                        }}
                     />
                 )}
+
+                <ConfirmModal
+                    visible={isConfirmDeleteOpen}
+                    title="Delete Sales History?"
+                    description={sale.cycleContext?.isEnded
+                        ? "This will delete the sale records for this batch. Batch stats and status will NOT be changed."
+                        : "This will delete ALL sales records for this cycle and revert stats (mortality/population). This cannot be undone."}
+                    confirmText="Delete"
+                    cancelText="Keep"
+                    destructive
+                    isLoading={deleteMutation.isPending}
+                    onConfirm={handleDelete}
+                    onCancel={() => setIsConfirmDeleteOpen(false)}
+                />
             </CardContent>
         </Card>
     );

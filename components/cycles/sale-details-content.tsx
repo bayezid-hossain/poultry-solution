@@ -99,8 +99,8 @@ export const SaleDetailsContent = ({
                 <View className="flex-1 space-y-4">
                     {/* NEW DATE DISPLAYS */}
                     {(() => {
-                        const sDate = sale.saleDate || selectedReport?.saleDate;
-                        const docDate = sale.officialInputDate || sale.cycleContext?.officialInputDate || sale.cycleContext?.createdAt || sale.history?.startDate || sale.cycle?.createdAt;
+                        const sDate = selectedReport?.saleDate || sale.saleDate;
+                        const docDate = selectedReport?.officialInputDate || sale.officialInputDate || sale.cycleContext?.officialInputDate || sale.cycleContext?.createdAt || sale.history?.startDate || sale.cycle?.createdAt;
 
                         return (
                             <>
@@ -145,7 +145,7 @@ export const SaleDetailsContent = ({
                         <View className="flex-row justify-between items-baseline">
                             <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Sale Age</Text>
                             <View className="flex-row items-baseline gap-1">
-                                <Text className="font-bold text-foreground">{sale.saleAge ?? sale.cycleContext?.age ?? "N/A"}</Text>
+                                <Text className="font-bold text-foreground">{selectedReport?.age ?? sale.saleAge ?? sale.cycleContext?.age ?? "N/A"}</Text>
                                 <Text className="text-[10px] text-muted-foreground">days</Text>
                             </View>
                         </View>

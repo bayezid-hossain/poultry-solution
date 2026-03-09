@@ -60,6 +60,7 @@ export function CycleRowAccordion({ cycle, isLast, onRefresh }: CycleRowAccordio
                 confirmText="Delete"
                 cancelText="Keep"
                 destructive
+                isLoading={deleteMutation.isPending}
                 onConfirm={onConfirmDelete}
                 onCancel={() => setIsConfirmOpen(false)}
             />

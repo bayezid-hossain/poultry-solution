@@ -154,6 +154,7 @@ export const SellModal = ({
     const [isAgeModalOpen, setIsAgeModalOpen] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showOfficialDatePicker, setShowOfficialDatePicker] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const onOfficialDateChange = (event: any, selectedDate?: Date) => {
         setShowOfficialDatePicker(Platform.OS === 'ios');
@@ -178,6 +179,7 @@ export const SellModal = ({
             setStep("form");
             setPreviewData(null);
             hasInitializedRef.current = false;
+            setIsSubmitting(false);
         }
     }, [open]);
 
@@ -248,6 +250,7 @@ export const SellModal = ({
             form.reset();
         },
         onError: (error) => {
+            setIsSubmitting(false);
             toast.error(error.message);
         },
     });
@@ -299,6 +302,8 @@ export const SellModal = ({
     };
 
     const onSubmit = form.handleSubmit(async (values: FormValues) => {
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         const now = new Date();
         const saleDateWithTime = new Date(values.saleDate);
         saleDateWithTime.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
@@ -314,7 +319,9 @@ export const SellModal = ({
                         officialInputDate: new Date(values.officialInputDate),
                     });
                 } catch (e) {
+                    setIsSubmitting(false);
                     toast.error("Failed to update official input date");
+                    return;
                 }
             }
         }
@@ -475,6 +482,7 @@ export const SellModal = ({
                                 variant="outline"
                                 className="flex-1 h-14 rounded-xl flex-row gap-2"
                                 onPress={() => setStep("form")}
+                                disabled={isSubmitting}
                             >
                                 <Icon as={ArrowLeft} size={18} className="text-foreground" />
                                 <Text className="font-bold">Back to Edit</Text>
@@ -482,15 +490,15 @@ export const SellModal = ({
                             <Button
                                 className="flex-1 h-14 rounded-xl shadow-none flex-row gap-2"
                                 onPress={onSubmit}
-                                disabled={mutation.isPending}
+                                disabled={isSubmitting || mutation.isPending}
                             >
-                                {mutation.isPending ? (
+                                {isSubmitting || mutation.isPending ? (
                                     <ActivityIndicator color={"#ffffff"} />
                                 ) : (
                                     <Icon as={Check} size={18} className="text-primary-foreground" />
                                 )}
                                 <Text className="text-primary-foreground font-bold">
-                                    {mutation.isPending ? "Saving..." : "Confirm & Save"}
+                                    {(isSubmitting || mutation.isPending) ? "Saving..." : "Confirm & Save"}
                                 </Text>
                             </Button>
                         </View>
@@ -967,7 +975,7 @@ export const SellModal = ({
                                     <Button
                                         className={`h-14 rounded-xl flex-row gap-2 shadow-none ${remainingBirdsAfterTransaction === 0 ? 'bg-destructive' : 'bg-primary'}`}
                                         onPress={remainingBirdsAfterTransaction === 0 ? handlePreview : onSubmit}
-                                        disabled={(remainingBirdsAfterTransaction === 0 ? previewMutation.isPending : mutation.isPending) || isStockInsufficient || isPreviousSalesLoading}
+                                        disabled={isSubmitting || (remainingBirdsAfterTransaction === 0 ? previewMutation.isPending : mutation.isPending) || isStockInsufficient || isPreviousSalesLoading}
                                     >
                                         {remainingBirdsAfterTransaction === 0 ? (
                                             <>
@@ -978,13 +986,13 @@ export const SellModal = ({
                                             </>
                                         ) : (
                                             <>
-                                                {mutation.isPending ? (
+                                                {(isSubmitting || mutation.isPending) ? (
                                                     <BirdyLoader size={24} color={"#ffffff"} />
                                                 ) : (
                                                     <Icon as={Check} size={18} className="text-primary-foreground" />
                                                 )}
                                                 <Text className="text-primary-foreground font-bold">
-                                                    {mutation.isPending ? "Saving..." : "Confirm & Save"}
+                                                    {(isSubmitting || mutation.isPending) ? "Saving..." : "Confirm & Save"}
                                                 </Text>
                                             </>
                                         )}
