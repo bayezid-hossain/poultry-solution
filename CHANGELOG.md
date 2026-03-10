@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.38] - 2026-03-10
+
+### Added
+- Main stock adjustment fixed
+
 ## [v1.0.37] - 2026-03-10
 
 ### Added
