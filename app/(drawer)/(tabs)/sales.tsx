@@ -7,19 +7,31 @@ import { Input } from "@/components/ui/input";
 import { BirdyLoader, LoadingState } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { useGlobalFilter } from "@/context/global-filter-context";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { trpc } from "@/lib/trpc";
-import { format } from "date-fns";
-import { useFocusEffect } from "expo-router";
+import { format, isThisMonth, isThisWeek, isToday } from "date-fns";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Calendar, ChevronDown, ChevronUp, FileText, Search, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, RefreshControl, SectionList, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, SectionList, View } from "react-native";
+
+type DateFilter = "all" | "today" | "week" | "month";
+
+const DATE_FILTERS: { key: DateFilter; label: string }[] = [
+    { key: "all", label: "All" },
+    { key: "today", label: "Today" },
+    { key: "week", label: "Weekly" },
+    { key: "month", label: "Monthly" },
+];
 
 export default function SalesScreen() {
+    const router = useRouter();
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
     const [searchQuery, setSearchQuery] = useState("");
     const [refreshing, setRefreshing] = useState(false);
+    const [dateFilter, setDateFilter] = useState<DateFilter>("all");
 
     const officerSalesQuery = trpc.officer.sales.getRecentSales.useQuery(
         { limit: 100, search: searchQuery },
@@ -62,22 +74,39 @@ export default function SalesScreen() {
     };
 
     const sectionListRef = useRef<SectionList>(null);
+    const scrollTargetRef = useRef<{ sectionIndex: number; itemIndex: number } | null>(null);
     const [highlightedSaleId, setHighlightedSaleId] = useState<string | null>(null);
     const [localVersionOverrides, setLocalVersionOverrides] = useState<Record<string, string>>({});
 
     const handleVersionSwitch = useCallback((saleId: string, reportId: string) => {
         setLocalVersionOverrides(prev => ({ ...prev, [saleId]: reportId }));
         setHighlightedSaleId(saleId);
-        setTimeout(() => setHighlightedSaleId(null), 3500);
     }, []);
 
+    // Filter sales by date
+    const filteredSales = useMemo(() => {
+        if (!recentSales) return [];
+        if (dateFilter === "all") return recentSales;
+
+        return recentSales.filter((sale: any) => {
+            const saleDate = new Date(sale.saleDate || sale.createdAt);
+            switch (dateFilter) {
+                case "today": return isToday(saleDate);
+                case "week": return isThisWeek(saleDate, { weekStartsOn: 6 });
+                case "month": return isThisMonth(saleDate);
+                default: return true;
+            }
+        });
+    }, [recentSales, dateFilter]);
+
+    // Group by date (original approach) + compute latestSaleIds
     const { rawGroups, latestSaleIds } = useMemo(() => {
-        if (!recentSales) return { rawGroups: [], latestSaleIds: new Set() };
+        if (!filteredSales) return { rawGroups: [], latestSaleIds: new Set() };
 
         const dates: Record<string, { dateStr: string; dateObj: Date; sales: any[] }> = {};
         const cycleLatestMap = new Map();
 
-        recentSales.forEach((sale: any) => {
+        filteredSales.forEach((sale: any) => {
             let displaySaleDate = sale.saleDate || sale.createdAt;
             if (sale.reports && sale.reports.length > 0) {
                 const targetVersionId = localVersionOverrides[sale.id] || sale.selectedReportId;
@@ -125,7 +154,7 @@ export default function SalesScreen() {
         });
 
         return { rawGroups: sortedGroups, latestSaleIds: latestSet };
-    }, [recentSales, localVersionOverrides]);
+    }, [filteredSales, localVersionOverrides]);
 
     const sections = useMemo(() => {
         return rawGroups.map((group, index) => ({
@@ -135,6 +164,34 @@ export default function SalesScreen() {
             data: isExpanded(group.dateStr, index) ? group.sales : []
         }));
     }, [rawGroups, expandedDates]);
+
+    // Navigate to a specific sale (scroll + highlight)
+    const navigateToSale = useCallback((saleId: string) => {
+        setHighlightedSaleId(saleId);
+        setTimeout(() => setHighlightedSaleId(null), 3500);
+
+        // Find section and item indices
+        const sectionIndex = rawGroups.findIndex(g => g.sales.some(s => s.id === saleId));
+        if (sectionIndex === -1) return;
+
+        const group = rawGroups[sectionIndex];
+        const itemIndex = group.sales.findIndex(s => s.id === saleId);
+
+        // Auto-expand the date group
+        if (!isExpanded(group.dateStr, sectionIndex)) {
+            setExpandedDates(prev => ({ ...prev, [group.dateStr]: true }));
+        }
+
+        if (itemIndex !== -1) {
+            // We only set the highlight and expansion here.
+            // The useEffect below handles the actual scrolling to ensure it waits for the list to re-render.
+        }
+    }, [rawGroups, expandedDates]);
+
+    // Cycle link navigation
+    const handleCyclePress = useCallback((cycleId: string | null) => {
+        if (cycleId) router.push(`/cycle/${cycleId}`);
+    }, [router]);
 
     // Track backend-driven changes for highlights
     const prevSales = useRef<any[] | undefined>(recentSales);
@@ -146,39 +203,54 @@ export default function SalesScreen() {
             });
             if (changedSale) {
                 setHighlightedSaleId(changedSale.id);
-                setTimeout(() => setHighlightedSaleId(null), 3500);
+                setTimeout(() => setHighlightedSaleId(null), 1500);
             }
         }
         prevSales.current = recentSales;
     }, [recentSales]);
 
-    // Native scrolling to highlight
+    // Scroll to highlighted sale
     useEffect(() => {
-        if (highlightedSaleId) {
-            const sectionIndex = sections.findIndex(s => rawGroups[s.index].sales.some(sale => sale.id === highlightedSaleId));
-            if (sectionIndex !== -1) {
-                const group = rawGroups[sections[sectionIndex].index];
-                const itemIndex = group.sales.findIndex(s => s.id === highlightedSaleId);
+        if (!highlightedSaleId || sections.length === 0) return;
 
-                // Auto-expand group if not already expanded
-                if (!expandedDates[group.dateStr]) {
-                    setExpandedDates(prev => ({ ...prev, [group.dateStr]: true }));
-                }
+        // 1. Find section index in the current 'sections' array
+        const sectionIdx = sections.findIndex(s =>
+            rawGroups[s.index].sales.some(sale => sale.id === highlightedSaleId)
+        );
+        if (sectionIdx === -1) return;
 
-                if (itemIndex !== -1) {
-                    const timer = setTimeout(() => {
-                        sectionListRef.current?.scrollToLocation({
-                            sectionIndex,
-                            itemIndex,
-                            viewOffset: 80,
-                            animated: true
-                        });
-                    }, 100);
-                    return () => clearTimeout(timer);
-                }
-            }
+        const group = rawGroups[sections[sectionIdx].index];
+        const itemIdx = group.sales.findIndex(s => s.id === highlightedSaleId);
+
+        // 2. If the section is currently empty (collapsed), trigger expand and return.
+        // The subsequent render of 'sections' will re-trigger this effect.
+        if (sections[sectionIdx].data.length === 0) {
+            setExpandedDates(prev => ({ ...prev, [group.dateStr]: true }));
+            return;
         }
+
+        // Save the target for potential retries
+        scrollTargetRef.current = { sectionIndex: sectionIdx, itemIndex: itemIdx };
+
+        // 3. Perform the scroll with a healthy delay for layout stability
+        const timer = setTimeout(() => {
+            try {
+                sectionListRef.current?.scrollToLocation({
+                    sectionIndex: sectionIdx,
+                    itemIndex: itemIdx,
+                    animated: true,
+                    viewPosition: 0, // Centers the item in the viewport
+                });
+            } catch (error) {
+                console.warn("Initial scroll failed, waiting for onScrollToIndexFailed...", error);
+            }
+        }, 450);
+
+        return () => clearTimeout(timer);
     }, [highlightedSaleId, sections, rawGroups]);
+
+    const colorScheme = useColorScheme();
+    const isDark = colorScheme === 'dark';
 
     if (!membership?.isPro) {
         return (
@@ -213,83 +285,116 @@ export default function SalesScreen() {
                         ref={sectionListRef}
                         sections={sections}
                         keyExtractor={(item) => item.id}
-                        stickySectionHeadersEnabled={true}
+                        extraData={expandedDates}
+                        keyboardShouldPersistTaps="handled"
                         contentContainerClassName="p-4 pb-20"
+
                         refreshControl={
                             <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
                         }
                         ListHeaderComponent={
-                            <View className="bg-card border border-border/50 px-3 pb-3 pt-2 rounded-2xl mb-4">
-                                {isManagement && (
-                                    <View className="mb-3">
-                                        <OfficerSelector orgId={membership?.orgId ?? ""} />
-                                    </View>
-                                )}
-                                <View className="relative flex-row items-center gap-2">
-                                    <View className="flex-1 relative">
-                                        <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                                            <Icon as={Search} size={18} className="text-muted-foreground opacity-50" />
+                            <View className="mb-4 gap-3">
+                                <View className="bg-card border border-border/50 px-3 pb-3 pt-2 rounded-2xl">
+                                    {isManagement && (
+                                        <View className="mb-3">
+                                            <OfficerSelector orgId={membership?.orgId ?? ""} />
                                         </View>
-                                        <Input
-                                            placeholder="Search by farmer or location..."
-                                            className="pl-12 pr-12 h-12 bg-muted/30 border-border/50 rounded-2xl text-base font-bold"
-                                            value={searchQuery}
-                                            onChangeText={setSearchQuery}
-                                            placeholderTextColor="rgba(255,255,255,0.2)"
-                                        />
-                                        {searchQuery.length > 0 && (
-                                            <Pressable
-                                                onPress={() => setSearchQuery("")}
-                                                className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full active:bg-muted/50 z-20"
-                                            >
-                                                <Icon as={X} size={20} className="text-muted-foreground" />
-                                            </Pressable>
-                                        )}
+                                    )}
+                                    <View className="relative flex-row items-center gap-2">
+                                        <View className="flex-1 relative">
+                                            <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                                                <Icon as={Search} size={18} className="text-muted-foreground opacity-50" />
+                                            </View>
+                                            <Input
+                                                placeholder="Search by farmer or location..."
+                                                className="pl-12 pr-12 h-12 bg-muted/30 border-border/50 rounded-2xl text-base font-bold"
+                                                value={searchQuery}
+                                                onChangeText={setSearchQuery}
+                                                placeholderTextColor={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.3)"}
+                                            />
+                                            {searchQuery.length > 0 && (
+                                                <Pressable
+                                                    onPress={() => setSearchQuery("")}
+                                                    className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full active:bg-muted/50 z-20"
+                                                >
+                                                    <Icon as={X} size={20} className="text-muted-foreground" />
+                                                </Pressable>
+                                            )}
+                                        </View>
                                     </View>
                                 </View>
+
+                                {/* Date Filter Chips */}
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-1">
+                                    {DATE_FILTERS.map(f => (
+                                        <Pressable
+                                            key={f.key}
+                                            onPress={() => setDateFilter(f.key)}
+                                            className={`px-4 py-2 rounded-full border ${dateFilter === f.key
+                                                ? "bg-primary border-primary"
+                                                : "bg-card border-border/50 active:bg-muted/30"
+                                                } `}
+                                        >
+                                            <Text className={`text-xs font-bold uppercase tracking-wider ${dateFilter === f.key ? "text-primary-foreground" : "text-muted-foreground"
+                                                }`}>
+                                                {f.label}
+                                            </Text>
+                                        </Pressable>
+                                    ))}
+                                    {dateFilter !== "all" && (
+                                        <Pressable
+                                            onPress={() => setDateFilter("all")}
+                                            className="px-3 py-2 rounded-full items-center justify-center active:bg-muted/30"
+                                        >
+                                            <Icon as={X} size={14} className="text-muted-foreground" />
+                                        </Pressable>
+                                    )}
+                                </ScrollView>
                             </View>
                         }
                         renderSectionHeader={({ section: { title, dateObj, index } }) => (
-                            <View className="bg-background pt-1.5 pb-1" pointerEvents="box-none" style={{ zIndex: 10 }}>
+                            <View className="bg-background p-2 pt-3 border border-[0.5px] mb-2 rounded-sm border-primary " style={{ zIndex: 10 }} collapsable={false} >
                                 <Pressable
                                     onPress={() => toggleDate(title, index)}
-                                    collapsable={false}
+                                    className="flex-row items-center justify-between px-1"
                                     hitSlop={{ top: 10, bottom: 10, left: 20, right: 20 }}
+                                    collapsable={false}
                                 >
-                                    <View
-                                        className="flex-row items-center justify-between px-3 py-2.5 bg-card border border-border/50 rounded-lg shadow-sm"
-                                        style={{ opacity: 0.95 }}
-                                    >
-                                        <View className="flex-row items-center gap-2">
-                                            <Icon as={Calendar} size={16} className="text-muted-foreground" />
-                                            <Text className="text-xs font-bold text-foreground uppercase tracking-widest">
-                                                {format(dateObj, "dd MMM yyyy")}
-                                            </Text>
+                                    <View className="flex-row items-center gap-2 ">
+                                        <View className="w-7 h-7 rounded-lg bg-muted/40 items-center justify-center">
+                                            <Icon as={Calendar} size={14} className="text-foreground/70" />
                                         </View>
-                                        <Icon as={isExpanded(title, index) ? ChevronUp : ChevronDown} size={18} className="text-muted-foreground" />
+                                        <Text className="text-[14px] font-black text-foreground/80 uppercase tracking-widest mt-0.5 ">
+                                            {format(dateObj, "dd MMM yyyy")}
+                                        </Text>
                                     </View>
+                                    <Icon as={isExpanded(title, index) ? ChevronUp : ChevronDown} size={16} className="text-muted-foreground/50" />
                                 </Pressable>
                             </View>
                         )}
                         renderItem={({ item }) => (
-                            <View className="mt-2">
-                                <SaleEventCard
-                                    sale={item}
-                                    isLatest={latestSaleIds.has(item.id)}
-                                    showFarmerName={true}
-                                    onVersionSwitch={handleVersionSwitch}
-                                    isHighlighted={highlightedSaleId === item.id}
-                                    selectedReportId={localVersionOverrides[item.id] || item.selectedReportId}
-                                />
-                            </View>
+                            <SaleEventCard
+                                sale={item}
+                                isLatest={latestSaleIds.has(item.id)}
+                                showFarmerName={true}
+                                onVersionSwitch={handleVersionSwitch}
+                                isHighlighted={highlightedSaleId === item.id}
+                                selectedReportId={localVersionOverrides[item.id] || item.selectedReportId}
+                                colorScheme={colorScheme}
+                                onNavigateToSale={navigateToSale}
+                                onCyclePress={handleCyclePress}
+                            />
                         )}
                         ListEmptyComponent={
                             <View className="flex-1 items-center justify-center py-20 opacity-50">
                                 <Icon as={FileText} size={48} className="text-muted-foreground mb-4" />
-                                <Text className="text-muted-foreground font-medium">No sales found.</Text>
+                                <Text className="text-muted-foreground font-medium">
+                                    {dateFilter !== "all" ? "No sales for this period." : "No sales found."}
+                                </Text>
                             </View>
                         }
-                        SectionSeparatorComponent={() => <View className="h-4" />}
+                        SectionSeparatorComponent={() => null}
+                        ListFooterComponent={<View className="" />}
                     />
                 </>
             )}

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 import { ArrowLeft, Banknote, Bird, Box, CalendarIcon, FileText, Settings, ShoppingCart, Truck } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
@@ -490,6 +490,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                             display="default"
                                             onChange={onSaleDateChange}
                                             maximumDate={new Date()}
+                                            minimumDate={saleEvent.previousSaleDate ? addDays(new Date(saleEvent.previousSaleDate), 0) : undefined}
                                         />
                                     )}
                                 </View>

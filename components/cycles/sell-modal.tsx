@@ -8,7 +8,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 import { useRouter } from "expo-router";
 import {
     AlertTriangle,
@@ -560,7 +560,7 @@ export const SellModal = ({
                                                         display="default"
                                                         onChange={onSaleDateChange}
                                                         maximumDate={new Date()}
-                                                        minimumDate={startDate ? new Date(startDate) : undefined}
+                                                        minimumDate={lastSale?.saleDate ? addDays(new Date(lastSale.saleDate), 0) : (startDate ? new Date(startDate) : undefined)}
                                                     />
                                                 )}
                                                 {hasError("saleDate") && <Text className="text-[10px] text-destructive ml-1 mt-1">{getError("saleDate")}</Text>}

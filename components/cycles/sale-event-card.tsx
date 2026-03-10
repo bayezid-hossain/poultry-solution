@@ -6,9 +6,9 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
-import { Check, CheckCircle2, ChevronDown, ChevronUp, ClipboardCopy, Edit, Eye, EyeOff, History, Info, Trash2 } from "lucide-react-native";
+import { Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardCopy, Edit, ExternalLink, Eye, EyeOff, History, Loader2, Trash2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { Animated, Pressable, View } from "react-native";
+import { Animated, Pressable, View, useColorScheme } from "react-native";
 import { toast } from "sonner-native";
 import { BirdyLoader } from "../ui/loading-state";
 import { AdjustSaleModal } from "./adjust-sale-modal";
@@ -115,10 +115,25 @@ interface SaleEventCardProps {
     showFarmerName?: boolean;
     onVersionSwitch?: (saleId: string, reportId: string) => void;
     isHighlighted?: boolean;
+    colorScheme?: string | null;
     selectedReportId?: string | null;
+    onNavigateToSale?: (saleId: string) => void;
+    onCyclePress?: (cycleId: string | null) => void;
 }
 
-export function SaleEventCard({ sale, isLatest = false, showFarmerName = false, onVersionSwitch, isHighlighted = false, selectedReportId: propsSelectedReportId }: SaleEventCardProps) {
+export function SaleEventCard({ 
+    sale, 
+    isLatest = false, 
+    showFarmerName = false, 
+    onVersionSwitch, 
+    isHighlighted = false, 
+    colorScheme: propColorScheme, 
+    selectedReportId: propsSelectedReportId, 
+    onNavigateToSale, 
+    onCyclePress 
+}: SaleEventCardProps) {
+    const internalColorScheme = useColorScheme();
+    const colorScheme = propColorScheme || internalColorScheme;
     const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
@@ -127,20 +142,24 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false, 
     const [isSwitchingVersion, setIsSwitchingVersion] = useState(false);
     const [pendingVersionId, setPendingVersionId] = useState<string | null>(null);
     const [highlightAnim] = useState(new Animated.Value(0));
+    const [isNavigatingPrev, setIsNavigatingPrev] = useState(false);
+    const [isNavigatingNext, setIsNavigatingNext] = useState(false);
+
+    const overlayBg = colorScheme === 'dark' ? '#000000' : '#ffffff';
 
     useEffect(() => {
         if (isHighlighted) {
-            setShowDetails(true);
+            // User requested: do not automatically expand details when highlighting
             Animated.sequence([
                 Animated.timing(highlightAnim, {
                     toValue: 1,
-                    duration: 500,
+                    duration: 350,
                     useNativeDriver: false,
                 }),
-                Animated.delay(1200),
+                Animated.delay(600),
                 Animated.timing(highlightAnim, {
                     toValue: 0,
-                    duration: 800,
+                    duration: 500,
                     useNativeDriver: false,
                 }),
             ]).start();
@@ -162,23 +181,29 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false, 
 
     const hasReports = sale.reports && sale.reports.length > 0;
     const sortedReports = hasReports
-        ? [...sale.reports].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        ? [...sale.reports].sort((a: any, b: any) => {
+            const timeA = new Date(a.createdAt).getTime();
+            const timeB = new Date(b.createdAt).getTime();
+            return timeB - timeA; // Descending: Newest first
+        })
         : [];
 
     const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
-        propsSelectedReportId || sale.selectedReportId || null
+        propsSelectedReportId || sale.selectedReportId || (sortedReports[0]?.id ?? null)
     );
 
     const [prevReportId, setPrevReportId] = useState(propsSelectedReportId || sale.selectedReportId);
     if ((propsSelectedReportId || sale.selectedReportId) !== prevReportId) {
         setPrevReportId(propsSelectedReportId || sale.selectedReportId);
-        setSelectedVersionId(propsSelectedReportId || sale.selectedReportId);
+        // If pointers changed or override updated, update selected version
+        // Prefer explicit override, then the canonical pointer, then fallback to newest
+        setSelectedVersionId(propsSelectedReportId || sale.selectedReportId || (sortedReports[0]?.id ?? null));
+        
         if (isHighlighted || (isLatest && !propsSelectedReportId)) {
-            setShowDetails(true);
             Animated.sequence([
-                Animated.timing(highlightAnim, { toValue: 1, duration: 500, useNativeDriver: false }),
-                Animated.delay(1200),
-                Animated.timing(highlightAnim, { toValue: 0, duration: 800, useNativeDriver: false }),
+                Animated.timing(highlightAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
+                Animated.delay(800),
+                Animated.timing(highlightAnim, { toValue: 0, duration: 600, useNativeDriver: false }),
             ]).start();
         }
     }
@@ -234,16 +259,11 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false, 
         if (reportId === selectedReport?.id) return;
 
         if (sortedReports.length > 1) {
-            if (!isLatest) {
-                toast.info("Version switching is only available for the latest sale.");
-                return;
-            }
             setPendingVersionId(reportId);
             setShowVersionPicker(false);
         } else {
             setSelectedVersionId(reportId);
             setShowVersionPicker(false);
-            setShowDetails(true);
             if (onVersionSwitch) onVersionSwitch(sale.id, reportId);
         }
     };
@@ -251,13 +271,15 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false, 
     const confirmVersionSwitch = () => {
         if (!pendingVersionId) return;
         setSelectedVersionId(pendingVersionId);
-        setShowDetails(true);
         if (onVersionSwitch) onVersionSwitch(sale.id, pendingVersionId);
-        setIsSwitchingVersion(true);
-        setActiveMutation.mutate({
-            saleEventId: sale.id,
-            saleReportId: pendingVersionId,
-        });
+
+        if (isLatest) {
+            setIsSwitchingVersion(true);
+            setActiveMutation.mutate({
+                saleEventId: sale.id,
+                saleReportId: pendingVersionId,
+            });
+        }
         setPendingVersionId(null);
     };
 
@@ -288,13 +310,11 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false, 
 
     const highlightBg = highlightAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: ['rgba(0,0,0,0)', 'rgba(16, 185, 129, 0.4)'],
+        outputRange: colorScheme === 'dark'
+            ? ['rgba(32, 26, 26, 0.98)', 'rgba(6, 98, 67, 0.08)']
+            : ['rgba(255, 255, 255, 1)', 'rgba(16, 185, 129, 0.12)'],
     });
 
-    const highlightBorder = highlightAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['rgba(255,255,255,0.1)', 'rgba(16, 185, 129, 0.8)'],
-    });
 
     const highlightScale = highlightAnim.interpolate({
         inputRange: [0, 0.1, 0.9, 1],
@@ -304,23 +324,31 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false, 
     return (
         <Animated.View style={{ transform: [{ scale: highlightScale }], zIndex: isHighlighted ? 50 : 1 }}>
             <AnimatedCard
-                className="mb-4 overflow-hidden"
+                className="mb-3 relative overflow-hidden border border-border dark:border-border/30 "
                 style={{
                     backgroundColor: highlightBg as any,
-                    borderColor: highlightBorder as any,
                 }}
             >
+                {(isSwitchingVersion || deleteMutation.isPending) && (
+                    <View
+                        className="absolute inset-0 items-center justify-center rounded-xl"
+                        style={{
+                            backgroundColor: overlayBg,
+                            zIndex: 200,
+                            elevation: 10
+                        }}
+                    >
+                        {/* Removed withGlow to test for the Android SVG filter bug */}
+                        <BirdyLoader size={48} color="#10b981" />
+
+                        <Text className="text-xs font-black text-emerald-600 uppercase mt-4 tracking-[0.2em]">
+                            {deleteMutation.isPending ? "Deleting Record" : "Updating Version"}
+                        </Text>
+                    </View>
+                )}
                 <CardContent className="p-0">
-                    {(isSwitchingVersion || deleteMutation.isPending) && (
-                        <View className="absolute inset-0 z-[100] bg-background/60 items-center justify-center rounded-xl">
-                            <BirdyLoader size={32} color="#10b981" />
-                            <Text className="text-[10px] font-bold text-emerald-600 uppercase mt-2 tracking-widest">
-                                {deleteMutation.isPending ? "Deleting..." : "Updating..."}
-                            </Text>
-                        </View>
-                    )}
                     {/* Header */}
-                    <View className="gap-x-2 px-4 py-3 bg-muted/30 border-b border-border/50 flex-row items-start justify-between">
+                    <View className="gap-x-2 px-4 py-3 bg-transparent border-b border-border flex-row items-start justify-between">
                         <View className="flex-1 items-start justify-start gap-x-4">
                             <View className="flex-row items-start justify-start gap-2 mb-1">
                                 <Text className="flex max-w-[85%] font-bold text-base flex-shrink " numberOfLines={2}>
@@ -368,7 +396,7 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false, 
 
                     {/* Active Version Summary */}
                     <View className="p-4">
-                        <View className="p-3 rounded-xl border bg-muted/40 border-border/50">
+                        <View className="p-3 rounded-xl border bg-background/50 border-border/30">
                             {/* Summary Header */}
                             <View className="flex-row justify-between items-center mb-2">
                                 <View className="flex-row items-center gap-2">
@@ -418,12 +446,72 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false, 
                             )}
                         </View>
 
+                        {/* Cycle Link + Prev/Next Navigation */}
+                        {(sale.cycleId || sale.historyId || sale.previousSaleId || sale.nextSaleId) && (
+                            <View className="mt-3 flex-row items-center justify-between">
+                                <View className="flex-row items-center gap-2">
+                                    {(sale.cycleId || sale.historyId) && onCyclePress && (
+                                        <Pressable
+                                            onPress={() => onCyclePress(sale.cycleId || sale.historyId)}
+                                            className="flex-row items-center gap-1 px-2 py-1 bg-primary/10 border border-primary/20 rounded active:bg-primary/20"
+                                        >
+                                            <Text className="text-[10px] font-bold text-primary">View Cycle</Text>
+                                            <Icon as={ExternalLink} size={10} className="text-primary" />
+                                        </Pressable>
+                                    )}
+                                    {sale.cycleContext?.isEnded && (
+                                        <View className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded">
+                                            <Text className="text-[9px] font-black text-amber-600 uppercase">Ended</Text>
+                                        </View>
+                                    )}
+                                </View>
+                                <View className="flex-row items-center gap-1">
+                                    {sale.previousSaleId && onNavigateToSale && (
+                                        <Pressable
+                                            onPress={() => {
+                                                setIsNavigatingPrev(true);
+                                                onNavigateToSale(sale.previousSaleId);
+                                                setTimeout(() => setIsNavigatingPrev(false), 1200);
+                                            }}
+                                            disabled={isNavigatingPrev || isNavigatingNext}
+                                            className="flex-row items-center gap-1 px-2 py-1 bg-muted border border-border/30 rounded active:bg-muted/50"
+                                        >
+                                            {isNavigatingPrev ? (
+                                                <Loader2 size={12} color="#10b981" />
+                                            ) : (
+                                                <Icon as={ChevronLeft} size={12} className="text-muted-foreground" />
+                                            )}
+                                            <Text className="text-[10px] font-bold text-muted-foreground">Previous Sale</Text>
+                                        </Pressable>
+                                    )}
+                                    {sale.nextSaleId && onNavigateToSale && (
+                                        <Pressable
+                                            onPress={() => {
+                                                setIsNavigatingNext(true);
+                                                onNavigateToSale(sale.nextSaleId);
+                                                setTimeout(() => setIsNavigatingNext(false), 1200);
+                                            }}
+                                            disabled={isNavigatingPrev || isNavigatingNext}
+                                            className="flex-row items-center gap-1 px-2 py-1 bg-muted border border-border/30 rounded active:bg-muted/50"
+                                        >
+                                            <Text className="text-[10px] font-bold text-muted-foreground">Next Sale</Text>
+                                            {isNavigatingNext ? (
+                                                <Loader2 size={12} color="#10b981" />
+                                            ) : (
+                                                <Icon as={ChevronRight} size={12} className="text-muted-foreground" />
+                                            )}
+                                        </Pressable>
+                                    )}
+                                </View>
+                            </View>
+                        )}
+
                         {sortedReports.length > 1 && (
                             <View className="mt-3 flex-row items-center">
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-8 px-2 flex-row gap-1.5 bg-muted/10"
+                                    className="h-8 px-2 flex-row gap-1.5 bg-muted "
                                     onPress={() => setShowVersionPicker(!showVersionPicker)}
                                 >
                                     <Icon as={History} size={14} className="text-muted-foreground mr-1" />
@@ -442,7 +530,7 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false, 
                                         key={report.id}
                                         onPress={() => handleSelectVersion(report.id)}
                                         className={`p-3 flex-row items-center justify-between ${report.id === selectedReport?.id ? 'bg-primary/10' : 'bg-muted/10'
-                                            } ${idx < sortedReports.length - 1 ? 'border-b border-border/30' : ''} ${!isLatest ? 'opacity-50' : ''}`}
+                                            } ${idx < sortedReports.length - 1 ? 'border-b border-border/30' : ''}`}
                                     >
                                         <View className="flex-row items-center gap-3">
                                             <View className={`w-6 h-6 rounded-full items-center justify-center ${report.id === selectedReport?.id ? 'bg-primary' : 'bg-muted-foreground/20'}`}>
@@ -462,9 +550,9 @@ export function SaleEventCard({ sale, isLatest = false, showFarmerName = false, 
                                         </View>
                                         {report.id === selectedReport?.id ? (
                                             <Icon as={Check} size={14} className="text-primary" />
-                                        ) : !isLatest ? (
-                                            <Icon as={Info} size={12} className="text-muted-foreground/40" />
-                                        ) : null}
+                                        ) : (
+                                            <Icon as={Eye} size={12} className="text-muted-foreground/40" />
+                                        )}
                                     </Pressable>
                                 ))}
                             </View>

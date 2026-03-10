@@ -199,15 +199,15 @@ export const SaleDetailsContent = ({
             <View className="flex-row gap-2 mb-4">
                 <View className="flex-1 bg-muted/30 rounded-xl p-3 items-center">
                     <Text className="text-muted-foreground text-[10px] uppercase font-bold mb-1">Cash</Text>
-                    <Text className="font-bold text-foreground">৳{parseFloat(sale.cashReceived || "0").toLocaleString()}</Text>
+                    <Text className="font-bold text-foreground">৳{parseFloat((selectedReport?.cashReceived ?? sale.cashReceived) || "0").toLocaleString()}</Text>
                 </View>
                 <View className="flex-1 bg-muted/30 rounded-xl p-3 items-center">
                     <Text className="text-muted-foreground text-[10px] uppercase font-bold mb-1">Deposit</Text>
-                    <Text className="font-bold text-foreground">৳{parseFloat(sale.depositReceived || "0").toLocaleString()}</Text>
+                    <Text className="font-bold text-foreground">৳{parseFloat((selectedReport?.depositReceived ?? sale.depositReceived) || "0").toLocaleString()}</Text>
                 </View>
                 <View className="flex-1 bg-muted/30 rounded-xl p-3 items-center">
                     <Text className="text-muted-foreground text-[10px] uppercase font-bold mb-1">Medicine</Text>
-                    <Text className="font-bold text-foreground">৳{parseFloat(sale.medicineCost || "0").toLocaleString()}</Text>
+                    <Text className="font-bold text-foreground">৳{parseFloat((selectedReport?.medicineCost ?? sale.medicineCost) || "0").toLocaleString()}</Text>
                 </View>
             </View>
 
