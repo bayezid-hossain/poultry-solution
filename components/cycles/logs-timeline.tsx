@@ -49,7 +49,7 @@ const getLogTitle = (type: string, note?: string | null) => {
     if (normalizedType === "FEED") return "Added Feed";
     if (normalizedType === "STOCK_IN") return "Stock In";
     if (normalizedType === "MORTALITY") return "Reported Mortality";
-    if (normalizedType === "CORRECTION") return "Correction";
+    if (normalizedType === "CORRECTION") return "Adjustment";
     if (normalizedType === "SALES") return "Sale Recorded";
     if (normalizedType === "CONSUMPTION" || normalizedType === "STOCK_OUT") return "Stock Deduction";
 

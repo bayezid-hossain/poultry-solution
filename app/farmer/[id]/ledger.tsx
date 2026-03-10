@@ -91,7 +91,7 @@ export default function FarmerLedgerScreen() {
                         <Icon as={parseFloat(item.amount) > 0 ? ArrowUpRight : ArrowDownLeft} size={12} className={parseFloat(item.amount) > 0 ? "text-emerald-500" : "text-orange-500"} />
                     </View>
                     <Text className={`text-sm font-bold text-foreground`}>
-                        {item.type.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase())}
+                        {item.type === 'CORRECTION' ? 'Adjustment' : item.type.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase())}
                     </Text>
                 </View>
 
@@ -100,15 +100,22 @@ export default function FarmerLedgerScreen() {
                         const originalLog = historyData.find((l: any) => l.id === item.referenceId);
                         if (originalLog) {
                             const origAmt = parseFloat(originalLog.amount);
-                            const deltaAmt = parseFloat(item.amount);
-                            const newAmt = origAmt + deltaAmt;
+                            const priorCorrections = historyData.filter((l: any) => 
+                                l.type === "CORRECTION" && 
+                                l.referenceId === item.referenceId && 
+                                new Date(l.createdAt).getTime() < new Date(item.createdAt).getTime()
+                            );
+                            const priorDeltaSum = priorCorrections.reduce((sum: number, l: any) => sum + parseFloat(l.amount), 0);
+                            
+                            const currentBaseAmt = origAmt + priorDeltaSum;
+                            const newAmt = currentBaseAmt + parseFloat(item.amount);
                             return (
                                 <View>
                                     <Text className="text-[11px] text-muted-foreground font-medium">
-                                        Corrected count
+                                        Adjusted count
                                     </Text>
                                     <View className="flex-row items-center gap-1 mt-0.5 opacity-80">
-                                        <Text className="text-[10px] text-muted-foreground line-through">{origAmt > 0 ? "+" : ""}{origAmt}</Text>
+                                        <Text className="text-[10px] text-muted-foreground line-through">{currentBaseAmt > 0 ? "+" : ""}{currentBaseAmt}</Text>
                                         <Text className="text-[10px] text-muted-foreground">→</Text>
                                         <Text className={`text-[10px] font-bold ${newAmt > 0 ? 'text-emerald-500' : 'text-orange-500'}`}>{newAmt > 0 ? "+" : ""}{newAmt}</Text>
                                     </View>

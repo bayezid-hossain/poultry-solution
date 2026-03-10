@@ -16,6 +16,7 @@ import { ConfirmModal } from "./confirm-modal";
 import { EditSaleAgeModal } from "./edit-sale-age-modal";
 import { SaleDetailsContent } from "./sale-details-content";
 import { SaleDiffModal } from "./sale-diff-modal";
+import { getFeedDiffFields } from "./sale-event-card";
 import { FarmerInfoHeader, FeedFieldArray, SaleMetricsBar } from "./sale-form-sections";
 
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -372,10 +373,19 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
             { label: "Weight", before: parseFloat(baseline.totalWeight), after: values.totalWeight, type: "number" as const, unit: "kg" },
             { label: "Price/kg", before: parseFloat(baseline.pricePerKg), after: values.pricePerKg, type: "number" as const, unit: "\u09f3" },
             { label: "Total Amount", before: (parseFloat(baseline.totalWeight) * parseFloat(baseline.pricePerKg)).toFixed(0), after: (values.totalWeight * values.pricePerKg).toFixed(0), type: "number" as const, unit: "\u09f3" },
+            { label: "Cash Rcvd", before: parseFloat(baseline.cashReceived || "0"), after: values.cashReceived, type: "number" as const, unit: "৳" },
+            { label: "Deposit", before: parseFloat(baseline.depositReceived || "0"), after: values.depositReceived, type: "number" as const, unit: "৳" },
+            { label: "Medicine", before: parseFloat(baseline.medicineCost || "0"), after: values.medicineCost, type: "number" as const, unit: "৳" },
             { label: "Sale Date", before: baselineSaleDate, after: values.saleDate, type: "date" as const },
             { label: "DOC Date", before: baselineOfficialDate, after: values.officialInputDate, type: "date" as const },
             { label: "Age", before: baseline.age ?? saleEvent.age, after: values.saleAge, type: "number" as const, unit: "days" },
             { label: "Location", before: saleEvent.location, after: values.location, type: "text" as const },
+            { label: "Party", before: saleEvent.party, after: values.party, type: "text" as const },
+            { label: "Rec. Price", before: baseline.recoveryPrice ?? saleEvent.cycleContext?.recoveryPrice, after: values.recoveryPrice, type: "number" as const, unit: "৳" },
+            { label: "Feed/Bag", before: baseline.feedPriceUsed ?? saleEvent.cycleContext?.feedPriceUsed, after: values.feedPricePerBag, type: "number" as const, unit: "৳" },
+            { label: "DOC Price", before: baseline.docPriceUsed ?? saleEvent.cycleContext?.docPriceUsed, after: values.docPricePerBird, type: "number" as const, unit: "৳" },
+            ...getFeedDiffFields(baseline.feedConsumed || "[]", values.feedConsumed, "Consumed"),
+            ...getFeedDiffFields(baseline.feedStock || "[]", values.feedStock, "Returned")
         ];
     };
 

@@ -77,7 +77,7 @@ export function SaleDiffModal({
 
     return (
         <BottomSheetModal open={visible} onOpenChange={(v) => !v && onCancel()}>
-            <ScrollView className="max-h-[500px]" contentContainerClassName="p-5 pb-8">
+            <ScrollView className="max-h-[600px]" contentContainerClassName="p-5 pb-8">
                 {/* Title */}
                 <Text className="text-lg font-black text-center text-foreground mb-1">
                     {title}

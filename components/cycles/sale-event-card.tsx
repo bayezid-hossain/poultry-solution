@@ -6,6 +6,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
+import { router } from "expo-router";
 import { Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardCopy, Edit, ExternalLink, Eye, EyeOff, History, Loader2, Trash2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Animated, Pressable, View, useColorScheme } from "react-native";
@@ -40,6 +41,32 @@ const safeParseJSON = (data: any) => {
     }
     return data;
 };
+
+export const getFeedDiffFields = (beforeFeed: any, afterFeed: any, labelPrefix: string) => {
+    const bFeed = safeParseJSON(beforeFeed);
+    const aFeed = safeParseJSON(afterFeed);
+
+    const types = new Set<string>();
+    bFeed.forEach((f: any) => { if (f.type) types.add(f.type.toUpperCase().trim()); });
+    aFeed.forEach((f: any) => { if (f.type) types.add(f.type.toUpperCase().trim()); });
+
+    const fields: any[] = [];
+    types.forEach(type => {
+        const b = bFeed.find((f: any) => (f.type || "").toUpperCase().trim() === type)?.bags || 0;
+        const a = aFeed.find((f: any) => (f.type || "").toUpperCase().trim() === type)?.bags || 0;
+        if (Number(b) !== 0 || Number(a) !== 0 || (Number(b) === 0 && Number(a) === 0 && types.size === 1)) {
+            fields.push({
+                label: `${labelPrefix} (${type})`,
+                before: Number(b),
+                after: Number(a),
+                type: "number",
+                unit: "bags"
+            });
+        }
+    });
+    return fields;
+};
+
 
 export const generateReportText = (sale: any, report: any, isLatest: boolean): string => {
     const birdsSold = report ? report.birdsSold : sale.birdsSold;
@@ -121,16 +148,16 @@ interface SaleEventCardProps {
     onCyclePress?: (cycleId: string | null) => void;
 }
 
-export function SaleEventCard({ 
-    sale, 
-    isLatest = false, 
-    showFarmerName = false, 
-    onVersionSwitch, 
-    isHighlighted = false, 
-    colorScheme: propColorScheme, 
-    selectedReportId: propsSelectedReportId, 
-    onNavigateToSale, 
-    onCyclePress 
+export function SaleEventCard({
+    sale,
+    isLatest = false,
+    showFarmerName = false,
+    onVersionSwitch,
+    isHighlighted = false,
+    colorScheme: propColorScheme,
+    selectedReportId: propsSelectedReportId,
+    onNavigateToSale,
+    onCyclePress
 }: SaleEventCardProps) {
     const internalColorScheme = useColorScheme();
     const colorScheme = propColorScheme || internalColorScheme;
@@ -198,7 +225,7 @@ export function SaleEventCard({
         // If pointers changed or override updated, update selected version
         // Prefer explicit override, then the canonical pointer, then fallback to newest
         setSelectedVersionId(propsSelectedReportId || sale.selectedReportId || (sortedReports[0]?.id ?? null));
-        
+
         if (isHighlighted || (isLatest && !propsSelectedReportId)) {
             Animated.sequence([
                 Animated.timing(highlightAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
@@ -286,13 +313,21 @@ export function SaleEventCard({
     const pendingReport = pendingVersionId ? sortedReports.find((r: any) => r.id === pendingVersionId) : null;
     const versionDiffFields = pendingReport && selectedReport ? [
         { label: "Birds Sold", before: selectedReport.birdsSold, after: pendingReport.birdsSold, type: "number" as const },
+        { label: "Mortality", before: selectedReport.totalMortality, after: pendingReport.totalMortality, type: "number" as const, invertColor: true },
         { label: "Weight", before: selectedReport.totalWeight, after: pendingReport.totalWeight, type: "number" as const, unit: "kg" },
         { label: "Price/kg", before: selectedReport.pricePerKg, after: pendingReport.pricePerKg, type: "number" as const, unit: "৳" },
         { label: "Total Amount", before: selectedReport.totalAmount, after: pendingReport.totalAmount, type: "number" as const, unit: "৳" },
-        { label: "Mortality", before: selectedReport.totalMortality, after: pendingReport.totalMortality, type: "number" as const, invertColor: true },
+        { label: "Cash Rcvd", before: selectedReport.cashReceived, after: pendingReport.cashReceived, type: "number" as const, unit: "৳" },
+        { label: "Deposit", before: selectedReport.depositReceived, after: pendingReport.depositReceived, type: "number" as const, unit: "৳" },
+        { label: "Medicine", before: selectedReport.medicineCost, after: pendingReport.medicineCost, type: "number" as const, unit: "৳" },
         { label: "Sale Date", before: selectedReport.saleDate || selectedReport.createdAt, after: pendingReport.saleDate || pendingReport.createdAt, type: "date" as const },
         { label: "DOC Date", before: selectedReport.officialInputDate || sale.officialInputDate || sale.cycle?.officialInputDate || sale.history?.startDate || sale.cycle?.createdAt, after: pendingReport.officialInputDate || sale.officialInputDate || sale.cycle?.officialInputDate || sale.history?.startDate || sale.cycle?.createdAt, type: "date" as const },
         { label: "Age", before: selectedReport.age, after: pendingReport.age, type: "number" as const, unit: "days" },
+        { label: "Rec. Price", before: selectedReport.recoveryPrice, after: pendingReport.recoveryPrice, type: "number" as const, unit: "৳" },
+        { label: "Feed/Bag", before: selectedReport.feedPriceUsed, after: pendingReport.feedPriceUsed, type: "number" as const, unit: "৳" },
+        { label: "DOC Price", before: selectedReport.docPriceUsed, after: pendingReport.docPriceUsed, type: "number" as const, unit: "৳" },
+        ...getFeedDiffFields(selectedReport.feedConsumed, pendingReport.feedConsumed, "Consumed"),
+        ...getFeedDiffFields(selectedReport.feedStock, pendingReport.feedStock, "Returned")
     ] : [];
 
     const displayReport = selectedReport || sale;
@@ -351,11 +386,24 @@ export function SaleEventCard({
                     <View className="gap-x-2 px-4 py-3 bg-transparent border-b border-border flex-row items-start justify-between">
                         <View className="flex-1 items-start justify-start gap-x-4">
                             <View className="flex-row items-start justify-start gap-2 mb-1">
-                                <Text className="flex max-w-[85%] font-bold text-base flex-shrink " numberOfLines={2}>
-                                    {showFarmerName
-                                        ? (sale.farmerName || sale.cycle?.farmer?.name || sale.history?.farmer?.name || "Unknown Farmer")
-                                        : format(new Date(displaySaleDate), "dd MMM yyyy")}
-                                </Text>
+                                <Pressable
+                                    className="flex max-w-[85%] flex-shrink"
+                                    disabled={!showFarmerName}
+                                    onPress={() => {
+                                        if (showFarmerName) {
+                                            const farmerId = sale.farmerId || sale.cycle?.farmerId || sale.cycle?.farmer?.id || sale.history?.farmerId || sale.history?.farmer?.id;
+                                            if (farmerId) {
+                                                router.push(`/farmer/${farmerId}` as any);
+                                            }
+                                        }
+                                    }}
+                                >
+                                    <Text className={`font-bold text-base underline ${showFarmerName ? 'text-emerald-600 dark:text-emerald-400' : ''}`} numberOfLines={2}>
+                                        {showFarmerName
+                                            ? (sale.farmerName || sale.cycle?.farmer?.name || sale.history?.farmer?.name || "Unknown Farmer")
+                                            : format(new Date(displaySaleDate), "dd MMM yyyy")}
+                                    </Text>
+                                </Pressable>
                                 {isLatest && (
                                     <Badge variant="outline" className="border-emerald-500 bg-emerald-500/10 py-0 h-5 px-1.5">
                                         <Text className="text-emerald-600 text-[10px] font-bold uppercase">Latest</Text>

@@ -279,7 +279,7 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                                             <Icon as={ti.icon} size={10} className={ti.color} />
                                         </View>
                                         <Text className="text-xs font-bold text-foreground" numberOfLines={1}>
-                                            {log.type.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase())}
+                                            {log.type === 'CORRECTION' ? 'Adjustment' : log.type.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase())}
                                         </Text>
                                     </View>
 
@@ -288,11 +288,18 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                                             const originalLog = stockLogs.find((l: any) => l.id === log.referenceId);
                                             if (originalLog) {
                                                 const origAmt = parseFloat(originalLog.amount);
-                                                const deltaAmt = parseFloat(log.amount);
-                                                const newAmt = origAmt + deltaAmt;
+                                                const priorCorrections = stockLogs.filter((l: any) => 
+                                                    l.type === "CORRECTION" && 
+                                                    l.referenceId === log.referenceId && 
+                                                    new Date(l.createdAt).getTime() < new Date(log.createdAt).getTime()
+                                                );
+                                                const priorDeltaSum = priorCorrections.reduce((sum: number, l: any) => sum + parseFloat(l.amount), 0);
+                                                
+                                                const currentBaseAmt = origAmt + priorDeltaSum;
+                                                const newAmt = currentBaseAmt + parseFloat(log.amount);
                                                 return (
                                                     <View className="flex-row items-center gap-1 opacity-80">
-                                                        <Text className="text-[9px] text-muted-foreground line-through">{origAmt > 0 ? "+" : ""}{origAmt}</Text>
+                                                        <Text className="text-[9px] text-muted-foreground line-through">{currentBaseAmt > 0 ? "+" : ""}{currentBaseAmt}</Text>
                                                         <Text className="text-[9px] text-muted-foreground">→</Text>
                                                         <Text className={`text-[9px] font-bold ${newAmt > 0 ? 'text-emerald-500' : 'text-orange-500'}`}>{newAmt > 0 ? "+" : ""}{newAmt}</Text>
                                                     </View>
