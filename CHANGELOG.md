@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.37] - 2026-03-10
+
+### Added
+- Track previous or next sale by button
+
 ## [v1.0.32] - 2026-03-08
 
 ### Fix
