@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.42] - 2026-03-11
+
 ### Add
 - Balance in every log of ledger
 
