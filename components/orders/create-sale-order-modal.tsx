@@ -81,7 +81,7 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
     const isSubmitting = createMutation.isPending;
 
     const generateCopyText = () => {
-        const dateStr = format(orderDate, "dd.MM.yy");
+        const dateStr = format(orderDate, "dd MMM yyyy");
         let text = `Date:  ${dateStr}\n`;
         text += `Broiler Sale Plan for ${branchName || "___"} Branch\n\n`;
 
@@ -116,8 +116,8 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
             });
         });
 
-        text += `\nTotal: ${grandTotalWeight} kg  \n`;
-        text += `Total Kg : ${grandTotalDoc} PCs \n`;
+        text += `\nTotal Weight: ${grandTotalWeight} kg  \n`;
+        text += `Total Birds : ${grandTotalDoc} PCs \n`;
         text += `\nThanks`;
 
         return text;

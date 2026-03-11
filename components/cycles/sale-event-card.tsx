@@ -111,7 +111,7 @@ export const generateReportText = (sale: any, report: any, isLatest: boolean): s
 Farmer: ${sale.farmerName || "N/A"}
 Location: ${sale.location || "N/A"}
 ${sale.cycleContext?.birdType ? `\nBird Type: ${sale.cycleContext?.birdType}` : ""}
-DOC Placement Date: ${docInputDateStr}
+DOC In: ${docInputDateStr}
 ${sale.houseBirds ? `House bird : ${sale.houseBirds}pcs` : ""}
 ${previousSold > 0 ? `Previously Sold: ${previousSold}pcs\n` : ""}Today's Sale : ${birdsSold}pcs
 Total Mortality: ${totalMortality} pcs
@@ -146,6 +146,7 @@ interface SaleEventCardProps {
     selectedReportId?: string | null;
     onNavigateToSale?: (saleId: string) => void;
     onCyclePress?: (cycleId: string | null) => void;
+    showOfficerName?: boolean;
 }
 
 export function SaleEventCard({
@@ -157,7 +158,8 @@ export function SaleEventCard({
     colorScheme: propColorScheme,
     selectedReportId: propsSelectedReportId,
     onNavigateToSale,
-    onCyclePress
+    onCyclePress,
+    showOfficerName = false,
 }: SaleEventCardProps) {
     const internalColorScheme = useColorScheme();
     const colorScheme = propColorScheme || internalColorScheme;
@@ -405,8 +407,13 @@ export function SaleEventCard({
                                     </Text>
                                 </Pressable>
                                 {isLatest && (
-                                    <Badge variant="outline" className="border-emerald-500 bg-emerald-500/10 py-0 h-5 px-1.5">
+                                    <Badge variant="outline" className="border-emerald-500 bg-emerald-500/10 py-0 h-5 px-1.5 shrink-0">
                                         <Text className="text-emerald-600 text-[10px] font-bold uppercase">Latest</Text>
+                                    </Badge>
+                                )}
+                                {showOfficerName && selectedReport?.createdByUser?.name && (
+                                    <Badge variant="outline" className="border-blue-500 bg-blue-500/10 py-0 h-5 px-1.5 shrink-0">
+                                        <Text className="text-blue-600 text-[10px] font-bold uppercase">{selectedReport.createdByUser.name}</Text>
                                     </Badge>
                                 )}
                             </View>

@@ -14,13 +14,15 @@ export function DocOrderCard({
     onPress,
     onEdit,
     onDelete,
-    onConfirm
+    onConfirm,
+    showOfficerName = false,
 }: {
     order: any,
     onPress?: () => void,
     onEdit?: () => void,
     onDelete?: () => void,
-    onConfirm?: () => void
+    onConfirm?: () => void,
+    showOfficerName?: boolean,
 }) {
     const router = useRouter();
     const isConfirmed = order.status === "CONFIRMED";
@@ -85,7 +87,14 @@ export function DocOrderCard({
                                 <Icon as={Bird} size={16} className={isConfirmed ? "text-primary" : "text-muted-foreground"} />
                             </View>
                             <View>
-                                <Text className="font-bold text-base">DOC Order {isConfirmed && "✓"}</Text>
+                                <View className="flex-row items-center gap-2">
+                                    <Text className="font-bold text-base">DOC Order {isConfirmed && "✓"}</Text>
+                                    {showOfficerName && order.officer?.name && (
+                                        <View className="bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
+                                            <Text className="text-[10px] font-bold text-blue-600 uppercase">{order.officer.name}</Text>
+                                        </View>
+                                    )}
+                                </View>
                                 <Text className="text-xs text-muted-foreground">ID: {order.id.slice(0, 8).toUpperCase()}</Text>
                             </View>
                         </View>

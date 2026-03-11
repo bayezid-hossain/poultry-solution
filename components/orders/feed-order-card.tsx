@@ -14,13 +14,15 @@ export function FeedOrderCard({
     onPress,
     onEdit,
     onDelete,
-    onConfirm
+    onConfirm,
+    showOfficerName = false,
 }: {
     order: any,
     onPress?: () => void,
     onEdit?: () => void,
     onDelete?: () => void,
-    onConfirm?: () => void
+    onConfirm?: () => void,
+    showOfficerName?: boolean,
 }) {
     const router = useRouter();
     const isConfirmed = order.status === "CONFIRMED";
@@ -30,8 +32,8 @@ export function FeedOrderCard({
     const uniqueFarmersCount = new Set(order.items?.map((item: any) => item.farmerId)).size;
 
     const generateCopyText = () => {
-        const orderDateStr = format(new Date(order.orderDate), "dd/MM/yyyy");
-        const deliveryDateStr = format(new Date(order.deliveryDate), "dd/MM/yyyy");
+        const orderDateStr = format(new Date(order.orderDate), "dd MMM yyyy");
+        const deliveryDateStr = format(new Date(order.deliveryDate), "dd MMM yyyy");
 
         let text = `Dear sir,\nFeed order date: ${orderDateStr}\nFeed delivery date: ${deliveryDateStr}\n\n`;
 
@@ -100,7 +102,14 @@ export function FeedOrderCard({
                                 <Icon as={Factory} size={16} className={isConfirmed ? "text-primary" : "text-muted-foreground"} />
                             </View>
                             <View>
-                                <Text className="font-bold text-base">Feed Order {isConfirmed && "✓"}</Text>
+                                <View className="flex-row items-center gap-2">
+                                    <Text className="font-bold text-base">Feed Order {isConfirmed && "✓"}</Text>
+                                    {showOfficerName && order.officer?.name && (
+                                        <View className="bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
+                                            <Text className="text-[10px] font-bold text-blue-600 uppercase">{order.officer.name}</Text>
+                                        </View>
+                                    )}
+                                </View>
                                 <Text className="text-xs text-muted-foreground">ID: {order.id.slice(0, 8).toUpperCase()}</Text>
                             </View>
                         </View>

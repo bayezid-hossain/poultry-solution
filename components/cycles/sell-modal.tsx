@@ -771,7 +771,7 @@ export const SellModal = ({
                                                         <Input
                                                             ref={totalWeightRef}
                                                             value={value?.toString() || ""}
-                                                            onChangeText={(t) => onChange(parseFloat(t) || 0)}
+                                                            onChangeText={(t) => onChange(t === "" || t === "." ? 0 : t.endsWith('.') ? t : (parseFloat(t) || 0))}
                                                             keyboardType="decimal-pad"
                                                             className={`h-12 bg-muted/40 border-border/50 font-mono text-lg ${hasError("totalWeight") ? "border-destructive/50" : ""}`}
                                                             returnKeyType="next"
@@ -790,7 +790,7 @@ export const SellModal = ({
                                                         <Input
                                                             ref={pricePerKgRef}
                                                             value={value?.toString() || ""}
-                                                            onChangeText={(t) => onChange(parseFloat(t) || 0)}
+                                                            onChangeText={(t) => onChange(t === "" || t === "." ? 0 : t.endsWith('.') ? t : (parseFloat(t) || 0))}
                                                             keyboardType="decimal-pad"
                                                             className={`h-12 bg-muted/40 border-border/50 font-mono text-lg ${hasError("pricePerKg") ? "border-destructive/50" : ""}`}
                                                             returnKeyType="next"
@@ -817,7 +817,7 @@ export const SellModal = ({
                                                         <Input
                                                             ref={cashReceivedRef}
                                                             value={value?.toString() || ""}
-                                                            onChangeText={(t) => onChange(parseFloat(t) || 0)}
+                                                            onChangeText={(t) => onChange(t === "" || t === "." ? 0 : t.endsWith('.') ? t : (parseFloat(t) || 0))}
                                                             keyboardType="number-pad"
                                                             className="h-12 bg-muted/40 border-border/50 font-mono text-lg"
                                                             returnKeyType="next"
@@ -835,7 +835,7 @@ export const SellModal = ({
                                                         <Input
                                                             ref={depositReceivedRef}
                                                             value={value?.toString() || ""}
-                                                            onChangeText={(t) => onChange(parseFloat(t) || 0)}
+                                                            onChangeText={(t) => onChange(t === "" || t === "." ? 0 : t.endsWith('.') ? t : (parseFloat(t) || 0))}
                                                             keyboardType="number-pad"
                                                             className="h-12 bg-muted/40 border-border/50 font-mono text-lg"
                                                             returnKeyType="next"
@@ -906,7 +906,7 @@ export const SellModal = ({
                                                                 <Input
                                                                     ref={recoveryPriceRef}
                                                                     value={value?.toString() || ""}
-                                                                    onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                                    onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                                     keyboardType="decimal-pad"
                                                                     placeholder="141"
                                                                     className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
@@ -923,7 +923,7 @@ export const SellModal = ({
                                                                 <Input
                                                                     ref={feedPriceRef}
                                                                     value={value?.toString() || ""}
-                                                                    onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                                    onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                                     keyboardType="decimal-pad"
                                                                     placeholder="3220"
                                                                     className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
@@ -940,7 +940,7 @@ export const SellModal = ({
                                                                 <Input
                                                                     ref={docPriceRef}
                                                                     value={value?.toString() || ""}
-                                                                    onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                                    onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                                     keyboardType="decimal-pad"
                                                                     placeholder="41.5"
                                                                     className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"

@@ -13,7 +13,7 @@ import { format, isThisMonth, isThisWeek, isToday } from "date-fns";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Calendar, ChevronDown, ChevronUp, FileText, Search, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, SectionList, View } from "react-native";
+import { Dimensions, Pressable, RefreshControl, ScrollView, SectionList, View } from "react-native";
 
 type DateFilter = "all" | "today" | "week" | "month";
 
@@ -161,6 +161,7 @@ export default function SalesScreen() {
             title: group.dateStr,
             dateObj: group.dateObj,
             index,
+            allSales: group.sales,
             data: isExpanded(group.dateStr, index) ? group.sales : []
         }));
     }, [rawGroups, expandedDates]);
@@ -352,26 +353,83 @@ export default function SalesScreen() {
                                 </ScrollView>
                             </View>
                         }
-                        renderSectionHeader={({ section: { title, dateObj, index } }) => (
-                            <View className="bg-background p-2 pt-3 border border-[0.5px] mb-2 rounded-sm border-primary " style={{ zIndex: 10 }} collapsable={false} >
-                                <Pressable
-                                    onPress={() => toggleDate(title, index)}
-                                    className="flex-row items-center justify-between px-1"
-                                    hitSlop={{ top: 10, bottom: 10, left: 20, right: 20 }}
-                                    collapsable={false}
-                                >
-                                    <View className="flex-row items-center gap-2 ">
-                                        <View className="w-7 h-7 rounded-lg bg-muted/40 items-center justify-center">
-                                            <Icon as={Calendar} size={14} className="text-foreground/70" />
+                        renderSectionHeader={({ section: { title, dateObj, index, allSales } }) => {
+                            const getShortName = (name: string) => {
+                                if (!name) return "";
+                                const words = name.split(" ").filter(w => isNaN(Number(w)));
+                                if (words.length === 0) return name.split(" ")[0] || "";
+                                
+                                let result = "";
+                                for (let i = 0; i < words.length; i++) {
+                                    result += (i > 0 ? " " : "") + words[i];
+                                    if (words[i].length >= 3) break;
+                                }
+                                return result.toUpperCase();
+                            };
+                            const uniqueFarmers = Array.from(new Set((allSales as any[]).map(s => s.farmerName || "Unknown"))).map(name => getShortName(name as string));
+                            
+                            // Dynamic Badge Calculation
+                            const screenWidth = Dimensions.get('window').width;
+                            const availableWidth = screenWidth - 175; // safe margin for date (+icon), chevron, padding
+                            
+                            let currentWidth = 0;
+                            let visibleCount = 0;
+                            
+                            for (let i = 0; i < uniqueFarmers.length; i++) {
+                                // Estimate badge width: ~7.5px per uppercase char + 24px for padding/borders/gaps
+                                const badgeWidth = uniqueFarmers[i].length * 7.5 + 24;
+                                
+                                if (i === 0) {
+                                    currentWidth += badgeWidth;
+                                    visibleCount = 1;
+                                } else {
+                                    const moreBadgeWidth = 35; // approx width for "+X"
+                                    if (currentWidth + badgeWidth + moreBadgeWidth > availableWidth) {
+                                        break;
+                                    }
+                                    currentWidth += badgeWidth;
+                                    visibleCount++;
+                                }
+                            }
+                            
+                            const visibleFarmers = uniqueFarmers.slice(0, visibleCount);
+                            const hiddenCount = uniqueFarmers.length - visibleCount;
+
+                            return (
+                                <View className="bg-background p-2 pt-3 border border-[0.5px] mb-2 rounded-sm border-primary " style={{ zIndex: 10 }} collapsable={false} >
+                                    <Pressable
+                                        onPress={() => toggleDate(title, index)}
+                                        className="flex-row items-center justify-between px-1"
+                                        hitSlop={{ top: 10, bottom: 10, left: 20, right: 20 }}
+                                        collapsable={false}
+                                    >
+                                        <View className="flex-row items-center gap-2 flex-1 mr-2">
+                                            <View className="w-7 h-7 rounded-lg bg-muted/40 items-center justify-center shrink-0">
+                                                <Icon as={Calendar} size={14} className="text-foreground/70" />
+                                            </View>
+                                            <Text className="text-[14px] font-black text-foreground/80 uppercase tracking-widest mt-0.5 shrink-0">
+                                                {format(dateObj, "dd MMM yyyy")}
+                                            </Text>
+                                            <View className="flex-1 flex-row pl-2">
+                                                <View className="flex-row gap-x-1.5 items-center overflow-hidden">
+                                                    {visibleFarmers.map((name, i) => (
+                                                        <View key={i} className="bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
+                                                            <Text className="text-[10px] font-bold text-primary">{name}</Text>
+                                                        </View>
+                                                    ))}
+                                                    {hiddenCount > 0 && (
+                                                        <View className="bg-muted/80 px-1.5 py-0.5 rounded border border-border">
+                                                            <Text className="text-[10px] font-bold text-muted-foreground">+{hiddenCount}</Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            </View>
                                         </View>
-                                        <Text className="text-[14px] font-black text-foreground/80 uppercase tracking-widest mt-0.5 ">
-                                            {format(dateObj, "dd MMM yyyy")}
-                                        </Text>
-                                    </View>
-                                    <Icon as={isExpanded(title, index) ? ChevronUp : ChevronDown} size={16} className="text-muted-foreground/50" />
-                                </Pressable>
-                            </View>
-                        )}
+                                        <Icon as={isExpanded(title, index) ? ChevronUp : ChevronDown} size={16} className="text-muted-foreground/50 shrink-0" />
+                                    </Pressable>
+                                </View>
+                            )
+                        }}
                         renderItem={({ item }) => (
                             <SaleEventCard
                                 sale={item}
@@ -383,6 +441,7 @@ export default function SalesScreen() {
                                 colorScheme={colorScheme}
                                 onNavigateToSale={navigateToSale}
                                 onCyclePress={handleCyclePress}
+                                showOfficerName={isManagement}
                             />
                         )}
                         ListEmptyComponent={

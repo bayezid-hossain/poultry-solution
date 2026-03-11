@@ -167,7 +167,7 @@ export function CreateDocOrderModal({ open, onOpenChange, orgId, onSuccess, init
     const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
     const generateCopyText = (items: DocItem[], oDate: Date, bName?: string) => {
-        const orderDateStr = format(oDate, "dd MMMM yy");
+        const orderDateStr = format(oDate, "dd MMM yyyy");
         let text = `Dear sir/ Boss, \n`;
         if (bName && bName.trim() !== "") {
             text += `Doc order under ${bName} branch\n `;

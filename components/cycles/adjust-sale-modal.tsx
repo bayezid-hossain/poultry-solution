@@ -665,7 +665,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                                 ref={totalWeightRef}
                                                 keyboardType="decimal-pad"
                                                 value={value?.toString()}
-                                                onChangeText={(v) => onChange(parseFloat(v) || 0)}
+                                                onChangeText={(v) => onChange(v === "" || v === "." ? 0 : v.endsWith('.') ? v : (parseFloat(v) || 0))}
                                                 className="h-12 bg-muted/40 border-border/50 font-mono text-lg"
                                                 returnKeyType="next"
                                                 onSubmitEditing={() => pricePerKgRef.current?.focus()}
@@ -683,7 +683,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                                 ref={pricePerKgRef}
                                                 keyboardType="decimal-pad"
                                                 value={value?.toString()}
-                                                onChangeText={(v) => onChange(parseFloat(v) || 0)}
+                                                onChangeText={(v) => onChange(v === "" || v === "." ? 0 : v.endsWith('.') ? v : (parseFloat(v) || 0))}
                                                 className="h-12 bg-muted/40 border-border/50 font-mono text-lg"
                                                 returnKeyType="next"
                                                 onSubmitEditing={() => adjustmentNoteRef.current?.focus()}
@@ -710,7 +710,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                         render={({ field: { onChange, value } }) => (
                                             <Input
                                                 value={value?.toString() || ""}
-                                                onChangeText={(t) => onChange(parseFloat(t) || 0)}
+                                                onChangeText={(t) => onChange(t === "" || t === "." ? 0 : t.endsWith('.') ? t : (parseFloat(t) || 0))}
                                                 keyboardType="number-pad"
                                                 className="h-12 bg-muted/40 border-border/50 font-mono text-lg"
                                             />
@@ -725,7 +725,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                         render={({ field: { onChange, value } }) => (
                                             <Input
                                                 value={value?.toString() || ""}
-                                                onChangeText={(t) => onChange(parseFloat(t) || 0)}
+                                                onChangeText={(t) => onChange(t === "" || t === "." ? 0 : t.endsWith('.') ? t : (parseFloat(t) || 0))}
                                                 keyboardType="number-pad"
                                                 className="h-12 bg-muted/40 border-border/50 font-mono text-lg"
                                             />
@@ -791,7 +791,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                                     <Input
                                                         ref={recoveryPriceRef}
                                                         value={value?.toString() || ""}
-                                                        onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                        onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                         keyboardType="decimal-pad"
                                                         placeholder="141"
                                                         className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
@@ -808,7 +808,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                                     <Input
                                                         ref={feedPriceRef}
                                                         value={value?.toString() || ""}
-                                                        onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                        onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                         keyboardType="decimal-pad"
                                                         placeholder="3220"
                                                         className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
@@ -825,7 +825,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                                     <Input
                                                         ref={docPriceRef}
                                                         value={value?.toString() || ""}
-                                                        onChangeText={(t) => onChange(t === "" ? undefined : parseFloat(t) || undefined)}
+                                                        onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                         keyboardType="decimal-pad"
                                                         placeholder="41.5"
                                                         className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"

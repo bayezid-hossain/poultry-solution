@@ -240,6 +240,7 @@ export default function OrdersScreen() {
                                     onEdit={() => setEditingOrder(item)}
                                     onDelete={() => setDeletingOrderId(item.id)}
                                     onConfirm={() => setConfirmingOrderId(item.id)}
+                                    showOfficerName={isManagement}
                                 />
                             )}
                             contentContainerClassName="p-4 gap-2 pb-20"
@@ -266,6 +267,7 @@ export default function OrdersScreen() {
                                     onEdit={() => setEditingDocOrder(item)}
                                     onDelete={() => setDeletingDocOrderId(item.id)}
                                     onConfirm={() => setConfirmingDocOrder(item)}
+                                    showOfficerName={isManagement}
                                 />
                             )}
                             contentContainerClassName="p-4 gap-2 pb-20"
@@ -292,6 +294,7 @@ export default function OrdersScreen() {
                                         order={item}
                                         onPress={() => { /* Handle press if needed */ }}
                                         onDelete={() => setDeletingSaleOrderId(item.id)}
+                                        showOfficerName={isManagement}
                                     />
                                 </View>
                             )}

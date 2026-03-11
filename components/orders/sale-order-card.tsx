@@ -13,10 +13,12 @@ export function SaleOrderCard({
     order,
     onPress,
     onDelete,
+    showOfficerName = false,
 }: {
     order: any,
     onPress?: () => void,
     onDelete?: () => void,
+    showOfficerName?: boolean,
 }) {
     const router = useRouter();
     const [isExpanded, setIsExpanded] = useState(false);
@@ -26,7 +28,7 @@ export function SaleOrderCard({
     const farmersCount = order.items?.length || 0;
 
     const generateCopyText = () => {
-        const orderDateStr = format(new Date(order.orderDate), "dd.MM.yy");
+        const orderDateStr = format(new Date(order.orderDate), "dd MMM yyyy");
         let text = `Date:  ${orderDateStr}\n`;
         text += `Broiler Sale Plan for ${order.branchName || "___"} Branch\n\n`;
 
@@ -59,8 +61,8 @@ export function SaleOrderCard({
             farmCounter++;
         });
 
-        text += `\nTotal: ${grandTotalWeight} kg  \n`;
-        text += `Total Kg : ${grandTotalDoc} PCs \n`;
+        text += `\nTotal Weight: ${grandTotalWeight} kg  \n`;
+        text += `Total Birds : ${grandTotalDoc} PCs \n`;
         text += `\nThanks`;
 
         return text;
@@ -82,7 +84,14 @@ export function SaleOrderCard({
                                 <Icon as={ShoppingBag} size={16} className="text-muted-foreground" />
                             </View>
                             <View>
-                                <Text className="font-bold text-base">Sale Order</Text>
+                                <View className="flex-row items-center gap-2">
+                                    <Text className="font-bold text-base">Sale Order</Text>
+                                    {showOfficerName && order.officer?.name && (
+                                        <View className="bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
+                                            <Text className="text-[10px] font-bold text-blue-600 uppercase">{order.officer.name}</Text>
+                                        </View>
+                                    )}
+                                </View>
                                 <Text className="text-xs text-muted-foreground">ID: {order.id.slice(0, 8).toUpperCase()}</Text>
                             </View>
                         </View>
