@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [v1.0.40] - 2026-03-11
+## [v1.0.41] - 2026-03-11
 
 ### Fix
 - Adjust and Sell modal decimal problem fixed!
@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fix
 - Management Cycle permission
+## [v1.0.40] - 2026-03-11
+
 ## [v1.0.39] - 2026-03-11
 
 
