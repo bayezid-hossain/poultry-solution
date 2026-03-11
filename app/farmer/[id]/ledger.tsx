@@ -84,20 +84,28 @@ export default function FarmerLedgerScreen() {
 
         return (
             <View className={`flex-row items-center py-4 border-b border-border/10 px-1 ${isHighlighted ? 'bg-primary/20 rounded-xl' : ''}`}>
-                <Text className="w-14 text-[11px] text-muted-foreground font-medium">
-                    {format(new Date(item.createdAt), "dd MMM")}
-                </Text>
+                {/* Date Column */}
+                <View className="w-14 items-center justify-center">
+                    <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">
+                        {format(new Date(item.createdAt), "dd")}
+                    </Text>
+                    <Text className="text-[9px] text-muted-foreground/60 font-bold uppercase">
+                        {format(new Date(item.createdAt), "MMM")}
+                    </Text>
+                </View>
 
-                <View className="flex-1 flex-row items-center gap-2">
-                    <View className={`w-5 h-5 rounded items-center justify-center ${parseFloat(item.amount) > 0 ? "bg-emerald-500/10" : "bg-orange-500/10"}`}>
-                        <Icon as={parseFloat(item.amount) > 0 ? ArrowUpRight : ArrowDownLeft} size={12} className={parseFloat(item.amount) > 0 ? "text-emerald-500" : "text-orange-500"} />
+                {/* Type Column */}
+                <View className="flex-[1.2] flex-row items-center gap-2 pl-1">
+                    <View className={`w-6 h-6 rounded-full items-center justify-center ${parseFloat(item.amount) > 0 ? "bg-emerald-500/10" : "bg-orange-500/10"}`}>
+                        <Icon as={parseFloat(item.amount) > 0 ? ArrowUpRight : ArrowDownLeft} size={14} className={parseFloat(item.amount) > 0 ? "text-emerald-500" : "text-orange-500"} />
                     </View>
-                    <Text className={`text-sm font-bold text-foreground`}>
+                    <Text className={`text-[12px] font-bold text-foreground flex-1`}>
                         {item.type === 'CORRECTION' ? 'Adjustment' : item.type.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase())}
                     </Text>
                 </View>
 
-                <View className="flex-1 pr-1 justify-center">
+                {/* Note/Details Column */}
+                <View className="flex-1 px-2 justify-center">
                     {isCorrection && item.referenceId ? (() => {
                         const originalLog = historyData.find((l: any) => l.id === item.referenceId);
                         if (originalLog) {
@@ -113,15 +121,12 @@ export default function FarmerLedgerScreen() {
                             const newAmt = currentBaseAmt + parseFloat(item.amount);
                             return (
                                 <View>
-                                    <Text className="text-[11px] text-muted-foreground font-medium">
-                                        Adjusted count
-                                    </Text>
-                                    <View className="flex-row items-center gap-1 mt-0.5 opacity-80">
+                                    <View className="flex-row items-center gap-1 opacity-80">
                                         <Text className="text-[10px] text-muted-foreground line-through">{currentBaseAmt > 0 ? "+" : ""}{currentBaseAmt}</Text>
                                         <Text className="text-[10px] text-muted-foreground">→</Text>
                                         <Text className={`text-[10px] font-bold ${newAmt > 0 ? 'text-emerald-500' : 'text-orange-500'}`}>{newAmt > 0 ? "+" : ""}{newAmt}</Text>
                                     </View>
-                                    <Pressable onPress={() => scrollToAndHighlight(item.referenceId)} className="mt-1">
+                                    <Pressable onPress={() => scrollToAndHighlight(item.referenceId)} className="mt-0.5">
                                         <Text className="text-[10px] text-primary font-bold">
                                             View Original
                                         </Text>
@@ -130,25 +135,34 @@ export default function FarmerLedgerScreen() {
                             );
                         }
                         return (
-                            <Text className="text-[11px] text-muted-foreground" numberOfLines={2}>
+                            <Text className="text-[10px] text-muted-foreground font-medium">
                                 {item.note || "-"}
                             </Text>
                         );
                     })() : (
-                        <Text className="text-[11px] text-muted-foreground" numberOfLines={2}>
+                        <Text className="text-[10px] text-muted-foreground font-medium">
                             {item.note || "-"}
                         </Text>
                     )}
                 </View>
 
-                <View className="items-end w-16 mr-1">
-                    <Text className={`text-sm font-bold ${parseFloat(item.amount) > 0 ? "text-emerald-500" : "text-orange-500"}`}>
+                {/* Change & Balance Column */}
+                <View className="w-24 items-end pr-1">
+                    <Text className={`text-sm font-black ${parseFloat(item.amount) > 0 ? "text-emerald-500" : "text-orange-500"}`}>
                         {parseFloat(item.amount) > 0 ? "+" : ""}{parseFloat(item.amount).toFixed(1)}
                     </Text>
+                    {item.balanceAfter != null && (
+                        <View className="flex-row items-center gap-0.5 mt-0.5">
+                            <Text className="text-[9px] text-muted-foreground/60 font-black uppercase tracking-tighter">Bal:</Text>
+                            <Text className="text-[10px] text-muted-foreground font-black">
+                                {Number(item.balanceAfter).toFixed(1)}
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
-                {/* Actions Row */}
-                <View className="w-10 items-end justify-center">
+                {/* Actions Column */}
+                <View className="w-8 items-end justify-center">
                     {!isCorrection && !isCycleClose && !isReverted ? (
                         <View className="gap-1">
                             {!isTransfer ? (
@@ -156,7 +170,7 @@ export default function FarmerLedgerScreen() {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-7 w-7 rounded-lg"
+                                        className="h-6 w-6 rounded-lg"
                                         onPress={() => setEditingLog(item)}
                                     >
                                         <Icon as={Pencil} size={12} className="text-muted-foreground" />
@@ -164,7 +178,7 @@ export default function FarmerLedgerScreen() {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-7 w-7 rounded-lg"
+                                        className="h-6 w-6 rounded-lg"
                                         onPress={() => setRevertingLog(item)}
                                     >
                                         <Icon as={RotateCcw} size={12} className="text-orange-500" />
@@ -174,15 +188,15 @@ export default function FarmerLedgerScreen() {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 rounded-lg"
+                                    className="h-6 w-6 rounded-lg"
                                     onPress={() => setRevertingTransfer({ id: item.referenceId, note: item.note })}
                                 >
-                                    <Icon as={RotateCcw} size={14} className="text-orange-500" />
+                                    <Icon as={RotateCcw} size={12} className="text-orange-500" />
                                 </Button>
                             )}
                         </View>
                     ) : (
-                        <View className="w-10" /> // Placeholder
+                        <View className="w-8" />
                     )}
                 </View>
             </View>
@@ -256,7 +270,7 @@ export default function FarmerLedgerScreen() {
             {tab === "stock" && (
                 <View className="px-4 pt-4 flex-row gap-2">
                     <View className="flex-[1.2] bg-card p-3 rounded-2xl border border-border/50 items-center justify-center">
-                        <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1 line-clamp-1 text-center">Provisioned</Text>
+                        <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1 text-center">Provisioned</Text>
                         <View className="flex-row items-baseline gap-1">
                             <Text className="text-base font-bold text-foreground">{mainStock.toFixed(1)}</Text>
                             <Text className="text-[10px] text-muted-foreground">bags</Text>
@@ -313,12 +327,16 @@ export default function FarmerLedgerScreen() {
                     keyExtractor={(item) => item.id}
                     contentContainerClassName="px-4 pb-[100px]"
                     ListHeaderComponent={tab === "stock" && historyData.length > 0 ? (
-                        <View className="flex-row py-3 border-b border-border/20 items-center">
-                            <Text className="w-14 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Date</Text>
-                            <Text className="flex-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Type</Text>
-                            <Text className="flex-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Note</Text>
-                            <Text className="w-16 mr-1 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Change</Text>
-                            <View className="w-10" />
+                        <View className="flex-row py-3 border-y border-border/20 items-center bg-muted/5">
+                            <Text className="w-14 text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Date</Text>
+                            <View className="flex-[1.2] flex-row items-center">
+                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Type</Text>
+                            </View>
+                            <Text className="flex-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2">Transaction Details</Text>
+                            <View className="w-24 items-end pr-1">
+                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Change / Bal</Text>
+                            </View>
+                            <View className="w-8" />
                         </View>
                     ) : null}
                     ListEmptyComponent={
