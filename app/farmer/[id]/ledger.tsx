@@ -163,7 +163,7 @@ export default function FarmerLedgerScreen() {
 
                 {/* Actions Column */}
                 <View className="w-8 items-end justify-center">
-                    {!isCorrection && !isCycleClose && !isReverted ? (
+                    {!isCorrection && !isCycleClose && !isReverted && item.type !== "ADJUSTMENT" && item.type !== "CYCLE_CONSUMPTION" ? (
                         <View className="gap-1">
                             {!isTransfer ? (
                                 <View className="gap-0.5">
