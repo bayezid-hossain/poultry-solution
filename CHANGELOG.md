@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Add
+- Balance in every log of ledger
+
+### Fix
+- Search in sales page fixed
+
 ## [v1.0.41] - 2026-03-11
 
 ### Fix

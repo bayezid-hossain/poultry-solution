@@ -210,7 +210,7 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
 
 
     return (
-        <Card className="mb-2 border-border/50 overflow-hidden">
+        <Card className="pl-2 mb-2 border-border/50 overflow-hidden">
             <CardContent className="p-0 flex-row items-center justify-between">
 
                 <Pressable
