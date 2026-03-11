@@ -50,7 +50,7 @@ export default function FarmersScreen() {
     const officerQuery = trpc.officer.farmers.listWithStock.useQuery(
         {
             orgId: membership?.orgId ?? "",
-            search: search,
+            search: search.trim(),
             pageSize: 50,
         },
         { enabled: !!membership?.orgId && !isManagement }
@@ -60,7 +60,7 @@ export default function FarmersScreen() {
     const mgmtQuery = trpc.management.farmers.getMany.useQuery(
         {
             orgId: membership?.orgId ?? "",
-            search: search,
+            search: search.trim(),
             pageSize: 50,
             status: activeTab === 'archived' ? 'deleted' : 'active',
             officerId: selectedOfficerId || undefined,

@@ -30,15 +30,23 @@ export default function SalesScreen() {
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [refreshing, setRefreshing] = useState(false);
     const [dateFilter, setDateFilter] = useState<DateFilter>("all");
 
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
+
     const officerSalesQuery = trpc.officer.sales.getRecentSales.useQuery(
-        { limit: 100, search: searchQuery },
+        { limit: 100, search: debouncedSearch.trim() },
         { enabled: !!membership?.orgId && !isManagement }
     );
     const mgmtSalesQuery = trpc.management.sales.getRecentSales.useQuery(
-        { orgId: membership?.orgId ?? "", limit: 100, search: searchQuery, officerId: selectedOfficerId || undefined },
+        { orgId: membership?.orgId ?? "", limit: 100, search: debouncedSearch.trim(), officerId: selectedOfficerId || undefined },
         { enabled: !!membership?.orgId && isManagement }
     );
     const recentSales = isManagement ? mgmtSalesQuery.data : officerSalesQuery.data;
@@ -240,6 +248,7 @@ export default function SalesScreen() {
                     sectionIndex: sectionIdx,
                     itemIndex: itemIdx,
                     animated: true,
+                    viewOffset: -50,
                     viewPosition: 0, // Centers the item in the viewport
                 });
             } catch (error) {
@@ -266,6 +275,66 @@ export default function SalesScreen() {
         <View className="flex-1 bg-background">
             <ScreenHeader title="Sales" />
 
+            {/* Header controls outside of list to prevent unmounting */}
+            <View className="px-4 pt-4 pb-2 gap-3">
+                <View className="bg-card border border-border/50 px-3 pb-3 pt-2 rounded-2xl">
+                    {isManagement && (
+                        <View className="mb-3">
+                            <OfficerSelector orgId={membership?.orgId ?? ""} />
+                        </View>
+                    )}
+                    <View className="relative flex-row items-center gap-2">
+                        <View className="flex-1 relative">
+                            <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                                <Icon as={Search} size={18} className="text-muted-foreground opacity-50" />
+                            </View>
+                            <Input
+                                placeholder="Search by farmer or location..."
+                                className="pl-12 pr-12 h-12 bg-muted/30 border-border/50 rounded-2xl text-base font-bold"
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                placeholderTextColor={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.3)"}
+                            />
+                            {searchQuery.length > 0 && (
+                                <Pressable
+                                    onPress={() => setSearchQuery("")}
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full active:bg-muted/50 z-20"
+                                >
+                                    <Icon as={X} size={20} className="text-muted-foreground" />
+                                </Pressable>
+                            )}
+                        </View>
+                    </View>
+                </View>
+
+                {/* Date Filter Chips */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-1 pb-1">
+                    {DATE_FILTERS.map(f => (
+                        <Pressable
+                            key={f.key}
+                            onPress={() => setDateFilter(f.key)}
+                            className={`px-4 py-2 rounded-full border ${dateFilter === f.key
+                                ? "bg-primary border-primary"
+                                : "bg-card border-border/50 active:bg-muted/30"
+                                } `}
+                        >
+                            <Text className={`text-xs font-bold uppercase tracking-wider ${dateFilter === f.key ? "text-primary-foreground" : "text-muted-foreground"
+                                }`}>
+                                {f.label}
+                            </Text>
+                        </Pressable>
+                    ))}
+                    {dateFilter !== "all" && (
+                        <Pressable
+                            onPress={() => setDateFilter("all")}
+                            className="px-3 py-2 rounded-full items-center justify-center active:bg-muted/30"
+                        >
+                            <Icon as={X} size={14} className="text-muted-foreground" />
+                        </Pressable>
+                    )}
+                </ScrollView>
+            </View>
+
             {salesLoading ? (
                 <View className="flex-1 items-center justify-center">
                     <BirdyLoader size={48} color={"#10b981"} />
@@ -288,77 +357,17 @@ export default function SalesScreen() {
                         keyExtractor={(item) => item.id}
                         extraData={expandedDates}
                         keyboardShouldPersistTaps="handled"
-                        contentContainerClassName="p-4 pb-20"
+                        contentContainerClassName="p-4 pb-20 pt-0"
 
                         refreshControl={
                             <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
-                        }
-                        ListHeaderComponent={
-                            <View className="mb-4 gap-3">
-                                <View className="bg-card border border-border/50 px-3 pb-3 pt-2 rounded-2xl">
-                                    {isManagement && (
-                                        <View className="mb-3">
-                                            <OfficerSelector orgId={membership?.orgId ?? ""} />
-                                        </View>
-                                    )}
-                                    <View className="relative flex-row items-center gap-2">
-                                        <View className="flex-1 relative">
-                                            <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                                                <Icon as={Search} size={18} className="text-muted-foreground opacity-50" />
-                                            </View>
-                                            <Input
-                                                placeholder="Search by farmer or location..."
-                                                className="pl-12 pr-12 h-12 bg-muted/30 border-border/50 rounded-2xl text-base font-bold"
-                                                value={searchQuery}
-                                                onChangeText={setSearchQuery}
-                                                placeholderTextColor={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.3)"}
-                                            />
-                                            {searchQuery.length > 0 && (
-                                                <Pressable
-                                                    onPress={() => setSearchQuery("")}
-                                                    className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full active:bg-muted/50 z-20"
-                                                >
-                                                    <Icon as={X} size={20} className="text-muted-foreground" />
-                                                </Pressable>
-                                            )}
-                                        </View>
-                                    </View>
-                                </View>
-
-                                {/* Date Filter Chips */}
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-1">
-                                    {DATE_FILTERS.map(f => (
-                                        <Pressable
-                                            key={f.key}
-                                            onPress={() => setDateFilter(f.key)}
-                                            className={`px-4 py-2 rounded-full border ${dateFilter === f.key
-                                                ? "bg-primary border-primary"
-                                                : "bg-card border-border/50 active:bg-muted/30"
-                                                } `}
-                                        >
-                                            <Text className={`text-xs font-bold uppercase tracking-wider ${dateFilter === f.key ? "text-primary-foreground" : "text-muted-foreground"
-                                                }`}>
-                                                {f.label}
-                                            </Text>
-                                        </Pressable>
-                                    ))}
-                                    {dateFilter !== "all" && (
-                                        <Pressable
-                                            onPress={() => setDateFilter("all")}
-                                            className="px-3 py-2 rounded-full items-center justify-center active:bg-muted/30"
-                                        >
-                                            <Icon as={X} size={14} className="text-muted-foreground" />
-                                        </Pressable>
-                                    )}
-                                </ScrollView>
-                            </View>
                         }
                         renderSectionHeader={({ section: { title, dateObj, index, allSales } }) => {
                             const getShortName = (name: string) => {
                                 if (!name) return "";
                                 const words = name.split(" ").filter(w => isNaN(Number(w)));
                                 if (words.length === 0) return name.split(" ")[0] || "";
-                                
+
                                 let result = "";
                                 for (let i = 0; i < words.length; i++) {
                                     result += (i > 0 ? " " : "") + words[i];
@@ -367,18 +376,18 @@ export default function SalesScreen() {
                                 return result.toUpperCase();
                             };
                             const uniqueFarmers = Array.from(new Set((allSales as any[]).map(s => s.farmerName || "Unknown"))).map(name => getShortName(name as string));
-                            
+
                             // Dynamic Badge Calculation
                             const screenWidth = Dimensions.get('window').width;
                             const availableWidth = screenWidth - 175; // safe margin for date (+icon), chevron, padding
-                            
+
                             let currentWidth = 0;
                             let visibleCount = 0;
-                            
+
                             for (let i = 0; i < uniqueFarmers.length; i++) {
                                 // Estimate badge width: ~7.5px per uppercase char + 24px for padding/borders/gaps
                                 const badgeWidth = uniqueFarmers[i].length * 7.5 + 24;
-                                
+
                                 if (i === 0) {
                                     currentWidth += badgeWidth;
                                     visibleCount = 1;
@@ -391,7 +400,7 @@ export default function SalesScreen() {
                                     visibleCount++;
                                 }
                             }
-                            
+
                             const visibleFarmers = uniqueFarmers.slice(0, visibleCount);
                             const hiddenCount = uniqueFarmers.length - visibleCount;
 

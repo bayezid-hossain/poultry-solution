@@ -110,11 +110,11 @@ function StockTab({
     searchQuery: string;
 }) {
     const officerQuery = trpc.officer.stock.getAllFarmersStock.useQuery(
-        { limit: 100, cursor: 0, search: searchQuery },
+        { limit: 100, cursor: 0, search: searchQuery.trim() },
         { enabled: !isManagement }
     );
     const mgmtQuery = trpc.management.stock.getAllFarmersStock.useQuery(
-        { orgId, limit: 100, cursor: 0, officerId, search: searchQuery },
+        { orgId, limit: 100, cursor: 0, officerId, search: searchQuery.trim() },
         { enabled: isManagement }
     );
     const data = isManagement ? mgmtQuery.data : officerQuery.data;
@@ -208,6 +208,7 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
         }
     };
 
+
     return (
         <Card className="mb-2 border-border/50 overflow-hidden">
             <CardContent className="p-0 flex-row items-center justify-between">
@@ -279,7 +280,7 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                                             <Icon as={ti.icon} size={10} className={ti.color} />
                                         </View>
                                         <Text className="text-xs font-bold text-foreground" numberOfLines={1}>
-                                            {log.type === 'CORRECTION' ? 'Adjustment' : log.type.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase())}
+                                            {log.type}
                                         </Text>
                                     </View>
 
@@ -288,13 +289,13 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                                             const originalLog = stockLogs.find((l: any) => l.id === log.referenceId);
                                             if (originalLog) {
                                                 const origAmt = parseFloat(originalLog.amount);
-                                                const priorCorrections = stockLogs.filter((l: any) => 
-                                                    l.type === "CORRECTION" && 
-                                                    l.referenceId === log.referenceId && 
+                                                const priorCorrections = stockLogs.filter((l: any) =>
+                                                    l.type === "CORRECTION" &&
+                                                    l.referenceId === log.referenceId &&
                                                     new Date(l.createdAt).getTime() < new Date(log.createdAt).getTime()
                                                 );
                                                 const priorDeltaSum = priorCorrections.reduce((sum: number, l: any) => sum + parseFloat(l.amount), 0);
-                                                
+
                                                 const currentBaseAmt = origAmt + priorDeltaSum;
                                                 const newAmt = currentBaseAmt + parseFloat(log.amount);
                                                 return (
@@ -353,11 +354,11 @@ function ImportHistoryTab({
     searchQuery: string;
 }) {
     const officerQuery = trpc.officer.stock.getImportHistory.useQuery(
-        { limit: 50, cursor: 0, search: searchQuery },
+        { limit: 50, cursor: 0, search: searchQuery.trim() },
         { enabled: !isManagement }
     );
     const mgmtQuery = trpc.management.stock.getImportHistory.useQuery(
-        { orgId, limit: 50, cursor: 0, officerId, search: searchQuery },
+        { orgId, limit: 50, cursor: 0, officerId, search: searchQuery.trim() },
         { enabled: isManagement }
     );
     const data = isManagement ? mgmtQuery.data : officerQuery.data;

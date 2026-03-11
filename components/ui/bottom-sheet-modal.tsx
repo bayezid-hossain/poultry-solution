@@ -1,6 +1,7 @@
 import { useKeyboardVisible } from "@/hooks/use-keyboard-visible";
 import React from "react";
 import { KeyboardAvoidingView, Modal, ModalProps, Platform, Pressable, View } from "react-native";
+import { Toaster } from "sonner-native";
 
 export interface BottomSheetModalProps extends ModalProps {
     open: boolean;
@@ -40,6 +41,7 @@ export function BottomSheetModal({ open, onOpenChange, children, fullScreen, ...
                         className={`w-full bg-card rounded-t-[40px] overflow-hidden ${fullScreen ? 'h-[90%]' : 'max-h-[90%]'}`}
                     >
                         {children}
+                        <Toaster position="bottom-center" offset={40} />
                     </View>
                 </View>
             </KeyboardAvoidingView>

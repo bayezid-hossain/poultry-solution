@@ -1022,7 +1022,6 @@ export const SellModal = ({
 
                 }}
             />
-            <Toaster position="bottom-center" offset={40} />
         </BottomSheetModal>
     );
 };

@@ -591,26 +591,45 @@ export default function FarmerDetailScreen() {
                                         <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Fetching Ledger</Text>
                                     </View>
                                 ) : ledgerData && ledgerData.length > 0 ? (
-                                    renderLedgerCards ? (
-                                        <>
-                                            {ledgerData.slice(0, 5).map((log: any) => (
-                                                <Card key={log.id} className="mb-2 border-border/50 bg-card p-3">
-                                                    <View className="flex-row justify-between items-center">
-                                                        <View>
-                                                            <Text className="font-bold text-foreground text-sm">{log.type}</Text>
-                                                            <Text className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(log.createdAt), "MMM d, yyyy")}</Text>
-                                                        </View>
-                                                        <Text className={`font-black ${parseFloat(log.amount) > 0 ? 'text-emerald-500' : 'text-orange-500'}`}>
-                                                            {parseFloat(log.amount) > 0 ? '+' : ''}{log.amount} b
-                                                        </Text>
-                                                    </View>
-                                                </Card>
-                                            ))}
-                                            <Button variant="outline" className="mt-2 h-10 border-border/50" onPress={() => router.push(`/farmer/${farmer.id}/ledger` as any)}>
-                                                <Text className="text-foreground font-bold">View Full Ledger</Text>
-                                            </Button>
-                                        </>
-                                    ) : (
+                                    renderLedgerCards ? (() => {
+
+                                        const entries = ledgerData.slice(0, 5);
+                                        return (
+                                            <>
+                                                {entries.map((log: any) => {
+                                                    const amt = parseFloat(log.amount);
+                                                    const isPositive = amt > 0;
+                                                    return (
+                                                        <Card key={log.id} className="mb-2 border border-border/50 bg-card overflow-hidden">
+                                                            <CardContent className="p-0">
+                                                                <View className="flex-row items-center">
+                                                                    {/* Left color strip */}
+                                                                    <View className={`w-1 self-stretch ${isPositive ? 'bg-emerald-500' : 'bg-orange-500'}`} />
+                                                                    <View className="flex-1 p-3">
+                                                                        <View className="flex-row justify-between items-start">
+                                                                            <View className="flex-1">
+                                                                                <Text className="font-bold text-foreground text-sm">{log.type}</Text>
+                                                                                <Text className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(log.createdAt), "MMM d, yyyy")}</Text>
+                                                                                {log.note ? <Text className="text-[10px] text-muted-foreground/70 mt-0.5" numberOfLines={1}>{log.note}</Text> : null}
+                                                                            </View>
+                                                                            <View className="items-end">
+                                                                                <Text className={`font-black text-sm ${isPositive ? 'text-emerald-500' : 'text-orange-500'}`}>
+                                                                                    {isPositive ? '+' : ''}{amt.toFixed(1)} b
+                                                                                </Text>
+                                                                            </View>
+                                                                        </View>
+                                                                    </View>
+                                                                </View>
+                                                            </CardContent>
+                                                        </Card>
+                                                    );
+                                                })}
+                                                <Button variant="outline" className="mt-2 h-10 border-border/50" onPress={() => router.push(`/farmer/${farmer.id}/ledger` as any)}>
+                                                    <Text className="text-foreground font-bold">View Full Ledger</Text>
+                                                </Button>
+                                            </>
+                                        );
+                                    })() : (
                                         <View className="py-20 items-center justify-center">
                                             <BirdyLoader size={48} color="#10b981" />
                                             <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Rendering Logs</Text>

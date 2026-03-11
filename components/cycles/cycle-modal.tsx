@@ -309,7 +309,7 @@ export function CycleModal({
                         </View>
                     )}
 
-                    {/* DOC & Age */}
+                    {/* DOC & Bird Type */}
                     <View className="flex-row gap-4 -z-10">
                         <View className="flex-1 gap-2">
                             <View className="flex-row items-center gap-2 ml-1">
@@ -325,54 +325,136 @@ export function CycleModal({
                             />
                         </View>
                         <View className="flex-1 gap-2">
-                            <View className="flex-row items-center justify-between ml-1">
-                                <View className="flex-row items-center gap-2">
-                                    <Icon as={Hash} size={14} className="text-muted-foreground" />
-                                    <Text className="text-sm font-bold text-foreground">Initial Age (Days)</Text>
-                                </View>
-                                <Pressable
-                                    onPress={() => setShowDatePicker(true)}
-                                    className="active:opacity-50"
-                                >
-                                    <Icon as={Calendar} size={18} className="text-primary" />
-                                </Pressable>
-                            </View>
-                            <View className="relative">
-                                <Input
-                                    placeholder="0"
-                                    keyboardType="numeric"
-                                    value={age}
-                                    onChangeText={handleAgeChange}
-                                    className="h-14 bg-muted/30 border-border/50 text-xl font-mono pr-32"
-                                />
-                                <Pressable
-                                    onPress={() => setShowDatePicker(true)}
-                                    className="absolute right-0 top-0 bottom-0 justify-center pr-4 active:opacity-50"
-                                >
-                                    <View className="flex-row items-center gap-1.5 bg-primary/10 px-2.5 py-1.5 rounded-lg border border-primary/20">
-                                        <Icon as={Calendar} size={12} className="text-primary" />
-                                        <Text className="text-xs text-primary font-bold">
-                                            Start Date: {format(hatchDate, "MMM dd")}
-                                        </Text>
-                                    </View>
-                                </Pressable>
+                            <View className="flex-row items-center gap-2 ml-1">
+                                <Icon as={Bird} size={14} className="text-amber-500" />
+                                <Text className="text-sm font-bold text-foreground">Bird Type</Text>
                             </View>
 
-                            {showDatePicker && (
-                                <DateTimePicker
-                                    value={hatchDate}
-                                    mode="date"
-                                    display="default"
-                                    maximumDate={startOfDay(new Date())}
-                                    minimumDate={subDays(startOfDay(new Date()), 39)}
-                                    onChange={handleDateChange}
-                                />
-                            )}
+                            <View className="relative">
+                                <Pressable
+                                    onPress={() => {
+                                        setIsBirdTypeOpen(!isBirdTypeOpen);
+                                        setIsFarmerOpen(false);
+                                    }}
+                                    className="h-14 bg-muted/30 border border-border/50 rounded-xl px-4 flex-row items-center justify-between active:bg-muted/50"
+                                >
+                                    <Text className={`text-base font-medium ${birdType ? 'text-foreground' : 'text-muted-foreground'}`} numberOfLines={1}>
+                                        {birdType || (isLoadingBirdTypes ? "Loading..." : "Select Type")}
+                                    </Text>
+                                    <Icon as={isBirdTypeOpen ? ChevronUp : ChevronDown} size={16} className="text-muted-foreground" />
+                                </Pressable>
+
+                                <BottomSheetModal
+                                    open={isBirdTypeOpen}
+                                    onOpenChange={(v) => !v && setIsBirdTypeOpen(false)}
+                                >
+                                    <View className="p-4 flex-col">
+                                        <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-border/50">
+                                            <Text className="text-xl font-bold">Select Bird Type</Text>
+                                            <Button variant="ghost" size="icon" onPress={() => setIsBirdTypeOpen(false)}>
+                                                <Icon as={X} size={20} className="text-muted-foreground" />
+                                            </Button>
+                                        </View>
+                                        <FlatList
+                                            data={birdTypes || []}
+                                            keyExtractor={(t, idx) => t.id || idx.toString()}
+                                            style={{ maxHeight: 300 }}
+                                            renderItem={({ item: type }: any) => (
+                                                <Pressable
+                                                    onPress={() => {
+                                                        setBirdType(type.name);
+                                                        setIsBirdTypeOpen(false);
+                                                    }}
+                                                    className={`p-4 border-b border-border/20 active:bg-muted/30 ${birdType === type.name ? 'bg-primary/5' : ''}`}
+                                                >
+                                                    <View className="flex-row items-center justify-between">
+                                                        <Text className={`font-medium ${birdType === type.name ? 'text-primary' : 'text-foreground'}`}>
+                                                            {type.name}
+                                                        </Text>
+                                                        {birdType === type.name && (
+                                                            <Icon as={Bird} size={16} className="text-primary" />
+                                                        )}
+                                                    </View>
+                                                </Pressable>
+                                            )}
+                                            ListEmptyComponent={() => (
+                                                <View className="p-4 items-center">
+                                                    <Text className="text-muted-foreground">No bird types found</Text>
+                                                </View>
+                                            )}
+                                        />
+                                        <View className="p-4 border-t border-border/20 flex-row gap-2 bg-muted/10 items-center">
+                                            <Input
+                                                className="flex-1 h-12 bg-background"
+                                                placeholder="New bird type..."
+                                                value={newBirdType}
+                                                onChangeText={setNewBirdType}
+                                            />
+                                            <Button
+                                                onPress={() => createBirdTypeMutation.mutate({ name: newBirdType.trim() })}
+                                                disabled={!newBirdType.trim() || createBirdTypeMutation.isPending}
+                                                className="h-12 px-6 items-center justify-center bg-primary"
+                                            >
+                                                <Text className="text-primary-foreground font-bold">
+                                                    {createBirdTypeMutation.isPending ? "Adding..." : "Add"}
+                                                </Text>
+                                            </Button>
+                                        </View>
+                                    </View>
+                                </BottomSheetModal>
+                            </View>
                         </View>
                     </View>
 
+                    {/* Age Selection */}
+                    <View className="gap-2 z-10">
+                        <View className="flex-row items-center justify-between ml-1">
+                            <View className="flex-row items-center gap-2">
+                                <Icon as={Hash} size={14} className="text-muted-foreground" />
+                                <Text className="text-sm font-bold text-foreground">Initial Age (Days)</Text>
+                            </View>
+                            <Pressable
+                                onPress={() => setShowDatePicker(true)}
+                                className="active:opacity-50"
+                            >
+                                <Icon as={Calendar} size={18} className="text-primary" />
+                            </Pressable>
+                        </View>
+                        <View className="relative">
+                            <Input
+                                placeholder="0"
+                                keyboardType="numeric"
+                                value={age}
+                                onChangeText={handleAgeChange}
+                                className="h-14 bg-muted/30 border-border/50 text-xl font-mono pr-40"
+                            />
+                            <Pressable
+                                onPress={() => setShowDatePicker(true)}
+                                className="absolute right-0 top-0 bottom-0 justify-center pr-4 active:opacity-50"
+                            >
+                                <View className="flex-row items-center gap-1.5 bg-primary/10 px-2.5 py-1.5 rounded-lg border border-primary/20">
+                                    <Icon as={Calendar} size={12} className="text-primary" />
+                                    <Text className="text-xs text-primary font-bold">
+                                        Start: {format(hatchDate, "MMM dd")}
+                                    </Text>
+                                </View>
+                            </Pressable>
+                        </View>
+
+                        {showDatePicker && (
+                            <DateTimePicker
+                                value={hatchDate}
+                                mode="date"
+                                display="default"
+                                maximumDate={startOfDay(new Date())}
+                                minimumDate={subDays(startOfDay(new Date()), 39)}
+                                onChange={handleDateChange}
+                            />
+                        )}
+                    </View>
+
                     {/* Official DOC Date */}
-                    <View className="gap-2 z-40">
+                    <View className="gap-2 z-0">
                         <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Official DOC Date (Optional)</Text>
                         <View className="relative">
                             <Pressable
@@ -394,88 +476,6 @@ export function CycleModal({
                                     onChange={handleOfficialDateChange}
                                 />
                             )}
-                        </View>
-                    </View>
-
-                    {/* Bird Type */}
-                    <View className="gap-2 z-50">
-                        <View className="flex-row items-center gap-2 ml-1">
-                            <Icon as={Bird} size={14} className="text-amber-500" />
-                            <Text className="text-sm font-bold text-foreground">Bird Type</Text>
-                        </View>
-
-                        <View className="relative">
-                            <Pressable
-                                onPress={() => {
-                                    setIsBirdTypeOpen(!isBirdTypeOpen);
-                                    setIsFarmerOpen(false);
-                                }}
-                                className="h-14 bg-muted/30 border border-border/50 rounded-xl px-4 flex-row items-center justify-between active:bg-muted/50"
-                            >
-                                <Text className={`text-base font-medium ${birdType ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                    {birdType || (isLoadingBirdTypes ? "Loading types..." : "Select Bird Type")}
-                                </Text>
-                                <Icon as={isBirdTypeOpen ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
-                            </Pressable>
-
-                            <BottomSheetModal
-                                open={isBirdTypeOpen}
-                                onOpenChange={(v) => !v && setIsBirdTypeOpen(false)}
-                            >
-                                <View className="p-4 flex-col">
-                                    <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-border/50">
-                                        <Text className="text-xl font-bold">Select Bird Type</Text>
-                                        <Button variant="ghost" size="icon" onPress={() => setIsBirdTypeOpen(false)}>
-                                            <Icon as={X} size={20} className="text-muted-foreground" />
-                                        </Button>
-                                    </View>
-                                    <FlatList
-                                        data={birdTypes || []}
-                                        keyExtractor={(t, idx) => t.id || idx.toString()}
-                                        style={{ maxHeight: 300 }}
-                                        renderItem={({ item: type }: any) => (
-                                            <Pressable
-                                                onPress={() => {
-                                                    setBirdType(type.name);
-                                                    setIsBirdTypeOpen(false);
-                                                }}
-                                                className={`p-4 border-b border-border/20 active:bg-muted/30 ${birdType === type.name ? 'bg-primary/5' : ''}`}
-                                            >
-                                                <View className="flex-row items-center justify-between">
-                                                    <Text className={`font-medium ${birdType === type.name ? 'text-primary' : 'text-foreground'}`}>
-                                                        {type.name}
-                                                    </Text>
-                                                    {birdType === type.name && (
-                                                        <Icon as={Bird} size={16} className="text-primary" />
-                                                    )}
-                                                </View>
-                                            </Pressable>
-                                        )}
-                                        ListEmptyComponent={() => (
-                                            <View className="p-4 items-center">
-                                                <Text className="text-muted-foreground">No bird types found</Text>
-                                            </View>
-                                        )}
-                                    />
-                                    <View className="p-4 border-t border-border/20 flex-row gap-2 bg-muted/10 items-center">
-                                        <Input
-                                            className="flex-1 h-12 bg-background"
-                                            placeholder="New bird type..."
-                                            value={newBirdType}
-                                            onChangeText={setNewBirdType}
-                                        />
-                                        <Button
-                                            onPress={() => createBirdTypeMutation.mutate({ name: newBirdType.trim() })}
-                                            disabled={!newBirdType.trim() || createBirdTypeMutation.isPending}
-                                            className="h-12 px-6 items-center justify-center bg-primary"
-                                        >
-                                            <Text className="text-primary-foreground font-bold">
-                                                {createBirdTypeMutation.isPending ? "Adding..." : "Add"}
-                                            </Text>
-                                        </Button>
-                                    </View>
-                                </View>
-                            </BottomSheetModal>
                         </View>
                     </View>
 

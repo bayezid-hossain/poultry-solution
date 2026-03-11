@@ -73,6 +73,8 @@ export default function FarmerLedgerScreen() {
             .map((item: any) => item.referenceId)
     );
 
+
+
     const renderStockLog = ({ item }: { item: any }) => {
         const isCorrection = item.type === "CORRECTION";
         const isTransfer = item.type === "TRANSFER_IN" || item.type === "TRANSFER_OUT";
@@ -100,13 +102,13 @@ export default function FarmerLedgerScreen() {
                         const originalLog = historyData.find((l: any) => l.id === item.referenceId);
                         if (originalLog) {
                             const origAmt = parseFloat(originalLog.amount);
-                            const priorCorrections = historyData.filter((l: any) => 
-                                l.type === "CORRECTION" && 
-                                l.referenceId === item.referenceId && 
+                            const priorCorrections = historyData.filter((l: any) =>
+                                l.type === "CORRECTION" &&
+                                l.referenceId === item.referenceId &&
                                 new Date(l.createdAt).getTime() < new Date(item.createdAt).getTime()
                             );
                             const priorDeltaSum = priorCorrections.reduce((sum: number, l: any) => sum + parseFloat(l.amount), 0);
-                            
+
                             const currentBaseAmt = origAmt + priorDeltaSum;
                             const newAmt = currentBaseAmt + parseFloat(item.amount);
                             return (
@@ -333,7 +335,7 @@ export default function FarmerLedgerScreen() {
 
             {/* Bottom Sticky Summary (Stock only) */}
             {tab === "stock" && !isLoading && historyData.length > 0 && (
-                <View className="absolute bottom-6 right-6 flex-row items-center gap-3">
+                <View className="absolute bottom-0 right-0 left-0 flex-row items-center justify-end p-2 gap-3 w-full bg-card">
                     <Text className="text-[10px] font-black text-muted-foreground tracking-widest uppercase pb-1">Main Stock</Text>
                     <View className="bg-card border border-border/50 rounded-2xl px-5 py-3 shadow-lg flex-row items-baseline gap-1">
                         <Text className="text-2xl font-black text-foreground">{mainStock}</Text>

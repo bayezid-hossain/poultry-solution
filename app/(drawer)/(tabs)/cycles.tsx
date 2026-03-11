@@ -106,7 +106,7 @@ export default function CyclesScreen() {
         { enabled: !!membership?.orgId && !isManagement }
     );
     const officerHistoryQuery = trpc.officer.cycles.listPast.useQuery(
-        { orgId: membership?.orgId ?? "", search: debouncedSearch, pageSize: 50 },
+        { orgId: membership?.orgId ?? "", search: debouncedSearch.trim(), pageSize: 50 },
         { enabled: !!membership?.orgId && !isManagement && activeTab === 'history' }
     );
 
@@ -116,7 +116,7 @@ export default function CyclesScreen() {
         { enabled: !!membership?.orgId && isManagement }
     );
     const mgmtHistoryQuery = trpc.management.cycles.listPast.useQuery(
-        { orgId: membership?.orgId ?? "", search: debouncedSearch, pageSize: 50, officerId: selectedOfficerId || undefined },
+        { orgId: membership?.orgId ?? "", search: debouncedSearch.trim(), pageSize: 50, officerId: selectedOfficerId || undefined },
         { enabled: !!membership?.orgId && isManagement && activeTab === 'history' }
     );
 
