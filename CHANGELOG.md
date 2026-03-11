@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.39] - 2026-03-11
+
+### Fix
+- Adjust and Sell modal decimal problem fixed!
+
+### Fix
+- Order message fix
+
+### Fix
+- Farmer name in date of sales page
+
+### Fix
+- Management Cycle permission
+
 ## [v1.0.38] - 2026-03-10
 
 ### Added
