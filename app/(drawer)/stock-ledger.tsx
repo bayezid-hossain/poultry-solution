@@ -275,7 +275,7 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                                         {format(new Date(log.createdAt), "dd MMM")}
                                     </Text>
 
-                                    <View className="flex-1 flex-row items-center gap-1.5 pl-1">
+                                    <View className="flex-1 flex-row items-center gap-1 pl-1">
                                         <View className={`w-4 h-4 rounded items-center justify-center ${ti.bg}`}>
                                             <Icon as={ti.icon} size={10} className={ti.color} />
                                         </View>
