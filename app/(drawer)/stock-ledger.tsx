@@ -279,8 +279,8 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                                         <View className={`w-4 h-4 rounded items-center justify-center ${ti.bg}`}>
                                             <Icon as={ti.icon} size={10} className={ti.color} />
                                         </View>
-                                        <Text className="text-xs font-bold text-foreground" numberOfLines={1}>
-                                            {log.type}
+                                        <Text className="text-xs font-bold text-foreground" numberOfLines={2}>
+                                            {log.type == "TRANSFER_OUT" ? "TRANSFERRED OUT" : log.type == "TRANSFER_IN" ? "TRANSFERRED IN" : log.type}
                                         </Text>
                                     </View>
 
