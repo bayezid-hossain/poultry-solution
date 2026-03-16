@@ -110,6 +110,7 @@ export const generateReportText = (sale: any, report: any, isLatest: boolean): s
 
 Farmer: ${sale.farmerName || "N/A"}
 Location: ${sale.location || "N/A"}
+${report?.party || sale.party ? `Party: ${report?.party || sale.party}` : ""}
 ${sale.cycleContext?.birdType ? `\nBird Type: ${sale.cycleContext?.birdType}` : ""}
 DOC In: ${docInputDateStr}
 ${sale.houseBirds ? `House bird : ${sale.houseBirds}pcs` : ""}
@@ -417,7 +418,7 @@ export function SaleEventCard({
                                     </Badge>
                                 )}
                             </View>
-                            <Text className="text-xs text-muted-foreground">{sale.location}</Text>
+                            <Text className="text-xs text-muted-foreground">{sale.location}{selectedReport?.party || sale.party ? ` • ${selectedReport?.party || sale.party}` : ""}</Text>
                         </View>
 
                         {isLatest && (

@@ -116,7 +116,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         ),
 
         location: saleEvent.location || "",
-        party: saleEvent.party || "",
+        party: latestReport?.party || saleEvent.party || "",
         farmerMobile: saleEvent.farmerMobile || "",
         adjustmentNote: "",
         recoveryPrice: typeof saleEvent.cycleContext?.recoveryPrice === 'number' ? saleEvent.cycleContext.recoveryPrice : undefined,
@@ -380,7 +380,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
             { label: "DOC Date", before: baselineOfficialDate, after: values.officialInputDate, type: "date" as const },
             { label: "Age", before: baseline.age ?? saleEvent.age, after: values.saleAge, type: "number" as const, unit: "days" },
             { label: "Location", before: saleEvent.location, after: values.location, type: "text" as const },
-            { label: "Party", before: saleEvent.party, after: values.party, type: "text" as const },
+            { label: "Party", before: (latestReport?.party || saleEvent.party) || "N/A", after: values.party || "N/A", type: "text" as const },
             { label: "Rec. Price", before: baseline.recoveryPrice ?? saleEvent.cycleContext?.recoveryPrice, after: values.recoveryPrice, type: "number" as const, unit: "৳" },
             { label: "Feed/Bag", before: baseline.feedPriceUsed ?? saleEvent.cycleContext?.feedPriceUsed, after: values.feedPricePerBag, type: "number" as const, unit: "৳" },
             { label: "DOC Price", before: baseline.docPriceUsed ?? saleEvent.cycleContext?.docPriceUsed, after: values.docPricePerBird, type: "number" as const, unit: "৳" },
