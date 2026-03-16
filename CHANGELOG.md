@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.43] - 2026-03-16
+
+### Fix
+- Stock change type fixed
+
+### Added
+- Party name display
+
 ## [v1.0.42] - 2026-03-11
 
 ### Add
