@@ -166,12 +166,7 @@ export const SaleDetailsContent = ({
                         <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Mortality</Text>
                         <Text className="font-bold text-destructive">{displayMortality}</Text>
                     </View>
-                    {(selectedReport?.party || sale.party) && (
-                        <View className="flex-row justify-between items-baseline">
-                            <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Note</Text>
-                            <Text className="font-bold text-foreground">{selectedReport?.party || sale.party}</Text>
-                        </View>
-                    )}
+
                 </View>
 
                 <View className="w-[1px] bg-border/50" />

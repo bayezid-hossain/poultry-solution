@@ -110,7 +110,6 @@ export const generateReportText = (sale: any, report: any, isLatest: boolean): s
 
 Farmer: ${sale.farmerName || "N/A"}
 Location: ${sale.location || "N/A"}
-${report?.party || sale.party ? `Party: ${report?.party || sale.party}` : ""}
 ${sale.cycleContext?.birdType ? `\nBird Type: ${sale.cycleContext?.birdType}` : ""}
 DOC In: ${docInputDateStr}
 ${sale.houseBirds ? `House bird : ${sale.houseBirds}pcs` : ""}
@@ -329,6 +328,7 @@ export function SaleEventCard({
         { label: "Rec. Price", before: selectedReport.recoveryPrice, after: pendingReport.recoveryPrice, type: "number" as const, unit: "৳" },
         { label: "Feed/Bag", before: selectedReport.feedPriceUsed, after: pendingReport.feedPriceUsed, type: "number" as const, unit: "৳" },
         { label: "DOC Price", before: selectedReport.docPriceUsed, after: pendingReport.docPriceUsed, type: "number" as const, unit: "৳" },
+        { label: "Party", before: selectedReport.party || sale.party || "N/A", after: pendingReport.party || sale.party || "N/A", type: "text" as const },
         ...getFeedDiffFields(selectedReport.feedConsumed, pendingReport.feedConsumed, "Consumed"),
         ...getFeedDiffFields(selectedReport.feedStock, pendingReport.feedStock, "Returned")
     ] : [];
@@ -418,7 +418,7 @@ export function SaleEventCard({
                                     </Badge>
                                 )}
                             </View>
-                            <Text className="text-xs text-muted-foreground">{sale.location}{selectedReport?.party || sale.party ? ` • ${selectedReport?.party || sale.party}` : ""}</Text>
+                            <Text className="text-xs text-muted-foreground">{sale.location}</Text>
                         </View>
 
                         {isLatest && (
@@ -463,6 +463,7 @@ export function SaleEventCard({
                                         </View>
                                     )}
                                 </View>
+
                                 {isLatestVersion ? (
                                     <View className="flex-row items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/10">
                                         <Icon as={CheckCircle2} size={10} className="text-emerald-500" />
@@ -515,11 +516,20 @@ export function SaleEventCard({
                                             <Icon as={ExternalLink} size={10} className="text-primary" />
                                         </Pressable>
                                     )}
+
                                     {sale.cycleContext?.isEnded && (
                                         <View className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded">
                                             <Text className="text-[9px] font-black text-amber-600 uppercase">Ended</Text>
                                         </View>
                                     )}
+                                    {(selectedReport?.party || sale.party) && (
+                                        <Badge variant="outline" className="rounded-sm">
+                                            <Text className="font-bold rounded-sm">
+                                                Note: {selectedReport?.party || sale.party}
+                                            </Text>
+                                        </Badge>
+                                    )}
+
                                 </View>
                                 <View className="flex-row items-center gap-1">
                                     {sale.previousSaleId && onNavigateToSale && (
