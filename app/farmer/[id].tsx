@@ -743,7 +743,7 @@ export default function FarmerDetailScreen() {
                 onOpenChange={setIsTransferOpen}
                 sourceFarmerId={farmer.id}
                 sourceFarmerName={farmer.name}
-                availableStock={availableStock}
+                availableStock={mainStock}
                 onSuccess={() => {
                     refetchAll();
                     utils.officer.stock.getAllFarmersStock.invalidate();

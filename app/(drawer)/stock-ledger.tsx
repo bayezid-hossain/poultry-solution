@@ -253,8 +253,8 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
 
                     <View className="flex-row items-center bg-muted/20 px-4 py-2 mb-1 border-y border-border/10">
                         <Text className="w-12 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Date</Text>
-                        <Text className="flex-1 text-[9px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Type</Text>
-                        <Text className="flex-[1.2] text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Note</Text>
+                        <Text className="flex-[1.3] text-[9px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Type</Text>
+                        <Text className="flex-1 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Note</Text>
                         <Text className="w-14 text-right text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Change</Text>
                     </View>
 
@@ -275,16 +275,16 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                                         {format(new Date(log.createdAt), "dd MMM")}
                                     </Text>
 
-                                    <View className="flex-1 flex-row items-center gap-1 pl-1">
+                                    <View className="flex-[1.3] flex-row items-center gap-1 pl-1">
                                         <View className={`w-4 h-4 rounded items-center justify-center ${ti.bg}`}>
                                             <Icon as={ti.icon} size={10} className={ti.color} />
                                         </View>
-                                        <Text className="text-xs font-bold text-foreground" numberOfLines={2}>
-                                            {log.type == "TRANSFER_OUT" ? "TRANSFERRED OUT" : log.type == "TRANSFER_IN" ? "TRANSFERRED IN" : log.type}
+                                        <Text className="text-[11px] font-bold text-foreground flex-1 leading-tight" numberOfLines={2}>
+                                            {log.type == "TRANSFER_OUT" ? "TRANSFER OUT" : log.type == "TRANSFER_IN" ? "TRANSFER IN" : log.type}
                                         </Text>
                                     </View>
 
-                                    <View className="flex-[1.2] pr-2 justify-center">
+                                    <View className="flex-1 pr-2 justify-center">
                                         {log.type === "CORRECTION" && log.referenceId ? (() => {
                                             const originalLog = stockLogs.find((l: any) => l.id === log.referenceId);
                                             if (originalLog) {

@@ -95,11 +95,11 @@ export default function FarmerLedgerScreen() {
                 </View>
 
                 {/* Type Column */}
-                <View className="flex-[1.2] flex-row items-center gap-2 pl-1">
-                    <View className={`w-6 h-6 rounded-full items-center justify-center ${parseFloat(item.amount) > 0 ? "bg-emerald-500/10" : "bg-orange-500/10"}`}>
-                        <Icon as={parseFloat(item.amount) > 0 ? ArrowUpRight : ArrowDownLeft} size={14} className={parseFloat(item.amount) > 0 ? "text-emerald-500" : "text-orange-500"} />
+                <View className="flex-[1.3] flex-row items-center gap-2 pl-1">
+                    <View className={`w-5 h-5 rounded-full items-center justify-center ${parseFloat(item.amount) > 0 ? "bg-emerald-500/10" : "bg-orange-500/10"}`}>
+                        <Icon as={parseFloat(item.amount) > 0 ? ArrowUpRight : ArrowDownLeft} size={12} className={parseFloat(item.amount) > 0 ? "text-emerald-500/10" : "text-orange-500/10"} />
                     </View>
-                    <Text className={`text-[12px] font-bold text-foreground flex-1`}>
+                    <Text className="text-[11px] font-bold text-foreground flex-1 leading-tight" numberOfLines={2}>
                         {item.type === 'CORRECTION' ? 'Adjustment' : item.type.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase())}
                     </Text>
                 </View>
@@ -147,14 +147,14 @@ export default function FarmerLedgerScreen() {
                 </View>
 
                 {/* Change & Balance Column */}
-                <View className="w-24 items-end pr-1">
-                    <Text className={`text-sm font-black ${parseFloat(item.amount) > 0 ? "text-emerald-500" : "text-orange-500"}`}>
+                <View className="w-20 items-end pr-1">
+                    <Text className={`text-[13px] font-black ${parseFloat(item.amount) > 0 ? "text-emerald-500" : "text-orange-500"}`}>
                         {parseFloat(item.amount) > 0 ? "+" : ""}{parseFloat(item.amount).toFixed(1)}
                     </Text>
                     {item.balanceAfter != null && (
                         <View className="flex-row items-center gap-0.5 mt-0.5">
-                            <Text className="text-[9px] text-muted-foreground/60 font-black uppercase tracking-tighter">Bal:</Text>
-                            <Text className="text-[10px] text-muted-foreground font-black">
+                            <Text className="text-[8px] text-muted-foreground/60 font-black uppercase tracking-tighter">Bal:</Text>
+                            <Text className="text-[9px] text-muted-foreground font-black">
                                 {Number(item.balanceAfter).toFixed(1)}
                             </Text>
                         </View>
@@ -328,9 +328,9 @@ export default function FarmerLedgerScreen() {
                     contentContainerClassName="px-4 pb-[100px]"
                     ListHeaderComponent={tab === "stock" && historyData.length > 0 ? (
                         <View className="flex-row py-3 border-y border-border/20 items-center bg-muted/5">
-                            <Text className="w-14 text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Date</Text>
-                            <View className="flex-[1.2] flex-row items-center">
-                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Type</Text>
+                            <Text className="w-14 text-[9px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Date</Text>
+                            <View className="flex-[1.3] flex-row items-center">
+                                <Text className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Type</Text>
                             </View>
                             <Text className="flex-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2">Transaction Details</Text>
                             <View className="w-24 items-end pr-1">

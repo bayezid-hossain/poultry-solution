@@ -203,7 +203,7 @@ export default function FarmersScreen() {
                                     onTransfer={activeTab === 'archived' ? undefined : () => setTransferringFarmer({
                                         id: item.id,
                                         name: item.name,
-                                        availableStock: Number(item.mainStock || 0) - (item.cycles?.filter((c: any) => c.status === 'active').reduce((acc: number, c: any) => acc + (parseFloat(c.intake) || 0), 0) || 0)
+                                        availableStock: Number(item.mainStock || 0)
                                     })}
                                     onDelete={activeTab === 'archived' ? undefined : () => setDeleteFarmer({ id: item.id, name: item.name, organizationId: item.organizationId })}
                                     onEdit={activeTab === 'archived' ? undefined : () => setEditingFarmer(item)}
