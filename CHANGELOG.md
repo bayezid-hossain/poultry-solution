@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.44] - 2026-03-24
+
+### Fix
+- Transfer now depends on main stock instead of remaining stock
+
+### Fix
+- Spacing in stock ledger page now shows log type perfectly
+
 ## [v1.0.43] - 2026-03-16
 
 ### Fix
