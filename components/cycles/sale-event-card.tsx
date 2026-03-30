@@ -100,7 +100,7 @@ export const generateReportText = (sale: any, report: any, isLatest: boolean): s
     const isEnded = sale.cycleContext?.isEnded || false;
 
     const saleAge = sale.saleAge ?? sale.cycleContext?.age ?? "N/A";
-    const previousSold = sale.houseBirds - sale.remainingBirds - birdsSold - totalMortality;
+    const previousSold = sale.houseBirds - sale.remainingBirds - birdsSold - totalMortality - birdsRejected;
     const ageText = `Age: ${saleAge} days`;
 
     const officialInputDate = report?.officialInputDate || sale.cycleContext?.officialInputDate || sale.cycleContext?.createdAt || sale.history?.startDate || sale.cycle?.createdAt;
