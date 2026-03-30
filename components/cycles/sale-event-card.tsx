@@ -87,6 +87,7 @@ export const generateReportText = (sale: any, report: any, isLatest: boolean): s
     const medicineCost = report ? (report.medicineCost ?? sale.medicineCost) : sale.medicineCost;
 
     const totalMortality = (report && report.totalMortality !== undefined && report.totalMortality !== null) ? report.totalMortality : sale.totalMortality;
+    const birdsRejected = (report?.birdsRejected ?? sale.birdsRejected ?? 0);
 
     const feedConsumed = safeParseJSON(report?.feedConsumed ?? sale.feedConsumed);
     const feedStock = safeParseJSON(report?.feedStock ?? sale.feedStock);
@@ -113,7 +114,7 @@ Location: ${sale.location || "N/A"}
 ${sale.cycleContext?.birdType ? `\nBird Type: ${sale.cycleContext?.birdType}` : ""}
 DOC In: ${docInputDateStr}
 ${sale.houseBirds ? `House bird : ${sale.houseBirds}pcs` : ""}
-${previousSold > 0 ? `Previously Sold: ${previousSold}pcs\n` : ""}Today's Sale : ${birdsSold}pcs
+${previousSold > 0 ? `Previously Sold: ${previousSold}pcs\n` : ""}Today's Sale : ${birdsSold}pcs${birdsRejected > 0 ? `\nRejected : ${birdsRejected}pcs` : ""}
 Total Mortality: ${totalMortality} pcs
 ${(!isEnded || !isLatest) ? `\nRemaining Birds: ${sale.remainingBirds ?? 0} pcs` : ""}
 
@@ -315,6 +316,7 @@ export function SaleEventCard({
     const pendingReport = pendingVersionId ? sortedReports.find((r: any) => r.id === pendingVersionId) : null;
     const versionDiffFields = pendingReport && selectedReport ? [
         { label: "Birds Sold", before: selectedReport.birdsSold, after: pendingReport.birdsSold, type: "number" as const },
+        { label: "Rejected", before: selectedReport.birdsRejected ?? 0, after: pendingReport.birdsRejected ?? 0, type: "number" as const, invertColor: true },
         { label: "Mortality", before: selectedReport.totalMortality, after: pendingReport.totalMortality, type: "number" as const, invertColor: true },
         { label: "Weight", before: selectedReport.totalWeight, after: pendingReport.totalWeight, type: "number" as const, unit: "kg" },
         { label: "Price/kg", before: selectedReport.pricePerKg, after: pendingReport.pricePerKg, type: "number" as const, unit: "৳" },

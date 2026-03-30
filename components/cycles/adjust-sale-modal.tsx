@@ -41,6 +41,7 @@ const feedItemSchema = z.object({
 const adjustSaleSchema = z.object({
     saleDate: z.string().min(1, "Sale date is required"),
     birdsSold: z.coerce.number().int().positive("Must be at least 1 bird"),
+    birdsRejected: z.coerce.number().int().min(0).default(0),
     totalMortality: z.coerce.number().int().min(0, "Cannot be negative"),
     totalWeight: z.coerce.number().positive("Weight must be positive"),
     pricePerKg: z.coerce.number().positive("Price must be positive"),
@@ -94,6 +95,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
     const defaultValues: FormValues = {
         saleDate: saleEvent.saleDate ? format(new Date(saleEvent.saleDate), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
         birdsSold: latestReport ? latestReport.birdsSold : saleEvent.birdsSold,
+        birdsRejected: latestReport ? (latestReport.birdsRejected ?? 0) : (saleEvent.birdsRejected ?? 0),
         totalMortality: latestReport
             ? (latestReport.totalMortality ?? saleEvent.totalMortality ?? 0)
             : (saleEvent.totalMortality ?? 0),
@@ -136,6 +138,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
     const locationRef = useRef<TextInput>(null);
     const partyRef = useRef<TextInput>(null);
     const birdsSoldRef = useRef<TextInput>(null);
+    const birdsRejectedRef = useRef<TextInput>(null);
     const totalMortalityRef = useRef<TextInput>(null);
     const totalWeightRef = useRef<TextInput>(null);
     const pricePerKgRef = useRef<TextInput>(null);
@@ -157,6 +160,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
     const wWeight = form.watch("totalWeight");
     const wPrice = form.watch("pricePerKg");
     const wBirdsSold = form.watch("birdsSold");
+    const wBirdsRejected = form.watch("birdsRejected") || 0;
     const wMortality = form.watch("totalMortality");
 
     const calculatedTotal = (wWeight || 0) * (wPrice || 0);
@@ -269,6 +273,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         previewMutation.mutate({
             cycleId: saleEvent.cycleId || "",
             birdsSold: values.birdsSold,
+            birdsRejected: values.birdsRejected || 0,
             totalMortality: values.totalMortality,
             totalWeight: values.totalWeight,
             pricePerKg: values.pricePerKg,
@@ -303,6 +308,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         generateReport.mutate({
             saleEventId: saleEvent.id,
             birdsSold: values.birdsSold,
+            birdsRejected: values.birdsRejected || 0,
             totalMortality: values.totalMortality,
             totalWeight: values.totalWeight,
             pricePerKg: values.pricePerKg,
@@ -327,10 +333,21 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         });
     };
 
+    const previousBirdsRejected = latestReport ? (latestReport.birdsRejected ?? 0) : (saleEvent.birdsRejected ?? 0);
+    const availableBirdsBeforeThisSale = (saleEvent.cycleContext?.doc || saleEvent.houseBirds || 0) -
+        ((saleEvent.cycleContext?.cumulativeBirdsSold || saleEvent.birdsSold) - saleEvent.birdsSold - previousBirdsRejected);
+
+    // Auto-correction logic: bird sold + rejected + mortality cannot exceed total birds available before this sale
+    useEffect(() => {
+        if (wBirdsSold + wBirdsRejected + wMortality > availableBirdsBeforeThisSale) {
+            form.setValue("birdsSold", Math.max(0, availableBirdsBeforeThisSale - wBirdsRejected - wMortality));
+        }
+    }, [wBirdsSold, wBirdsRejected, wMortality, availableBirdsBeforeThisSale, form]);
+
     const remainingBirdsAfterAdjustment = Math.max(0,
-        (saleEvent.cycleContext?.doc || saleEvent.houseBirds || 0) -
-        ((saleEvent.cycleContext?.cumulativeBirdsSold || saleEvent.birdsSold) - saleEvent.birdsSold) -
+        availableBirdsBeforeThisSale -
         wBirdsSold -
+        wBirdsRejected -
         wMortality
     );
 
@@ -369,6 +386,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         const baselineOfficialDate = baseline.officialInputDate || saleEvent.cycleContext?.officialInputDate;
         return [
             { label: "Birds Sold", before: baseline.birdsSold, after: values.birdsSold, type: "number" as const },
+            { label: "Rejected", before: baseline.birdsRejected ?? 0, after: values.birdsRejected ?? 0, type: "number" as const, invertColor: true },
             { label: "Mortality", before: baseline.totalMortality ?? saleEvent.totalMortality, after: values.totalMortality, type: "number" as const, invertColor: true },
             { label: "Weight", before: parseFloat(baseline.totalWeight), after: values.totalWeight, type: "number" as const, unit: "kg" },
             { label: "Price/kg", before: parseFloat(baseline.pricePerKg), after: values.pricePerKg, type: "number" as const, unit: "\u09f3" },
@@ -582,7 +600,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                     </View>
                                 </View>
 
-                                <View className="flex-[1.5]">
+                                <View className="flex-1">
                                     <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Birds Sold</Text>
                                     <Controller
                                         control={form.control}
@@ -595,13 +613,17 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                                 onChangeText={(v) => onChange(parseInt(v) || 0)}
                                                 className="h-12 bg-muted/40 border-border/50 font-mono text-xl text-center"
                                                 returnKeyType="next"
-                                                onSubmitEditing={() => totalMortalityRef.current?.focus()}
+                                                onSubmitEditing={() => birdsRejectedRef.current?.focus()}
                                             />
                                         )}
                                     />
                                 </View>
+                            </View>
 
-                                <View className="flex-[1.5]">
+                            <View className="flex-row gap-3 px-1">
+
+
+                                <View className="flex-1">
                                     <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Total Mortality</Text>
                                     <Controller
                                         control={form.control}
@@ -630,6 +652,24 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                                 </View>
                                             );
                                         }}
+                                    />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Rejected Birds</Text>
+                                    <Controller
+                                        control={form.control}
+                                        name="birdsRejected"
+                                        render={({ field: { onChange, value } }) => (
+                                            <Input
+                                                ref={birdsRejectedRef}
+                                                keyboardType="numeric"
+                                                value={value?.toString() || ""}
+                                                onChangeText={(v) => onChange(parseInt(v) || 0)}
+                                                className="h-12 bg-muted/40 border-border/50 font-mono text-xl text-center"
+                                                returnKeyType="next"
+                                                onSubmitEditing={() => totalMortalityRef.current?.focus()}
+                                            />
+                                        )}
                                     />
                                 </View>
                             </View>

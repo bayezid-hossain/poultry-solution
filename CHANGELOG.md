@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fix
+- Report DOC Placement
+
 ## [v1.0.44] - 2026-03-24
 
 ### Fix

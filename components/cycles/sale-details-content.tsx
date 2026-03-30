@@ -162,6 +162,12 @@ export const SaleDetailsContent = ({
                         <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Birds Sold</Text>
                         <Text className="font-bold text-foreground">{displayBirdsSold}</Text>
                     </View>
+                    {((selectedReport?.birdsRejected ?? sale.birdsRejected ?? 0) > 0) && (
+                        <View className="flex-row justify-between items-baseline">
+                            <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Rejected</Text>
+                            <Text className="font-bold text-amber-600 dark:text-amber-400">{selectedReport?.birdsRejected ?? sale.birdsRejected}</Text>
+                        </View>
+                    )}
                     <View className="flex-row justify-between items-baseline">
                         <Text className="text-muted-foreground text-xs uppercase tracking-tight font-bold">Mortality</Text>
                         <Text className="font-bold text-destructive">{displayMortality}</Text>

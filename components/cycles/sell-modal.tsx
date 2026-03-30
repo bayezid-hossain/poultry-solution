@@ -25,7 +25,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { ActivityIndicator, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
-import { toast, Toaster } from "sonner-native";
+import { toast } from "sonner-native";
 import { z } from "zod";
 import { CorrectAgeModal } from "./correct-age-modal";
 import { SaleDetailsContent } from "./sale-details-content";
@@ -43,6 +43,7 @@ const formSchema = z.object({
     party: z.string().optional(),
     farmerMobile: z.string().optional(),
     birdsSold: z.number().int().positive("Must sell at least 1 bird"),
+    birdsRejected: z.number().int().min(0),
     mortalityChange: z.number().int(),
     totalWeight: z.number().positive("Weight must be greater than 0"),
     pricePerKg: z.number().positive("Price must be greater than 0"),
@@ -106,6 +107,7 @@ export const SellModal = ({
             location: farmerLocation || "",
             farmerMobile: farmerMobile || "",
             birdsSold: initialRemainingBirds, // Use initial calculation for default
+            birdsRejected: 0,
             mortalityChange: 0,
             totalWeight: 0,
             pricePerKg: 0,
@@ -132,6 +134,7 @@ export const SellModal = ({
     const locationRef = useRef<TextInput>(null);
     const partyRef = useRef<TextInput>(null);
     const birdsSoldRef = useRef<TextInput>(null);
+    const birdsRejectedRef = useRef<TextInput>(null);
     const mortalityChangeRef = useRef<TextInput>(null);
     const totalWeightRef = useRef<TextInput>(null);
     const pricePerKgRef = useRef<TextInput>(null);
@@ -207,6 +210,7 @@ export const SellModal = ({
                 party: "",
                 farmerMobile: farmerMobile || "",
                 birdsSold: currentRemainingBirds,
+                birdsRejected: 0,
                 mortalityChange: 0,
                 totalWeight: 0,
                 pricePerKg: 0,
@@ -282,6 +286,7 @@ export const SellModal = ({
                 party: values.party,
                 houseBirds: doc,
                 birdsSold: values.birdsSold,
+                birdsRejected: values.birdsRejected || 0,
                 mortalityChange: values.mortalityChange,
                 totalMortality: mortality + values.mortalityChange,
                 totalWeight: values.totalWeight,
@@ -335,6 +340,7 @@ export const SellModal = ({
             party: values.party,
             houseBirds: doc,
             birdsSold: values.birdsSold,
+            birdsRejected: values.birdsRejected || 0,
             mortalityChange: values.mortalityChange,
             totalMortality: mortality + values.mortalityChange,
             totalWeight: values.totalWeight,
@@ -354,18 +360,19 @@ export const SellModal = ({
 
     const mortalityChange = form.watch("mortalityChange") || 0;
     const watchBirdsSold = form.watch("birdsSold") || 0;
+    const watchBirdsRejected = form.watch("birdsRejected") || 0;
     const watchWeight = form.watch("totalWeight") || 0;
     const watchPrice = form.watch("pricePerKg") || 0;
 
     // Birds currently in the house before this transaction
     const birdsInHouse = doc - mortality - birdsSold;
 
-    // Auto-correction logic: bird sold + mortality cannot exceed total birds in house
+    // Auto-correction logic: bird sold + rejected + mortality cannot exceed total birds in house
     useEffect(() => {
-        if (watchBirdsSold + mortalityChange > birdsInHouse) {
-            form.setValue("birdsSold", Math.max(0, birdsInHouse - mortalityChange));
+        if (watchBirdsSold + watchBirdsRejected + mortalityChange > birdsInHouse) {
+            form.setValue("birdsSold", Math.max(0, birdsInHouse - watchBirdsRejected - mortalityChange));
         }
-    }, [watchBirdsSold, mortalityChange, birdsInHouse, form]);
+    }, [watchBirdsSold, watchBirdsRejected, mortalityChange, birdsInHouse, form]);
 
     // SYNC CASH: Automatically update Cash Received when Total Amount changes
     useEffect(() => {
@@ -375,8 +382,8 @@ export const SellModal = ({
         }
     }, [watchWeight, watchPrice, form]);
 
-    // Birds remaining AFTER this transaction (subtracting mortality change and current sale)
-    const remainingBirdsAfterTransaction = Math.max(0, birdsInHouse - mortalityChange - watchBirdsSold);
+    // Birds remaining AFTER this transaction (subtracting mortality change, sold, and rejected)
+    const remainingBirdsAfterTransaction = Math.max(0, birdsInHouse - mortalityChange - watchBirdsSold - watchBirdsRejected);
 
     const avgWeight = watchBirdsSold > 0 ? (watchWeight / watchBirdsSold).toFixed(2) : "0.00";
     const totalAmount = (watchWeight * watchPrice).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -666,7 +673,7 @@ export const SellModal = ({
                                                 </View>
                                             </View>
 
-                                            <View className="flex-[1.5]">
+                                            <View className="flex-1">
                                                 <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Birds Sold</Text>
                                                 <Controller
                                                     control={form.control}
@@ -679,13 +686,17 @@ export const SellModal = ({
                                                             keyboardType="number-pad"
                                                             className={`h-12 bg-muted/40 border-border/50 font-mono text-xl text-center ${hasError("birdsSold") ? "border-destructive/50" : ""}`}
                                                             returnKeyType="next"
-                                                            onSubmitEditing={() => mortalityChangeRef.current?.focus()}
+                                                            onSubmitEditing={() => birdsRejectedRef.current?.focus()}
                                                         />
                                                     )}
                                                 />
                                             </View>
+                                        </View>
 
-                                            <View className="flex-[1.5]">
+                                        <View className="flex-row gap-3 px-1">
+
+
+                                            <View className="flex-1">
                                                 <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Total Mortality</Text>
                                                 <Controller
                                                     control={form.control}
@@ -738,6 +749,24 @@ export const SellModal = ({
                                                             </View>
                                                         );
                                                     }}
+                                                />
+                                            </View>
+                                            <View className="flex-1">
+                                                <Text className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">Rejected Birds</Text>
+                                                <Controller
+                                                    control={form.control}
+                                                    name="birdsRejected"
+                                                    render={({ field: { onChange, value } }) => (
+                                                        <Input
+                                                            ref={birdsRejectedRef}
+                                                            value={value?.toString() || ""}
+                                                            onChangeText={(t) => onChange(parseInt(t, 10) || 0)}
+                                                            keyboardType="number-pad"
+                                                            className="h-12 bg-muted/40 border-border/50 font-mono text-xl text-center"
+                                                            returnKeyType="next"
+                                                            onSubmitEditing={() => mortalityChangeRef.current?.focus()}
+                                                        />
+                                                    )}
                                                 />
                                             </View>
                                         </View>
