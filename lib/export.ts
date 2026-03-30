@@ -1053,26 +1053,27 @@ export async function exportActiveStockPDF(activeCycles: any[], title: string, r
 
     const bodyHtml = `
         <tbody>
-            ${Object.entries(groups).map(([farmerName, cycles]) => `
-                ${cycles.map((c, idx) => `
-                    <tr>
+            ${Object.entries(groups).map(([farmerName, cycles], groupIdx) => {
+                const bgColor = groupIdx % 2 === 0 ? '#ffffff' : '#f9fafb';
+                return cycles.map((c, idx) => `
+                    <tr style="background-color: ${bgColor};">
                         ${idx === 0
-            ? `<td rowspan="${cycles.length}" style="font-weight: bold; vertical-align: middle; border: 1px solid #e5e7eb;">${farmerName}</td>`
-            : ''
-        }
+                            ? `<td rowspan="${cycles.length}" style="font-weight: bold; vertical-align: middle; border: 1px solid #e5e7eb; background-color: ${bgColor};">${farmerName}</td>`
+                            : ''
+                        }
                         <td style="border: 1px solid #e5e7eb;">${c.doc}</td>
                         <td style="border: 1px solid #e5e7eb;">${c.age}</td>
                         ${idx === 0
-            ? `<td rowspan="${cycles.length}" style="vertical-align: middle; border: 1px solid #e5e7eb;">${Number(c.farmerMainStock).toFixed(2)}</td>`
-            : ''
-        }
+                            ? `<td rowspan="${cycles.length}" style="vertical-align: middle; border: 1px solid #e5e7eb; background-color: ${bgColor};">${Number(c.farmerMainStock).toFixed(2)}</td>`
+                            : ''
+                        }
                         ${idx === 0
-            ? `<td rowspan="${cycles.length}" style="vertical-align: middle; border: 1px solid #e5e7eb;">${formatLocalDate(c.mainStockUpdatedAt || c.farmerUpdatedAt || c.updatedAt)}</td>`
-            : ''
-        }
+                            ? `<td rowspan="${cycles.length}" style="vertical-align: middle; border: 1px solid #e5e7eb; background-color: ${bgColor};">${formatLocalDate(c.mainStockUpdatedAt || c.farmerUpdatedAt || c.updatedAt)}</td>`
+                            : ''
+                        }
                     </tr>
-                `).join('')}
-            `).join('')}
+                `).join('');
+            }).join('')}
         </tbody>
     `;
 
@@ -1185,7 +1186,8 @@ export async function exportRangeDocPlacementsExcel(data: any, title: string, re
 
     // Calculate extra merges for Farmer column (Index 2 in Excel)
     const extraMerges: any[] = [];
-    let currentRow = 15; // Details start at row 15 (index 14) in buildExcelWorksheet for grouped data
+    const subtitleLines = subtitle ? subtitle.split('\n').length : 1;
+    let currentRow = 14 + subtitleLines; // Base rows before grouped data starts (dynamic based on subtitle)
 
     Object.values(monthGroups).forEach((cycles, groupIdx) => {
         // Section Header Row
@@ -1287,6 +1289,7 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string, retu
         // Group cycles by farmer for rowspan
         const rows: string[] = [];
         let i = 0;
+        let farmerGroupIdx = 0;
         while (i < cycles.length) {
             const currentFarmer = cycles[i].farmerName;
             let count = 0;
@@ -1294,12 +1297,13 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string, retu
                 count++;
             }
 
+            const bgColor = farmerGroupIdx % 2 === 0 ? '#ffffff' : '#f9fafb';
             for (let j = 0; j < count; j++) {
                 const c = cycles[i + j];
                 const isFirst = j === 0;
                 rows.push(`
-                    <tr>
-                        ${isFirst ? `<td rowspan="${count}" style="font-weight: bold; vertical-align: middle;">${c.farmerName}</td>` : ''}
+                    <tr style="background-color: ${bgColor};">
+                        ${isFirst ? `<td rowspan="${count}" style="font-weight: bold; vertical-align: middle; background-color: ${bgColor};">${c.farmerName}</td>` : ''}
                         <td>${c.batchNum}</td>
                         <td>${formatLocalDate(c.date)}</td>
                         <td style="font-weight: bold;">${c.doc.toLocaleString()}</td>
@@ -1307,6 +1311,7 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string, retu
                     </tr>
                 `);
             }
+            farmerGroupIdx++;
             i += count;
         }
 
