@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.45] - 2026-03-30
+
+### Add
+- Rejected birds added in sale and adjust sale function
+
 ### Fix
 - Report DOC Placement
 
