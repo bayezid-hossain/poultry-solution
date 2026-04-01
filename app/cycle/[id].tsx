@@ -95,9 +95,10 @@ export default function CycleDetailsScreen() {
     const docValue = cycle.doc ?? 0;
     const mortalityValue = cycle.mortality ?? 0;
     const soldValue = cycle.birdsSold ?? 0;
+    const rejectedValue = (cycle as any).totalBirdsRejected ?? 0;
     const liveBirds = Math.max(0, docValue - mortalityValue - soldValue);
 
-    const survivalRate = docValue > 0 ? (((docValue - mortalityValue) / docValue) * 100).toFixed(2) : "0.00";
+    const survivalRate = docValue > 0 ? (((docValue - mortalityValue - rejectedValue) / docValue) * 100).toFixed(2) : "0.00";
 
     const feedIntake = Number(cycle.intake ?? 0).toFixed(2);
     const startDateFormatted = cycle.createdAt ? format(new Date(cycle.createdAt), "dd MMM yyyy") : "";

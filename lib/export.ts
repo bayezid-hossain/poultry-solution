@@ -229,7 +229,7 @@ const getCalculationsPDFPage = (): PDFExportOptions => ({
                     </tr>
                     <tr>
                         <td style="font-weight: bold;">Survival Rate</td>
-                        <td>((DOC - Mortality) / DOC) &times; 100</td>
+                        <td>((DOC - Mortality - Rejected) / DOC) &times; 100</td>
                     </tr>
                     <tr>
                         <td style="font-weight: bold;">Live Birds</td>
@@ -1054,26 +1054,26 @@ export async function exportActiveStockPDF(activeCycles: any[], title: string, r
     const bodyHtml = `
         <tbody>
             ${Object.entries(groups).map(([farmerName, cycles], groupIdx) => {
-                const bgColor = groupIdx % 2 === 0 ? '#ffffff' : '#f9fafb';
-                return cycles.map((c, idx) => `
+        const bgColor = groupIdx % 2 === 0 ? '#ffffff' : '#f9fafb';
+        return cycles.map((c, idx) => `
                     <tr style="background-color: ${bgColor};">
                         ${idx === 0
-                            ? `<td rowspan="${cycles.length}" style="font-weight: bold; vertical-align: middle; border: 1px solid #e5e7eb; background-color: ${bgColor};">${farmerName}</td>`
-                            : ''
-                        }
+                ? `<td rowspan="${cycles.length}" style="font-weight: bold; vertical-align: middle; border: 1px solid #e5e7eb; background-color: ${bgColor};">${farmerName}</td>`
+                : ''
+            }
                         <td style="border: 1px solid #e5e7eb;">${c.doc}</td>
                         <td style="border: 1px solid #e5e7eb;">${c.age}</td>
                         ${idx === 0
-                            ? `<td rowspan="${cycles.length}" style="vertical-align: middle; border: 1px solid #e5e7eb; background-color: ${bgColor};">${Number(c.farmerMainStock).toFixed(2)}</td>`
-                            : ''
-                        }
+                ? `<td rowspan="${cycles.length}" style="vertical-align: middle; border: 1px solid #e5e7eb; background-color: ${bgColor};">${Number(c.farmerMainStock).toFixed(2)}</td>`
+                : ''
+            }
                         ${idx === 0
-                            ? `<td rowspan="${cycles.length}" style="vertical-align: middle; border: 1px solid #e5e7eb; background-color: ${bgColor};">${formatLocalDate(c.mainStockUpdatedAt || c.farmerUpdatedAt || c.updatedAt)}</td>`
-                            : ''
-                        }
+                ? `<td rowspan="${cycles.length}" style="vertical-align: middle; border: 1px solid #e5e7eb; background-color: ${bgColor};">${formatLocalDate(c.mainStockUpdatedAt || c.farmerUpdatedAt || c.updatedAt)}</td>`
+                : ''
+            }
                     </tr>
                 `).join('');
-            }).join('')}
+    }).join('')}
         </tbody>
     `;
 

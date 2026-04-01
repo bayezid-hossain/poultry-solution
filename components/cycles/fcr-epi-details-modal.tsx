@@ -12,6 +12,7 @@ interface FcrEpiDetailsModalProps {
     epi: number;
     doc: number;
     mortality: number;
+    birdsRejected?: number;
     age: number;
     totalWeight: number;
     feedBags: number;
@@ -34,11 +35,12 @@ export const FcrEpiDetailsModal = ({
     epi,
     doc,
     mortality,
+    birdsRejected = 0,
     age,
     totalWeight,
     feedBags,
 }: FcrEpiDetailsModalProps) => {
-    const survivors = doc - mortality;
+    const survivors = doc - mortality - birdsRejected;
     const survivalRate = doc > 0 ? (survivors / doc) * 100 : 0;
     const feedKg = feedBags * 50;
     const avgWeightKg = survivors > 0 ? totalWeight / survivors : 0;
