@@ -294,6 +294,7 @@ export const SaleDetailsContent = ({
                         epi={ctx.epi || 0}
                         doc={ctx.doc || 0}
                         mortality={ctx.mortality || 0}
+                        birdsRejected={ctx.totalBirdsRejected ?? selectedReport?.birdsRejected ?? sale.birdsRejected ?? 0}
                         age={ctx.age || 0}
                         totalWeight={ctx.totalWeight || 0}
                         feedBags={ctx.feedConsumed ?? 0}

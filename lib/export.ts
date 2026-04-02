@@ -1013,7 +1013,7 @@ export async function exportActiveStockExcel(activeCycles: any[], title: string,
         { Metric: "Farmers", Value: Object.keys(groups).length },
         { Metric: "DOC", Value: activeCycles.reduce((acc, c) => acc + (c.doc || 0), 0) },
         { Metric: "Live Birds", Value: activeCycles.reduce((acc, c) => acc + ((c.doc || 0) - (c.mortality || 0) - (c.birdsSold || 0)), 0) },
-        { Metric: "Stock (bags)", Value: totalStock.toFixed(1) }
+        { Metric: "Stock (bags)", Value: totalStock.toFixed(2) }
     ];
 
     const options: ExcelExportOptions = {
@@ -1101,7 +1101,7 @@ export async function exportActiveStockPDF(activeCycles: any[], title: string, r
                 <div class="kpi-label">Total Live Birds</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-value">${totalStock.toFixed(1)}</div>
+                <div class="kpi-value">${totalStock.toFixed(2)}</div>
                 <div class="kpi-label">Total Stock (bags)</div>
             </div>
         </div>
@@ -1129,8 +1129,8 @@ export async function exportRangeDocPlacementsExcel(data: any, title: string, re
         const sortedCycles = [...f.cycles].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
         const monthBatchCount: Record<string, number> = {};
         sortedCycles.forEach((c: any) => {
-            const d = new Date(c.date);
-            const monthKey = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+            const d = new Date(c.date); const effectiveD = new Date(d); if (effectiveD.getUTCDate() === 31) effectiveD.setUTCMonth(effectiveD.getUTCMonth() + 1, 1);
+            const monthKey = `${effectiveD.getUTCFullYear()}-${String(effectiveD.getUTCMonth()).padStart(2, '0')}`;
             if (!monthBatchCount[monthKey]) monthBatchCount[monthKey] = 0;
             monthBatchCount[monthKey]++;
 
@@ -1141,7 +1141,7 @@ export async function exportRangeDocPlacementsExcel(data: any, title: string, re
                 doc: c.doc,
                 status: c.status,
                 monthKey,
-                monthLabel: d.toLocaleString('default', { month: 'long', year: 'numeric' })
+                monthLabel: (typeof effectiveD !== 'undefined' ? effectiveD : d).toLocaleString('default', { month: 'long', year: 'numeric', timeZone: 'UTC' })
             });
         });
     });
@@ -1252,8 +1252,8 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string, retu
         const sortedCycles = [...f.cycles].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
         const monthBatchCount: Record<string, number> = {};
         sortedCycles.forEach((c: any) => {
-            const d = new Date(c.date);
-            const monthKey = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+            const d = new Date(c.date); const effectiveD = new Date(d); if (effectiveD.getUTCDate() === 31) effectiveD.setUTCMonth(effectiveD.getUTCMonth() + 1, 1);
+            const monthKey = `${effectiveD.getUTCFullYear()}-${String(effectiveD.getUTCMonth()).padStart(2, '0')}`;
             if (!monthBatchCount[monthKey]) monthBatchCount[monthKey] = 0;
             monthBatchCount[monthKey]++;
 
@@ -1264,7 +1264,7 @@ export async function exportRangeDocPlacementsPDF(data: any, title: string, retu
                 doc: c.doc,
                 status: c.status,
                 monthKey,
-                monthLabel: d.toLocaleString('default', { month: 'long', year: 'numeric' })
+                monthLabel: (typeof effectiveD !== 'undefined' ? effectiveD : d).toLocaleString('default', { month: 'long', year: 'numeric', timeZone: 'UTC' })
             });
         });
     });
@@ -1378,26 +1378,26 @@ export async function exportRangeProductionExcel(records: any[], title: string, 
         const monthProfit = groupRecords.reduce((sum, r) => sum + r.profit, 0);
         const monthAvgFcr = groupRecords.length > 0 ? (groupRecords.reduce((sum, r) => sum + r.fcr, 0) / groupRecords.length).toFixed(2) : "0.00";
         const monthAvgEpi = groupRecords.length > 0 ? (groupRecords.reduce((sum, r) => sum + r.epi, 0) / groupRecords.length).toFixed(2) : "0.00";
-        const footer = `${groupRecords[0].monthName} Averages: EPI ${monthAvgEpi} | FCR ${monthAvgFcr} | Total Profit: ৳${monthProfit.toLocaleString()}`;
+        const footer = `${groupRecords[0].monthName} Averages: EPI ${monthAvgEpi} | FCR ${monthAvgFcr} | Total Profit: ৳${monthProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
         const data = groupRecords.map(r => ({
             "Farmer": r.farmerName,
             "DOC": r.doc,
-            "Surv. %": (r.survivalRate || 0).toFixed(1) + "%",
-            "Avg Wt (kg)": (r.averageWeight || 0).toFixed(3),
+            "Surv. %": (r.survivalRate || 0).toFixed(2) + "%",
+            "Avg Wt (kg)": (r.averageWeight || 0).toFixed(2),
             "FCR": (r.fcr || 0).toFixed(2),
             "EPI": (r.epi || 0).toFixed(2),
-            "Age": (r.age || 0).toFixed(1),
-            "Net Profit": r.profit
+            "Age": (r.age || 0).toFixed(2),
+            "Net Profit": Number(r.profit || 0).toFixed(2)
         }));
         groupedDataTable.push({ sectionHeader, data, footer });
     });
 
     const summaryData = [
         { Metric: "Total DOC In", Value: records.reduce((sum, r) => sum + r.doc, 0) },
-        { Metric: "Average FCR", Value: records.length > 0 ? (records.reduce((sum, r) => sum + r.fcr, 0) / records.length).toFixed(3) : "0.000" },
+        { Metric: "Average FCR", Value: records.length > 0 ? (records.reduce((sum, r) => sum + r.fcr, 0) / records.length).toFixed(2) : "0.00" },
         { Metric: "Average EPI", Value: records.length > 0 ? (records.reduce((sum, r) => sum + r.epi, 0) / records.length).toFixed(2) : "0.00" },
-        { Metric: "Net Profit", Value: "৳" + records.reduce((sum, r) => sum + r.profit, 0).toLocaleString() }
+        { Metric: "Net Profit", Value: "৳" + records.reduce((sum, r) => sum + r.profit, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
     ];
 
     const options = {
@@ -1455,17 +1455,17 @@ export async function exportRangeProductionPDF(records: any[], title: string, re
                 <tr>
                     <td style="font-weight: bold;">${r.farmerName}</td>
                     <td>${r.doc.toLocaleString()}</td>
-                    <td>${(r.survivalRate || 0).toFixed(1)}%</td>
-                    <td>${(r.averageWeight || 0).toFixed(3)}</td>
+                    <td>${(r.survivalRate || 0).toFixed(2)}%</td>
+                    <td>${(r.averageWeight || 0).toFixed(2)}</td>
                     <td style="font-family: monospace;">${(r.fcr || 0).toFixed(2)}</td>
                     <td style="font-family: monospace;">${(r.epi || 0).toFixed(2)}</td>
-                    <td>${(r.age || 0).toFixed(1)}</td>
-                    <td style="color: ${r.profit >= 0 ? '#16a34a' : '#dc2626'}; white-space: nowrap;">৳${r.profit.toLocaleString()}</td>
+                    <td>${(r.age || 0).toFixed(2)}</td>
+                    <td style="color: ${r.profit >= 0 ? '#16a34a' : '#dc2626'}; white-space: nowrap;">৳${Number(r.profit || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 </tr>
                 `).join('')}
                 <tr>
                     <td colspan="8" style="text-align: center; font-weight: 800; background-color: #f3f4f6; color: #1f2937; padding: 12px; letter-spacing: 0.05em; font-size: 11px; border-top: 2px solid #e5e7eb;">
-                        ${groupRecords[0].monthName.toUpperCase()} AVERAGES: <span style="color: #10b981; margin: 0 8px;">EPI ${monthAvgEpi}</span> &bull; <span style="color: #10b981; margin: 0 8px;">FCR ${monthAvgFcr}</span> &bull; <span style="color: ${monthProfit >= 0 ? '#10b981' : '#dc2626'}; margin-left: 8px;">PROFIT: ৳${monthProfit.toLocaleString()}</span>
+                        ${groupRecords[0].monthName.toUpperCase()} AVERAGES: <span style="color: #10b981; margin: 0 8px;">EPI ${monthAvgEpi}</span> &bull; <span style="color: #10b981; margin: 0 8px;">FCR ${monthAvgFcr}</span> &bull; <span style="color: ${monthProfit >= 0 ? '#10b981' : '#dc2626'}; margin-left: 8px;">PROFIT: ৳${monthProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </td>
                 </tr>
             </tbody>
@@ -1481,7 +1481,7 @@ export async function exportRangeProductionPDF(records: any[], title: string, re
             </div>
             
             <div class="kpi-card">
-                <div class="kpi-value">${avgFCR.toFixed(3)}</div>
+                <div class="kpi-value">${avgFCR.toFixed(2)}</div>
                 <div class="kpi-label">Average FCR</div>
             </div>
             
@@ -1490,7 +1490,7 @@ export async function exportRangeProductionPDF(records: any[], title: string, re
                 <div class="kpi-label">Average EPI</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-value" style="color: ${totalProfit >= 0 ? '#16a34a' : '#dc2626'}">৳${totalProfit.toLocaleString()}</div>
+                <div class="kpi-value" style="color: ${totalProfit >= 0 ? '#16a34a' : '#dc2626'}">৳${totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 <div class="kpi-label">Net Profit</div>
             </div>
         </div>
@@ -1517,12 +1517,12 @@ export async function exportYearlyPerformanceExcel(data: any, title: string, ret
         "Month": m.month || ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][idx],
         "Chicks In": m.chicksIn,
         "Sold": m.chicksSold,
-        "Avg Age (days)": m.averageAge > 0 ? Math.round(m.averageAge) : 0,
+        "Avg Age (days)": m.averageAge > 0 ? m.averageAge.toFixed(2) : 0,
         "Total Weight (kg)": m.totalBirdWeight,
-        "Feed (kg)": m.feedConsumption,
-        "Survival %": m.survivalRate > 0 ? (m.survivalRate).toFixed(1) : 0,
-        "EPI": m.epi > 0 ? Math.round(m.epi) : 0,
-        "FCR": m.fcr > 0 ? Number(m.fcr.toFixed(3)) : 0,
+        "Feed (kg)": m.feedConsumption > 0 ? m.feedConsumption.toFixed(2) : 0,
+        "Survival %": m.survivalRate > 0 ? (m.survivalRate).toFixed(2) : 0,
+        "EPI": m.epi > 0 ? m.epi.toFixed(2) : 0,
+        "FCR": m.fcr > 0 ? Number(m.fcr.toFixed(2)) : 0,
         "Avg Price": m.averagePrice.toFixed(2)
     }));
 
@@ -1530,8 +1530,8 @@ export async function exportYearlyPerformanceExcel(data: any, title: string, ret
         { Metric: "Total DOC Placed", Value: (data.totalChicksIn || 0) },
         { Metric: "Total Sold", Value: (data.totalChicksSold || 0) },
         { Metric: "Average FCR", Value: (data.averageFCR || 0).toFixed(2) },
-        { Metric: "Average EPI", Value: (data.averageEPI || 0).toFixed(0) },
-        { Metric: "Average Survival Rate", Value: (data.averageSurvivalRate).toFixed(1) + "%" }
+        { Metric: "Average EPI", Value: (data.averageEPI || 0).toFixed(2) },
+        { Metric: "Average Survival Rate", Value: (data.averageSurvivalRate).toFixed(2) + "%" }
     ];
 
     const options: ExcelExportOptions = {
@@ -1574,7 +1574,7 @@ export async function exportYearlyPerformancePDF(data: any, title: string, retur
     };
     const fmtPct = (v: number | undefined | null) => {
         if (v === null || v === undefined || isNaN(v)) return '0%';
-        return (v * 100).toFixed(1) + '%';
+        return (v * 100).toFixed(2) + '%';
     };
 
     const soldPercent = data.totalChicksIn > 0 ? ((data.totalChicksSold / data.totalChicksIn) * 100).toFixed(0) : "0";
@@ -1636,11 +1636,11 @@ export async function exportYearlyPerformancePDF(data: any, title: string, retur
                         <td>${MONTHS_SHORT[idx]}</td>
                         <td>${m.chicksIn}</td>
                         <td>${m.chicksSold}</td>
-                        <td>${m.averageAge > 0 ? Math.round(m.averageAge) : '-'}</td>
-                        <td>${m.totalBirdWeight > 0 ? Math.round(m.totalBirdWeight) : '-'}</td>
-                        <td>${m.feedConsumption > 0 ? Math.round(m.feedConsumption) : '-'}</td>
-                        <td>${m.survivalRate > 0 ? (m.survivalRate).toFixed(1) + '%' : '-'}</td>
-                        <td>${m.epi > 0 ? Math.round(m.epi) : '-'}</td>
+                        <td>${m.averageAge > 0 ? m.averageAge.toFixed(2) : '-'}</td>
+                        <td>${m.totalBirdWeight > 0 ? m.totalBirdWeight.toFixed(2) : '-'}</td>
+                        <td>${m.feedConsumption > 0 ? m.feedConsumption.toFixed(2) : '-'}</td>
+                        <td>${m.survivalRate > 0 ? (m.survivalRate).toFixed(2) + '%' : '-'}</td>
+                        <td>${m.epi > 0 ? m.epi.toFixed(2) : '-'}</td>
                         <td>${m.fcr > 0 ? m.fcr.toFixed(2) : '-'}</td>
                         <td>${m.averagePrice > 0 ? m.averagePrice.toFixed(2) : '-'}</td>
                     </tr>
@@ -1690,7 +1690,7 @@ export async function exportAllFarmerStockExcel(farmers: any[], title: string, r
 
     const summaryData = [
         { Metric: "Total Farmers", Value: farmers.length },
-        { Metric: "Total Stock (b)", Value: farmers.reduce((sum, f) => sum + (Number(f.mainStock) || 0), 0).toFixed(1) },
+        { Metric: "Total Stock (b)", Value: farmers.reduce((sum, f) => sum + (Number(f.mainStock) || 0), 0).toFixed(2) },
         { Metric: "With Active Cycles", Value: farmers.filter(f => f.activeCyclesCount > 0).length }
     ];
 
@@ -1716,7 +1716,7 @@ export async function exportAllFarmerStockPDF(farmers: any[], title: string, ret
                 <div class="kpi-label">Total Farmers</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-value">${farmers.reduce((sum, f) => sum + (Number(f.mainStock) || 0), 0).toFixed(1)}</div>
+                <div class="kpi-value">${farmers.reduce((sum, f) => sum + (Number(f.mainStock) || 0), 0).toFixed(2)}</div>
                 <div class="kpi-label">Total Stock (bags)</div>
             </div>
             <div class="kpi-card">
@@ -1804,13 +1804,13 @@ export async function exportSalesLedgerExcel(sales: any[], title: string, return
         { Metric: "Total Revenue", Value: `৳${totalRevenue.toLocaleString()}` },
         { Metric: "Birds Sold", Value: totalBirds.toLocaleString() },
         { Metric: "Total Weight", Value: `${totalWeight.toFixed(2)} kg` },
-        { Metric: "Net Profit", Value: `৳${totalProfit.toLocaleString()}` }
+        { Metric: "Net Profit", Value: `৳${totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }
     ];
 
     const rawHeaders = [
-        "Farmer", "Date", "Age", "Birds Sold", "Total Weight (kg)",
-        "Price/kg", "Revenue", "Cash", "Deposit", "Medicine", "Feed (Bags)",
-        "Mortality", "FCR", "EPI", "Profit"
+        "Farmer", "Date", "Age", "Birds Sold", "Total Weight (kg)", "Avg Weight (kg)",
+        "Price/kg", "Revenue", "Cash", "Feed (Bags)",
+        "Mortality", "Rejected Birds", "FCR", "EPI", "Profit"
     ];
 
     // Helper to build a sale row
@@ -1827,22 +1827,26 @@ export async function exportSalesLedgerExcel(sales: any[], title: string, return
             if (Array.isArray(parsed)) feedTotal = parsed.reduce((sum: number, f: any) => sum + (Number(f.bags) || 0), 0);
         } catch (e) { }
 
+        const birdsSold = s.birdsSold || 1;
+        const avgWeight = (Number(s.totalWeight) / birdsSold).toFixed(2);
+        const rejectedBirds = s.reports?.[0]?.birdsRejected ?? s.birdsRejected ?? "-";
+
         return {
             Farmer: s.farmerName || s.cycle?.farmer?.name || s.history?.farmer?.name || "-",
             Date: formatLocalDate(s.saleDate || s.createdAt),
             Age: showWeighted ? `${ctx.age} (Weighted)` : (s.saleAge ?? ctx?.age ?? "N/A"),
             "Birds Sold": s.birdsSold,
             "Total Weight (kg)": Number(s.totalWeight).toFixed(2),
+            "Avg Weight (kg)": avgWeight,
             "Price/kg": `৳${s.pricePerKg}`,
-            Revenue: `৳${(s.totalRevenue || (Number(s.totalWeight) * Number(s.pricePerKg)) || 0).toLocaleString()}`,
-            Cash: `৳${(s.cashReceived || 0).toLocaleString()}`,
-            Deposit: `৳${(s.depositReceived || 0).toLocaleString()}`,
-            Medicine: `৳${(s.medicineCost || 0).toLocaleString()}`,
-            "Feed (Bags)": feedTotal || "-",
+            Revenue: `৳${(s.totalRevenue || (Number(s.totalWeight) * Number(s.pricePerKg)) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            Cash: `৳${(s.cashReceived || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            "Feed (Bags)": feedTotal ? Number(feedTotal.toFixed(2)) : "-",
             Mortality: s.reports?.[0]?.totalMortality ?? s.totalMortality ?? "-",
+            "Rejected Birds": rejectedBirds,
             FCR: showWeighted ? ctx.fcr : "-",
             EPI: showWeighted ? ctx.epi : "-",
-            Profit: showWeighted ? `৳${Math.round(ctx?.profit || 0).toLocaleString()}` : "-"
+            Profit: showWeighted ? `৳${(ctx?.profit || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "-"
         };
     };
 
@@ -1851,8 +1855,8 @@ export async function exportSalesLedgerExcel(sales: any[], title: string, return
     const monthGroups: Record<string, { label: string, sales: any[] }> = {};
     sortedSales.forEach(s => {
         const d = new Date(s.saleDate || s.createdAt);
-        const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
-        if (!monthGroups[key]) monthGroups[key] = { label: d.toLocaleString('default', { month: 'long', year: 'numeric' }), sales: [] };
+        const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth()).padStart(2, '0')}`;
+        if (!monthGroups[key]) monthGroups[key] = { label: d.toLocaleString('default', { month: 'long', year: 'numeric', timeZone: 'UTC' }), sales: [] };
         monthGroups[key].sales.push(s);
     });
 
@@ -1877,9 +1881,9 @@ export async function exportSalesLedgerExcel(sales: any[], title: string, return
             const monthBirds = group.sales.reduce((sum, s) => sum + (s.birdsSold || 0), 0);
             const monthWeight = group.sales.reduce((sum, s) => sum + (Number(s.totalWeight) || 0), 0);
             return {
-                sectionHeader: `${group.label} — ${group.sales.length} sales — ${monthBirds.toLocaleString()} birds — ৳${monthRevenue.toLocaleString()}`,
+                sectionHeader: `${group.label} — ${group.sales.length} sales — ${monthBirds.toLocaleString()} birds — ৳${monthRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
                 data: group.sales.map(s => buildSaleRow(s)),
-                footer: `MONTHLY TOTAL: ${monthWeight.toFixed(2)} kg  |  ৳ ${monthRevenue.toLocaleString()}`
+                footer: `MONTHLY TOTAL: ${monthWeight.toFixed(2)} kg  |  ৳ ${monthRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             };
         }),
         mergePrimaryColumn: true,
@@ -1932,8 +1936,8 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
     const monthGroups: Record<string, { label: string, sales: any[] }> = {};
     sortedSales.forEach(s => {
         const d = new Date(s.saleDate || s.createdAt);
-        const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
-        if (!monthGroups[key]) monthGroups[key] = { label: d.toLocaleString('default', { month: 'long', year: 'numeric' }), sales: [] };
+        const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth()).padStart(2, '0')}`;
+        if (!monthGroups[key]) monthGroups[key] = { label: d.toLocaleString('default', { month: 'long', year: 'numeric', timeZone: 'UTC' }), sales: [] };
         monthGroups[key].sales.push(s);
     });
 
@@ -1951,6 +1955,10 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
             if (Array.isArray(parsed)) feedTotal = parsed.reduce((sum: number, f: any) => sum + (Number(f.bags) || 0), 0);
         } catch (e) { }
 
+        const birdsSold = s.birdsSold || 1;
+        const avgWeight = (Number(s.totalWeight) / birdsSold).toFixed(2);
+        const rejectedBirds = s.reports?.[0]?.birdsRejected ?? s.birdsRejected ?? "-";
+
         return `
             <tr>
                 <td>${formatLocalDate(s.saleDate || s.createdAt)}</td>
@@ -1958,13 +1966,15 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
                 <td>${showWeighted ? `<b>${ctx.age}</b>` : (s.saleAge ?? ctx?.age ?? "N/A")} d</td>
                 <td>${s.birdsSold}</td>
                 <td>${s.reports?.[0]?.totalMortality ?? s.totalMortality ?? "-"}</td>
+                <td>${rejectedBirds}</td>
                 <td>${Number(s.totalWeight).toFixed(2)}</td>
-                <td>৳${(s.totalRevenue || (Number(s.totalWeight) * Number(s.pricePerKg)) || 0).toLocaleString()}</td>
-                <td><small>C: ৳${(s.cashReceived || 0).toLocaleString()}<br/>D: ৳${(s.depositReceived || 0).toLocaleString()}<br/>M: ৳${(s.medicineCost || 0).toLocaleString()}</small></td>
-                <td>${feedTotal || "-"}</td>
+                <td>${avgWeight}</td>
+                <td>৳${(s.totalRevenue || (Number(s.totalWeight) * Number(s.pricePerKg)) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td>৳${(s.cashReceived || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td>${feedTotal ? feedTotal.toFixed(2) : "-"}</td>
                 <td>${showWeighted ? `${ctx?.fcr || "-"} / ${ctx?.epi || "-"}` : "-"}</td>
                 <td style="color: ${showWeighted ? ((ctx?.profit || 0) >= 0 ? '#10b981' : '#ef4444') : 'inherit'}">
-                    ${showWeighted ? `৳${Math.round(ctx?.profit || 0).toLocaleString()}` : "-"}
+                    ${showWeighted ? `৳${(ctx?.profit || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "-"}
                 </td>
             </tr>
         `;
@@ -1975,12 +1985,12 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
         const monthRevenue = group.sales.reduce((sum, s) => sum + (s.totalRevenue || (Number(s.totalWeight) * Number(s.pricePerKg)) || 0), 0);
         const monthBirds = group.sales.reduce((sum, s) => sum + (s.birdsSold || 0), 0);
         return `
-            <div class="section-title">${group.label} — ${group.sales.length} sales — ${monthBirds.toLocaleString()} birds — ৳${monthRevenue.toLocaleString()}</div>
+            <div class="section-title">${group.label} — ${group.sales.length} sales — ${monthBirds.toLocaleString()} birds — ৳${monthRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <table>
                 <thead>
                     <tr>
-                        <th>Date</th><th>Farmer</th><th>Age</th><th>Birds</th><th>Mortality</th><th>Weight</th>
-                        <th>Revenue</th><th>Cash/Dep/Med</th><th>Feed</th><th>FCR/EPI</th><th>Profit</th>
+                        <th>Date</th><th>Farmer</th><th>Age</th><th>Birds</th><th>Mortality</th><th>Rejected</th><th>Weight</th><th>Avg Weight</th>
+                        <th>Revenue</th><th>Cash</th><th>Feed</th><th>FCR/EPI</th><th>Profit</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1993,7 +2003,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
     const htmlContent = `
         <div class="kpi-container">
             <div class="kpi-card">
-                <div class="kpi-value">৳${(totalRevenue || 0).toLocaleString()}</div>
+                <div class="kpi-value">৳${(totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 <div class="kpi-label">Total Revenue</div>
             </div>
             <div class="kpi-card">
@@ -2005,7 +2015,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
                 <div class="kpi-label">Total Weight</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-value">৳${(totalProfit || 0).toLocaleString()}</div>
+                <div class="kpi-value">৳${(totalProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 <div class="kpi-label">Net Profit</div>
             </div>
         </div>
@@ -2099,8 +2109,8 @@ export async function downloadFileToDevice(uri: string, fileName: string, mimeTy
 export async function exportProblematicFeedsExcel(farmers: any[], title: string, returnOptions = false, subtitle?: string): Promise<any> {
     const data = farmers.map(f => ({
         "Farmer Name": f.name,
-        "Main Stock (bags)": f.mainStock,
-        "Problematic Feed (bags)": f.problematicFeed,
+        "Main Stock (bags)": Number(f.mainStock || 0).toFixed(2),
+        "Problematic Feed (bags)": Number(f.problematicFeed || 0).toFixed(2),
         "Last Update Date": formatLocalDate(f.problematicFeedUpdatedAt)
     }));
 
@@ -2109,7 +2119,7 @@ export async function exportProblematicFeedsExcel(farmers: any[], title: string,
         subtitle,
         summaryData: [
             { Metric: "Total Problematic Farmers", Value: farmers.length.toString() },
-            { Metric: "Total Problematic Bags", Value: farmers.reduce((acc, f) => acc + Number(f.problematicFeed || 0), 0).toString() },
+            { Metric: "Total Problematic Bags", Value: farmers.reduce((acc, f) => acc + Number(f.problematicFeed || 0), 0).toFixed(2) },
         ],
         rawHeaders: ["Farmer Name", "Main Stock (bags)", "Problematic Feed (bags)", "Last Update Date"],
         rawDataTable: data,
@@ -2131,8 +2141,8 @@ export async function exportProblematicFeedsPDF(farmers: any[], title: string, r
         rowsHtml += `
             <tr style="border-bottom: 1px solid #ddd;">
                 <td style="padding: 10px; font-weight: bold; color: #111827;">${f.name}</td>
-                <td style="padding: 10px; text-align: right; color: #4b5563;">${f.mainStock} bags</td>
-                <td style="padding: 10px; text-align: right; font-weight: bold; color: #dc2626;">${f.problematicFeed} bags</td>
+                <td style="padding: 10px; text-align: right; color: #4b5563;">${Number(f.mainStock || 0).toFixed(2)} bags</td>
+                <td style="padding: 10px; text-align: right; font-weight: bold; color: #dc2626;">${Number(f.problematicFeed || 0).toFixed(2)} bags</td>
                 <td style="padding: 10px; text-align: center; color: #6b7280;">${lastUpdate}</td>
             </tr>
         `;
@@ -2148,7 +2158,7 @@ export async function exportProblematicFeedsPDF(farmers: any[], title: string, r
                     </td>
                     <td style="padding: 10px;">
                         <span style="display: block; font-size: 12px; color: #4b5563; text-transform: uppercase; margin-bottom: 4px;">Total Problematic Bags</span>
-                        <span style="font-size: 20px; font-weight: bold; color: #dc2626;">${totalBags}</span>
+                        <span style="font-size: 20px; font-weight: bold; color: #dc2626;">${totalBags.toFixed(2)}</span>
                     </td>
                 </tr>
             </table>
