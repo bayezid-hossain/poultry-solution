@@ -10,6 +10,7 @@ import { ArrowLeft, Banknote, Bird, Box, CalendarIcon, FileText, Settings, Shopp
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { ActivityIndicator, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 import { z } from "zod";
 import { ConfirmModal } from "./confirm-modal";
@@ -75,6 +76,7 @@ interface AdjustSaleModalProps {
 }
 
 export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, onSuccess }: AdjustSaleModalProps) => {
+    const insets = useSafeAreaInsets();
     const utils = trpc.useUtils();
     const [step, setStep] = useState<"form" | "preview">("form");
     const [previewData, setPreviewData] = useState<any | null>(null);
@@ -417,7 +419,10 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
 
     return (
         <BottomSheetModal open={open} onOpenChange={onOpenChange} fullScreen>
-            <View className="px-4 py-3 border-b border-border/50 bg-card/50 flex-row items-center justify-between">
+            <View 
+                className="px-4 py-3 border-b border-border/50 bg-card/50 flex-row items-center justify-between"
+                style={{ paddingTop: insets.top }}
+            >
                 <Text className="text-lg font-bold">Adjust Sale</Text>
                 <Button variant="ghost" className="h-8 px-2" onPress={() => onOpenChange(false)}>
                     <Text className="text-primary font-bold">Close</Text>
@@ -447,7 +452,10 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                         />
                     </ScrollView>
 
-                    <View className="p-4 border-t border-border/50 bg-card flex-row gap-3">
+                    <View 
+                        className="p-4 border-t border-border/50 bg-card flex-row gap-3"
+                        style={{ paddingBottom: insets.bottom + 12 }}
+                    >
                         <Button
                             variant="outline"
                             className="flex-1 h-12 flex-row gap-2"
@@ -474,7 +482,12 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                 </View>
             ) : (
                 <View className="flex-1">
-                    <ScrollView className="flex-1" contentContainerClassName="p-4 pb-8 gap-6" keyboardShouldPersistTaps="handled">
+                    <ScrollView 
+                        className="flex-1" 
+                        contentContainerClassName="p-4 pb-8 gap-6" 
+                        keyboardShouldPersistTaps="handled"
+                        style={{ marginBottom: insets.bottom }}
+                    >
                         <FarmerInfoHeader
                             farmerName={saleEvent.farmerName || "Farmer"}
                             farmerLocation={saleEvent.location}

@@ -9,6 +9,7 @@ import { DeleteFeedOrderModal } from "@/components/orders/delete-feed-order-moda
 import { DeleteSaleOrderModal } from "@/components/orders/delete-sale-order-modal";
 import { DocOrderCard } from "@/components/orders/doc-order-card";
 import { FeedOrderCard } from "@/components/orders/feed-order-card";
+import { RevertFeedOrderModal } from "@/components/orders/revert-feed-order-modal";
 import { SaleOrderCard } from "@/components/orders/sale-order-card";
 import { ProBlocker } from "@/components/pro-blocker";
 import { ScreenHeader } from "@/components/screen-header";
@@ -40,6 +41,7 @@ export default function OrdersScreen() {
     const [editingOrder, setEditingOrder] = useState<any>(null);
     const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
     const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
+    const [revertingOrderId, setRevertingOrderId] = useState<string | null>(null);
 
     // DOC Action States
     const [isCreateDocOpen, setIsCreateDocOpen] = useState(false);
@@ -240,6 +242,7 @@ export default function OrdersScreen() {
                                     onEdit={() => setEditingOrder(item)}
                                     onDelete={() => setDeletingOrderId(item.id)}
                                     onConfirm={() => setConfirmingOrderId(item.id)}
+                                    onRevert={() => setRevertingOrderId(item.id)}
                                     showOfficerName={isManagement}
                                 />
                             )}
@@ -352,6 +355,15 @@ export default function OrdersScreen() {
                             open={!!confirmingOrderId}
                             onOpenChange={(open) => !open && setConfirmingOrderId(null)}
                             feedOrderId={confirmingOrderId}
+                            onSuccess={() => feedOrdersQuery.refetch()}
+                        />
+                    )}
+
+                    {revertingOrderId && (
+                        <RevertFeedOrderModal
+                            open={!!revertingOrderId}
+                            onOpenChange={(open) => !open && setRevertingOrderId(null)}
+                            feedOrderId={revertingOrderId}
                             onSuccess={() => feedOrdersQuery.refetch()}
                         />
                     )}

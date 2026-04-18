@@ -25,8 +25,10 @@ import { router } from "expo-router";
 import { Activity, Archive, Bird, ChevronDown, ChevronUp, History, LayoutGrid, List, Pencil, Plus, Search, ShoppingCart, Skull, Sparkles, Table2, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Modal, Pressable, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function CyclesScreen() {
+    const insets = useSafeAreaInsets();
     const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
     const [viewMode, setViewMode] = useState<'detailed' | 'group'>('detailed');
 
@@ -556,7 +558,11 @@ export default function CyclesScreen() {
                 onRequestClose={() => setIsGroupMenuOpen(false)}
             >
                 <Pressable className="flex-1 bg-black/50 justify-end" onPress={() => setIsGroupMenuOpen(false)}>
-                    <Pressable className="bg-card rounded-t-3xl pb-8 overflow-hidden border-t border-border/50" onPress={(e) => e.stopPropagation()}>
+                    <Pressable 
+                        className="bg-card rounded-t-3xl pb-8 overflow-hidden border-t border-border/50" 
+                        onPress={(e) => e.stopPropagation()}
+                        style={{ paddingBottom: insets.bottom + 16 }}
+                    >
                         <View className="items-center py-4">
                             <View className="w-12 h-1.5 bg-muted rounded-full" />
                         </View>

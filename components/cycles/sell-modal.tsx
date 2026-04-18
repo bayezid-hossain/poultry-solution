@@ -25,6 +25,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { ActivityIndicator, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 import { z } from "zod";
 import { CorrectAgeModal } from "./correct-age-modal";
@@ -97,6 +98,7 @@ export const SellModal = ({
     startDate,
     officialInputDate
 }: SellModalProps) => {
+    const insets = useSafeAreaInsets();
     // Initial remaining birds for default value calculation
     const initialRemainingBirds = doc - mortality - birdsSold;
 
@@ -210,7 +212,7 @@ export const SellModal = ({
                 party: "",
                 farmerMobile: farmerMobile || "",
                 birdsSold: currentRemainingBirds,
-                birdsRejected: 0,
+                birdsRejected: lastSale?.birdsRejected || 0,
                 mortalityChange: 0,
                 totalWeight: 0,
                 pricePerKg: 0,
@@ -441,9 +443,9 @@ export const SellModal = ({
 
     return (
         <BottomSheetModal open={open} onOpenChange={onOpenChange} fullScreen>
-            <View className="flex-1 bg-background">
+            <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
                 {/* Header */}
-                <View className="flex-row items-center justify-between p-4 border-b border-border/50 bg-card pt-12">
+                <View className="flex-row items-center justify-between p-4 border-b border-border/50 bg-card">
                     <View className="flex-row items-center gap-2">
                         <Button variant="ghost" size="icon" className="h-10 w-10 p-0" onPress={() => onOpenChange(false)}>
                             <Icon as={ArrowLeft} size={20} className="text-foreground" />
@@ -486,7 +488,10 @@ export const SellModal = ({
                             <View className="h-20" />
                         </ScrollView>
 
-                        <View className="p-4 bg-card border-t border-border/50 flex-row gap-3">
+                        <View 
+                            className="p-4 bg-card border-t border-border/50 flex-row gap-3"
+                            style={{ paddingBottom: insets.bottom + 12 }}
+                        >
                             <Button
                                 variant="outline"
                                 className="flex-1 h-14 rounded-xl flex-row gap-2"
@@ -524,7 +529,12 @@ export const SellModal = ({
                             </View>
                         ) : (
                             <>
-                                <ScrollView className="flex-1" contentContainerClassName="p-4 gap-6 pb-20" keyboardShouldPersistTaps="handled">
+                                <ScrollView 
+                                    className="flex-1" 
+                                    contentContainerClassName="p-4 gap-6 pb-20" 
+                                    keyboardShouldPersistTaps="handled"
+                                    style={{ marginBottom: insets.bottom }}
+                                >
                                     {/* SECTION 1: FARMER INFO */}
                                     <View className="space-y-4 gap-y-2">
                                         <FarmerInfoHeader
