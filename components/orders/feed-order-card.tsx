@@ -205,9 +205,9 @@ export function FeedOrderCard({
                     {isConfirmed && (
                         <View className="mt-3 flex-row items-center justify-between bg-primary/5 px-3 py-2 rounded-lg border border-primary/20">
                             {order.driverName ? (
-                                <View className="flex-row items-center gap-2">
-                                    <Icon as={Truck} size={14} className="text-primary" />
-                                    <Text className="text-xs font-bold text-primary">Driver: {order.driverName}</Text>
+                                <View className="flex-row items-start gap-2 flex-shrink flex-1 mr-2">
+                                    <Icon as={Truck} size={14} className="text-primary mt-0.5" />
+                                    <Text className="text-xs font-bold text-primary flex-shrink" numberOfLines={3}>Driver: {order.driverName}</Text>
                                 </View>
                             ) : <View />}
                             
