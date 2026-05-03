@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.51] - 2026-05-03
+
+### Fix
+- Fixed average weight when rejected birds
+
 ## [v1.0.45] - 2026-03-30
 
 ### Add
