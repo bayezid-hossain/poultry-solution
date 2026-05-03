@@ -335,9 +335,8 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         });
     };
 
-    const previousBirdsRejected = latestReport ? (latestReport.birdsRejected ?? 0) : (saleEvent.birdsRejected ?? 0);
     const availableBirdsBeforeThisSale = (saleEvent.cycleContext?.doc || saleEvent.houseBirds || 0) -
-        ((saleEvent.cycleContext?.cumulativeBirdsSold || saleEvent.birdsSold) - saleEvent.birdsSold - previousBirdsRejected);
+        ((saleEvent.cycleContext?.cumulativeBirdsSold || saleEvent.birdsSold) - saleEvent.birdsSold);
 
     // Auto-correction logic: bird sold + rejected + mortality cannot exceed total birds available before this sale
     useEffect(() => {
@@ -352,6 +351,9 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         wBirdsRejected -
         wMortality
     );
+
+    // Use server-computed remaining birds from preview data when available (most accurate)
+    const serverRemainingBirds = previewData?.remainingBirds;
 
     const handleConfirmClick = () => {
         form.handleSubmit((values: any) => {
@@ -368,11 +370,13 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
     };
 
     const proceedAfterDateCheck = (v: FormValues) => {
-        if (saleEvent.historyId && remainingBirdsAfterAdjustment > 0) {
+        // Use server-computed remaining birds for accurate reopen/close decision
+        const effectiveRemaining = serverRemainingBirds ?? remainingBirdsAfterAdjustment;
+        if (saleEvent.historyId && effectiveRemaining > 0) {
             setShowConfirm(true);
             return;
         }
-        if (!saleEvent.historyId && remainingBirdsAfterAdjustment === 0) {
+        if (!saleEvent.historyId && effectiveRemaining === 0) {
             setShowConfirm(true);
             return;
         }
@@ -942,8 +946,8 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                 title={saleEvent.historyId ? "Reopen Cycle?" : "Close Cycle?"}
                 description={
                     saleEvent.historyId
-                        ? `This adjustment results in ${remainingBirdsAfterAdjustment} remaining birds.\n\nThe ended cycle will be reopened as active and feed stock restored.\n\nAre you sure you want to continue?`
-                        : `This adjustment results in ${remainingBirdsAfterAdjustment} remaining birds.\n\nThe active cycle will be closed.\n\nAre you sure you want to continue?`
+                        ? `This adjustment results in ${serverRemainingBirds ?? remainingBirdsAfterAdjustment} remaining birds.\n\nThe ended cycle will be reopened as active and feed stock restored.\n\nAre you sure you want to continue?`
+                        : `This adjustment results in ${serverRemainingBirds ?? remainingBirdsAfterAdjustment} remaining birds.\n\nThe active cycle will be closed.\n\nAre you sure you want to continue?`
                 }
                 confirmText={saleEvent.historyId ? "Reopen & Save" : "Close & Save"}
                 onCancel={() => setShowConfirm(false)}
