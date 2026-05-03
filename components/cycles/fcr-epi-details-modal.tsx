@@ -13,6 +13,7 @@ interface FcrEpiDetailsModalProps {
     doc: number;
     mortality: number;
     birdsRejected?: number;
+    totalBirdsSold?: number;
     age: number;
     totalWeight: number;
     feedBags: number;
@@ -36,6 +37,7 @@ export const FcrEpiDetailsModal = ({
     doc,
     mortality,
     birdsRejected = 0,
+    totalBirdsSold,
     age,
     totalWeight,
     feedBags,
@@ -43,7 +45,9 @@ export const FcrEpiDetailsModal = ({
     const survivors = doc - mortality - birdsRejected;
     const survivalRate = doc > 0 ? (survivors / doc) * 100 : 0;
     const feedKg = feedBags * 50;
-    const avgWeightKg = survivors > 0 ? totalWeight / survivors : 0;
+    // Average weight should be calculated using total birds sold (excluding rejected)
+    const effectiveBirdsSold = totalBirdsSold ?? survivors;
+    const avgWeightKg = effectiveBirdsSold > 0 ? totalWeight / effectiveBirdsSold : 0;
 
     return (
         <BottomSheetModal open={open} onOpenChange={onOpenChange} fullScreen>
@@ -104,7 +108,7 @@ export const FcrEpiDetailsModal = ({
                         />
                         <StatRow
                             label="Avg. Weight per Bird"
-                            sublabel={`${totalWeight.toLocaleString()}kg / ${survivors.toLocaleString()} birds`}
+                            sublabel={`${totalWeight.toLocaleString()}kg / ${effectiveBirdsSold.toLocaleString()} birds sold`}
                             value={`${avgWeightKg.toFixed(3)} kg`}
                         />
                     </View>
