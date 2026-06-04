@@ -316,6 +316,8 @@ export const SaleDetailsContent = ({
                         docCost={ctx.docCost || 0}
                         profit={ctx.profit || 0}
                         baseRate={ctx.recoveryPrice ?? BASE_SELLING_PRICE}
+                        feedPricePerBag={ctx.feedPriceUsed != null ? Number(ctx.feedPriceUsed) : undefined}
+                        docPricePerBird={ctx.docPriceUsed != null ? Number(ctx.docPriceUsed) : undefined}
                     />
                 </>
             )}

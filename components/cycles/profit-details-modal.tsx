@@ -21,6 +21,8 @@ interface ProfitDetailsModalProps {
     docCost: number;
     profit: number;
     baseRate?: number;
+    feedPricePerBag?: number;
+    docPricePerBird?: number;
 }
 
 const StatRow = ({ label, sublabel, value, highlight, color }: { label: string; sublabel?: string; value: string; highlight?: boolean; color?: string }) => (
@@ -48,6 +50,8 @@ export const ProfitDetailsModal = ({
     docCost,
     profit,
     baseRate = BASE_SELLING_PRICE,
+    feedPricePerBag = FEED_PRICE_PER_BAG,
+    docPricePerBird = DOC_PRICE_PER_BIRD,
 }: ProfitDetailsModalProps) => {
     const adjustmentType = netAdjustment > 0 ? "surplus" : netAdjustment < 0 ? "deficit" : "neutral";
 
@@ -169,7 +173,7 @@ export const ProfitDetailsModal = ({
                             <View className="flex-1 mr-4">
                                 <Text className="text-xs font-medium text-muted-foreground">Feed Cost</Text>
                                 <Text className="text-[10px] text-muted-foreground/70 mt-0.5">
-                                    {feedBags.toLocaleString()} bags × ৳{FEED_PRICE_PER_BAG.toLocaleString()}
+                                    {feedBags.toLocaleString()} bags × ৳{feedPricePerBag.toLocaleString()}
                                 </Text>
                             </View>
                             <Text className="font-mono font-semibold text-red-500/80">- ৳{Math.round(feedCost).toLocaleString()}</Text>
@@ -178,7 +182,7 @@ export const ProfitDetailsModal = ({
                             <View className="flex-1 mr-4">
                                 <Text className="text-xs font-medium text-muted-foreground">DOC Cost</Text>
                                 <Text className="text-[10px] text-muted-foreground/70 mt-0.5">
-                                    {docCount.toLocaleString()} birds × ৳{DOC_PRICE_PER_BIRD}
+                                    {docCount.toLocaleString()} birds × ৳{docPricePerBird}
                                 </Text>
                             </View>
                             <Text className="font-mono font-semibold text-red-500/80">- ৳{Math.round(docCost).toLocaleString()}</Text>
