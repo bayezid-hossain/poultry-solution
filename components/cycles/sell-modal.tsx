@@ -947,7 +947,7 @@ export const SellModal = ({
                                                                     value={value?.toString() || ""}
                                                                     onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                                     keyboardType="decimal-pad"
-                                                                    placeholder="141"
+                                                                    placeholder="145"
                                                                     className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
                                                                 />
                                                             )}
@@ -964,7 +964,7 @@ export const SellModal = ({
                                                                     value={value?.toString() || ""}
                                                                     onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                                     keyboardType="decimal-pad"
-                                                                    placeholder="3220"
+                                                                    placeholder="3325"
                                                                     className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
                                                                 />
                                                             )}
