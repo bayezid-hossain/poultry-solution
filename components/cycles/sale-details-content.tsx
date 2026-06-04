@@ -3,6 +3,7 @@ import { Text } from "@/components/ui/text";
 import { Info } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
+import { BASE_SELLING_PRICE } from "@/lib/profit-constants";
 import { FcrEpiDetailsModal } from "./fcr-epi-details-modal";
 import { ProfitDetailsModal } from "./profit-details-modal";
 
@@ -314,7 +315,7 @@ export const SaleDetailsContent = ({
                         feedCost={ctx.feedCost || 0}
                         docCost={ctx.docCost || 0}
                         profit={ctx.profit || 0}
-                        baseRate={ctx.recoveryPrice ?? 141}
+                        baseRate={ctx.recoveryPrice ?? BASE_SELLING_PRICE}
                     />
                 </>
             )}
