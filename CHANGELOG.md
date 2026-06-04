@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.53] - 2026-06-04
+
+### Changed
+- Feed bag price updated from ৳3220 to ৳3325 per bag (company policy update)
+- Profit margin base rate updated from ৳141 to ৳145 per kg (company policy update)
+- Price defaults now read from organization settings in database — allows per-organization pricing
+- Profit details modal now shows the actual prices used in each cycle's calculation
+
+### Fixed
+- Adjusting a previous sale now correctly uses the original prices from when the sale was first recorded
+- Sell and adjust-sale form placeholders updated to reflect new default prices (৳3325 feed / ৳145 recovery)
+- Recovery price fallback was hardcoded to 141 — now uses the configured base sell price
+
 ## [v1.0.51] - 2026-05-03
 
 ### Fix
