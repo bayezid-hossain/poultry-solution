@@ -4,7 +4,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
 import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
-import { BarChart3, Bird, BookOpen, ClipboardList, Crown, Download, LayoutDashboard, Package, Settings, ShoppingBag, TrendingUp, Users, Wheat } from "lucide-react-native";
+import { BarChart3, Bird, BookOpen, ClipboardList, Crown, Download, LayoutDashboard, Package, Settings, ShoppingBag, Tag, TrendingUp, Users, Wheat } from "lucide-react-native";
 import { Image, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SubscriptionStatus } from "./subscription-status";
@@ -44,6 +44,7 @@ const managementCoreItems: NavItem[] = [
     { label: "Overview", icon: LayoutDashboard, route: "/(drawer)/(tabs)/overview" },
     { label: "Officers", icon: Users, route: "/(drawer)/officers" },
     { label: "Members", icon: Crown, route: "/(drawer)/members" },
+    { label: "Price Policies", icon: Tag, route: "/(drawer)/price-policies" },
     { label: "Farmers", icon: Wheat, route: "/(drawer)/(tabs)/farmers" },
     { label: "Cycles", icon: Users, route: "/(drawer)/(tabs)/cycles" },
 ];

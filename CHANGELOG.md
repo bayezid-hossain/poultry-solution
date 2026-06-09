@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Price Policies management screen for managers/owners (Management mode only) — accessible from the drawer under Members
+- Timeline view showing all price policies with the current active policy highlighted in green
+- Swipe left on any policy row to edit or delete it
+- Add/edit via scrollable bottom sheet with date picker and numeric inputs for all three prices (feed/bag, DOC/bird, base sell)
+- Delete a policy shows a confirmation alert; deleting the current policy warns explicitly
+
+### Fixed
+- Preview sale feed cost now reads from `price_policies` table (same as saved sales) instead of stale `organization.feedPricePerBag` — preview and confirmed sale profit breakdown now match
+
 ## [v1.0.53] - 2026-06-04
 
 ### Changed

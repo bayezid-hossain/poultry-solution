@@ -93,6 +93,13 @@ export default function TabsDrawerLayout() {
             headerShown: false
           }}
         />
+        <Drawer.Screen
+          name="price-policies"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false
+          }}
+        />
 
       </Drawer>
     </View>
