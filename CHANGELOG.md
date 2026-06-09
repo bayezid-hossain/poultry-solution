@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.54] - 2026-06-09
+
 ### Added
 - Price Policies management screen for managers/owners (Management mode only) — accessible from the drawer under Members
 - Timeline view showing all price policies with the current active policy highlighted in green
