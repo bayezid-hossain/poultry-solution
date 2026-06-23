@@ -4,7 +4,7 @@ import { Text } from "@/components/ui/text";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from "expo-router";
-import { Calendar, ChevronDown, ChevronUp, Copy, ShoppingBag, Trash2 } from "lucide-react-native";
+import { Calendar, ChevronDown, ChevronUp, Copy, Edit2, ShoppingBag, Trash2 } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { toast } from "sonner-native";
@@ -13,11 +13,13 @@ export function SaleOrderCard({
     order,
     onPress,
     onDelete,
+    onEdit,
     showOfficerName = false,
 }: {
     order: any,
     onPress?: () => void,
     onDelete?: () => void,
+    onEdit?: () => void,
     showOfficerName?: boolean,
 }) {
     const router = useRouter();
@@ -102,6 +104,14 @@ export function SaleOrderCard({
                             >
                                 <Icon as={Copy} size={14} className="text-primary-foreground" />
                             </Pressable>
+                            {onEdit && (
+                                <Pressable
+                                    onPress={onEdit}
+                                    className="w-8 h-8 rounded-lg bg-blue-500 items-center justify-center active:bg-blue-500/80"
+                                >
+                                    <Icon as={Edit2} size={14} className="text-white" />
+                                </Pressable>
+                            )}
                             <Pressable
                                 onPress={onDelete}
                                 className="w-8 h-8 rounded-lg bg-destructive items-center justify-center active:bg-destructive/80"

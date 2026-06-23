@@ -19,6 +19,12 @@ interface CreateSaleOrderModalProps {
     onOpenChange: (open: boolean) => void;
     orgId: string;
     onSuccess?: () => void;
+    initialData?: {
+        id: string;
+        orderDate: Date | string;
+        branchName: string;
+        items: any[]; // flat saleOrderItems rows with farmer relation
+    } | null;
 }
 
 interface SaleBatch {
@@ -40,7 +46,7 @@ interface SaleItem {
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: CreateSaleOrderModalProps) {
+export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess, initialData }: CreateSaleOrderModalProps) {
     const insets = useSafeAreaInsets();
 
     const [orderDate, setOrderDate] = useState(new Date());
@@ -53,11 +59,40 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
 
     useEffect(() => {
         if (open) {
-            setOrderDate(new Date());
-            setBranchName(sessionData?.user?.branchName || "");
-            setItems([]);
+            if (initialData) {
+                setOrderDate(new Date(initialData.orderDate));
+                setBranchName(initialData.branchName || "");
+
+                // Group flat items from DB by farmerId
+                const grouped: Record<string, SaleItem> = {};
+                (initialData.items as any[]).forEach(item => {
+                    const key = item.farmerId;
+                    if (!grouped[key]) {
+                        grouped[key] = {
+                            id: key,
+                            farmerId: item.farmerId,
+                            farmerName: item.farmer?.name || "Unknown",
+                            location: item.farmer?.location,
+                            mobile: item.farmer?.mobile,
+                            batches: []
+                        };
+                    }
+                    grouped[key].batches.push({
+                        id: generateId(),
+                        totalWeight: item.totalWeight?.toString() ?? "",
+                        totalDoc: item.totalDoc?.toString() ?? "",
+                        avgWeight: item.avgWeight?.toString() ?? "",
+                        age: item.age?.toString() ?? "",
+                    });
+                });
+                setItems(Object.values(grouped));
+            } else {
+                setOrderDate(new Date());
+                setBranchName(sessionData?.user?.branchName || "");
+                setItems([]);
+            }
         }
-    }, [open, sessionData?.user?.branchName]);
+    }, [open, initialData, sessionData?.user?.branchName]);
 
     const { data: searchResults, isFetching: isSearching } = trpc.officer.farmers.listWithStock.useQuery(
         { orgId, page: 1, pageSize: 20, search: searchQuery },
@@ -78,7 +113,21 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
         }
     });
 
-    const isSubmitting = createMutation.isPending;
+    const updateMutation = trpc.officer.saleOrders.update.useMutation({
+        onSuccess: () => {
+            const text = generateCopyText();
+            Clipboard.setStringAsync(text);
+            toast.success("Sale Order Updated & Copied to Clipboard!");
+            setItems([]);
+            onSuccess?.();
+            onOpenChange(false);
+        },
+        onError: (error) => {
+            toast.error(error.message);
+        }
+    });
+
+    const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
     const generateCopyText = () => {
         const dateStr = format(orderDate, "dd MMM yyyy");
@@ -257,12 +306,21 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
             }))
         );
 
-        createMutation.mutate({
-            orgId,
-            orderDate,
-            branchName: branchName.trim(),
-            items: validItems
-        });
+        if (initialData) {
+            updateMutation.mutate({
+                id: initialData.id,
+                orderDate,
+                branchName: branchName.trim(),
+                items: validItems
+            });
+        } else {
+            createMutation.mutate({
+                orgId,
+                orderDate,
+                branchName: branchName.trim(),
+                items: validItems
+            });
+        }
     };
 
     // Search screen
@@ -336,7 +394,7 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
                         <View className="bg-primary/20 w-8 h-8 rounded-full items-center justify-center">
                             <Icon as={ShoppingBag} size={16} className="text-primary" />
                         </View>
-                        <Text className="text-lg font-bold text-foreground">New Sale Order</Text>
+                        <Text className="text-lg font-bold text-foreground">{initialData ? "Edit Sale Order" : "New Sale Order"}</Text>
                     </View>
                     <Pressable onPress={() => onOpenChange(false)} disabled={isSubmitting}>
                         <Text className="text-primary font-bold">Cancel</Text>
@@ -507,7 +565,7 @@ export function CreateSaleOrderModal({ open, onOpenChange, orgId, onSuccess }: C
                         ) : (
                             <>
                                 <Icon as={Copy} size={18} className="mr-2 text-primary-foreground" />
-                                <Text>Save & Copy</Text>
+                                <Text>{initialData ? "Update & Copy" : "Save & Copy"}</Text>
                             </>
                         )}
                     </Button>

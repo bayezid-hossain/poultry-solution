@@ -14,14 +14,15 @@ if "%1" == "--pair" (
         exit /b %errorlevel%
     )
     echo Pairing successful.
+    echo Please check your device for the connection port on the main Wireless Debugging screen.
+    echo Then run connect.bat again without --pair and enter the IP:PORT.
+    pause
+    exit /b 0
 )
 
 echo Starting ADB Connection to %DEVICE_ADDRESS%...
 
-:: kill-server if needed
-"%ADB_EXE%" kill-server
-"%ADB_EXE%" start-server
-
+:: We don't need to kill-server on every connection attempt
 echo Attempting to connect...
 "%ADB_EXE%" connect %DEVICE_ADDRESS%
 

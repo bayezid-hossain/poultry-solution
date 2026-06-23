@@ -51,6 +51,7 @@ export default function OrdersScreen() {
 
     // Sale Action States
     const [isCreateSaleOpen, setIsCreateSaleOpen] = useState(false);
+    const [editingSaleOrder, setEditingSaleOrder] = useState<any>(null);
     const [deletingSaleOrderId, setDeletingSaleOrderId] = useState<string | null>(null);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -297,6 +298,7 @@ export default function OrdersScreen() {
                                         order={item}
                                         onPress={() => { /* Handle press if needed */ }}
                                         onDelete={() => setDeletingSaleOrderId(item.id)}
+                                        onEdit={() => setEditingSaleOrder(item)}
                                         showOfficerName={isManagement}
                                     />
                                 </View>
@@ -411,6 +413,16 @@ export default function OrdersScreen() {
                         orgId={membership.orgId}
                         onSuccess={() => saleOrdersQuery.refetch()}
                     />
+
+                    {editingSaleOrder && (
+                        <CreateSaleOrderModal
+                            open={!!editingSaleOrder}
+                            onOpenChange={(open) => !open && setEditingSaleOrder(null)}
+                            orgId={membership.orgId}
+                            initialData={editingSaleOrder}
+                            onSuccess={() => saleOrdersQuery.refetch()}
+                        />
+                    )}
 
                     {deletingSaleOrderId && (
                         <DeleteSaleOrderModal
