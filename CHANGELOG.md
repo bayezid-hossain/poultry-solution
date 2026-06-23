@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.55] - 2026-06-23
+
 ### Added
 - Sale Orders can now be edited after creation (officer who created it), matching Feed/DOC order edit support
 
