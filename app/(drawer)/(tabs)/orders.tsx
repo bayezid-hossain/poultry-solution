@@ -17,10 +17,12 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
+import { ConfirmModal } from "@/components/cycles/confirm-modal";
 import { useGlobalFilter } from "@/context/global-filter-context";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { Bird, Factory, Plus, ShoppingBag } from "lucide-react-native";
+import { Bird, Factory, Plus, ShoppingBag, Trash2 } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, View } from "react-native";
 
@@ -54,6 +56,10 @@ export default function OrdersScreen() {
     const [editingSaleOrder, setEditingSaleOrder] = useState<any>(null);
     const [deletingSaleOrderId, setDeletingSaleOrderId] = useState<string | null>(null);
 
+    // Delete All State
+    const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+
+    const utils = trpc.useUtils();
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
     const { selectedOfficerId } = useGlobalFilter();
@@ -90,6 +96,34 @@ export default function OrdersScreen() {
         { enabled: !!membership?.orgId && activeTab === 'sale' && isManagement }
     );
     const saleOrdersQuery = isManagement ? mgmtSaleQuery : officerSaleQuery;
+
+    const deleteAllDocMutation = trpc.officer.docOrders.deleteAll.useMutation({
+        onSuccess: () => {
+            setShowDeleteAllConfirm(false);
+            docOrdersQuery.refetch();
+            utils.officer.docOrders.list.invalidate();
+            toast.success("All DOC orders deleted");
+        },
+        onError: (e) => toast.error(e.message),
+    });
+
+    const deleteAllSaleMutation = trpc.officer.saleOrders.deleteAll.useMutation({
+        onSuccess: () => {
+            setShowDeleteAllConfirm(false);
+            saleOrdersQuery.refetch();
+            utils.officer.saleOrders.list.invalidate();
+            toast.success("All sale orders deleted");
+        },
+        onError: (e) => toast.error(e.message),
+    });
+
+    const handleDeleteAllConfirm = () => {
+        if (activeTab === 'doc') {
+            deleteAllDocMutation.mutate();
+        } else {
+            deleteAllSaleMutation.mutate();
+        }
+    };
 
     useFocusEffect(
         useCallback(() => {
@@ -149,9 +183,27 @@ export default function OrdersScreen() {
         );
     };
 
+    const showDeleteAll = !isManagement && (activeTab === 'doc' || activeTab === 'sale') && (
+        (activeTab === 'doc' && (docOrdersQuery.data?.length ?? 0) > 0) ||
+        (activeTab === 'sale' && (saleOrdersQuery.data?.length ?? 0) > 0)
+    );
+
+    const isDeleteAllLoading = deleteAllDocMutation.isPending || deleteAllSaleMutation.isPending;
+
     return (
         <View className="flex-1 bg-background">
-            <ScreenHeader title="Order Center" />
+            <ScreenHeader
+                title="Order Center"
+                rightElement={showDeleteAll ? (
+                    <Pressable
+                        onPress={() => setShowDeleteAllConfirm(true)}
+                        disabled={isDeleteAllLoading}
+                        className="w-9 h-9 items-center justify-center rounded-lg active:bg-destructive/10 mr-1"
+                    >
+                        <Icon as={Trash2} size={18} className="text-destructive" />
+                    </Pressable>
+                ) : undefined}
+            />
 
             <View className="bg-card border-b border-border/50 px-6 pb-4 pt-4">
                 {isManagement && (
@@ -432,6 +484,17 @@ export default function OrdersScreen() {
                             onSuccess={() => saleOrdersQuery.refetch()}
                         />
                     )}
+
+                    <ConfirmModal
+                        visible={showDeleteAllConfirm}
+                        title={`Delete All ${activeTab === 'doc' ? 'DOC' : 'Sale'} Orders`}
+                        description={`This will permanently delete all ${activeTab === 'doc' ? (docOrdersQuery.data?.length ?? 0) : (saleOrdersQuery.data?.length ?? 0)} order${((activeTab === 'doc' ? docOrdersQuery.data?.length : saleOrdersQuery.data?.length) ?? 0) !== 1 ? 's' : ''}. This cannot be undone.`}
+                        confirmText="Delete All"
+                        onConfirm={handleDeleteAllConfirm}
+                        onCancel={() => setShowDeleteAllConfirm(false)}
+                        destructive
+                        isLoading={isDeleteAllLoading}
+                    />
                 </>
             )}
         </View>

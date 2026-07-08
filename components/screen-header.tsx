@@ -10,9 +10,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 interface ScreenHeaderProps {
     title: string;
     leftElement?: ReactNode;
+    rightElement?: ReactNode;
 }
 
-export function ScreenHeader({ title, leftElement }: ScreenHeaderProps) {
+export function ScreenHeader({ title, leftElement, rightElement }: ScreenHeaderProps) {
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -42,6 +43,8 @@ export function ScreenHeader({ title, leftElement }: ScreenHeaderProps) {
                 </Pressable>
             )}
             <Text className="text-xl font-bold text-[#16a34a] flex-1" numberOfLines={1}>{title}</Text>
+
+            {rightElement}
 
             {isManagerOrAdmin && (
                 <View className="flex-row items-center gap-1">

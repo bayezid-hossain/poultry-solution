@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Delete All button (trash icon in screen header) for DOC and Sale order tabs — officers can bulk-delete all their own orders with a single confirmation; uses the themed bottom sheet confirm modal
+
 ## [v1.0.55] - 2026-06-23
 
 ### Added
