@@ -148,6 +148,8 @@ export default function FarmerDetailScreen() {
             utils.management.sales.getRecentSales.invalidate(),
             utils.officer.stock.getHistory.invalidate({ farmerId: id }),
             utils.management.stock.getHistory.invalidate({ farmerId: id }),
+            utils.officer.stock.getStockBreakdown.invalidate({ farmerId: id }),
+            utils.management.stock.getStockBreakdown.invalidate({ farmerId: id }),
             utils.officer.cycles.getDetails.invalidate(),
             utils.management.cycles.getDetails.invalidate(),
         ]);
@@ -372,7 +374,12 @@ export default function FarmerDetailScreen() {
                             <View className="h-full bg-orange-500" style={{ width: `${mainStock > 0 ? (activeConsumption / mainStock) * 100 : 0}%` }} />
                         </View>
 
-                        <StockDistributionChips data={stockBreakdown} isLoading={isBreakdownLoading} className="mt-4" />
+                        <StockDistributionChips
+                            data={stockBreakdown}
+                            isLoading={isBreakdownLoading}
+                            className="mt-4"
+                            onEditPress={() => setLedgerExpanded(true)}
+                        />
                     </CardContent>
                 </Card>
 

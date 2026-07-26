@@ -89,8 +89,14 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
             toast.success("Stock transferred successfully");
             utils.officer.farmers.getDetails.invalidate({ farmerId: sourceFarmerId });
             utils.officer.stock.getHistory.invalidate({ farmerId: sourceFarmerId });
+            utils.officer.stock.getStockBreakdown.invalidate({ farmerId: sourceFarmerId });
             utils.management.farmers.getDetails.invalidate({ farmerId: sourceFarmerId });
             utils.management.stock.getHistory.invalidate({ farmerId: sourceFarmerId });
+            utils.management.stock.getStockBreakdown.invalidate({ farmerId: sourceFarmerId });
+            if (targetFarmerId) {
+                utils.officer.stock.getStockBreakdown.invalidate({ farmerId: targetFarmerId });
+                utils.management.stock.getStockBreakdown.invalidate({ farmerId: targetFarmerId });
+            }
             reset();
             setSearchTerm("");
             setIsDropdownOpen(false);

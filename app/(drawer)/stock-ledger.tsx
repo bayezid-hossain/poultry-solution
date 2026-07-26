@@ -260,12 +260,15 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                                 <Text className="text-[10px] font-medium text-muted-foreground">b</Text>
                             </View>
                         </View>
-                        <StockDistributionChips data={stockBreakdown} isLoading={isBreakdownLoading} />
+                        <StockDistributionChips
+                            data={stockBreakdown}
+                            isLoading={isBreakdownLoading}
+                            onEditPress={() => router.push(`/farmer/${farmer.id}/ledger` as any)}
+                        />
                     </View>
 
                     <View className="flex-row items-center bg-muted/20 px-4 py-2 mb-1 border-y border-border/10">
-                        <Text className="w-12 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Date</Text>
-                        <Text className="flex-[1.3] text-[9px] font-bold text-muted-foreground uppercase tracking-widest pl-1">Type</Text>
+                        <Text className="flex-[1.3] text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Type</Text>
                         <Text className="flex-1 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Note</Text>
                         <Text className="w-14 text-right text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Change</Text>
                     </View>
@@ -276,71 +279,99 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                             <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Fetching History</Text>
                         </View>
                     ) : stockLogs && stockLogs.length > 0 ? (
-                        stockLogs.slice(0, 10).map((log: any) => {
-                            const ti = typeIcon(log.type);
-                            const amount = Number(log.amount);
-                            const isReverted = false; // Simplified for this view
+                        (() => {
+                            const DATE_BORDER_PALETTE = [
+                                "border-primary/30",
+                                "border-blue-400/30",
+                                "border-amber-400/30",
+                                "border-emerald-400/30",
+                                "border-purple-400/30",
+                            ];
+                            const groups: { dateKey: string; logs: any[] }[] = [];
+                            stockLogs.slice(0, 10).forEach((log: any) => {
+                                const dateKey = format(new Date(log.createdAt), "yyyy-MM-dd");
+                                const lastGroup = groups[groups.length - 1];
+                                if (lastGroup && lastGroup.dateKey === dateKey) {
+                                    lastGroup.logs.push(log);
+                                } else {
+                                    groups.push({ dateKey, logs: [log] });
+                                }
+                            });
 
-                            return (
-                                <View key={log.id} className="flex-row items-center py-3 border-b border-border/5 px-4">
-                                    <Text className="w-12 text-[10px] text-muted-foreground font-medium">
-                                        {format(new Date(log.createdAt), "dd MMM")}
-                                    </Text>
-
-                                    <View className="flex-[1.3] flex-row items-center gap-1 pl-1">
-                                        <View className={`w-4 h-4 rounded items-center justify-center ${ti.bg}`}>
-                                            <Icon as={ti.icon} size={10} className={ti.color} />
-                                        </View>
-                                        <View className="flex-1">
-                                            <Text className="text-[11px] font-bold text-foreground leading-tight" numberOfLines={2}>
-                                                {log.type == "TRANSFER_OUT" ? "TRANSFER OUT" : log.type == "TRANSFER_IN" ? "TRANSFER IN" : log.type}
-                                            </Text>
-                                            {log.feedType && (
-                                                <Text className="text-[9px] text-primary font-black uppercase tracking-wide" numberOfLines={1}>
-                                                    {log.feedType}
-                                                </Text>
-                                            )}
-                                        </View>
-                                    </View>
-
-                                    <View className="flex-1 pr-2 justify-center">
-                                        {log.type === "ADJUSTMENT" && log.referenceId ? (() => {
-                                            const originalLog = stockLogs.find((l: any) => l.id === log.referenceId);
-                                            if (originalLog) {
-                                                const origAmt = parseFloat(originalLog.amount);
-                                                const priorCorrections = stockLogs.filter((l: any) =>
-                                                    l.type === "ADJUSTMENT" &&
-                                                    l.referenceId === log.referenceId &&
-                                                    new Date(l.createdAt).getTime() < new Date(log.createdAt).getTime()
-                                                );
-                                                const priorDeltaSum = priorCorrections.reduce((sum: number, l: any) => sum + parseFloat(l.amount), 0);
-
-                                                const currentBaseAmt = origAmt + priorDeltaSum;
-                                                const newAmt = currentBaseAmt + parseFloat(log.amount);
-                                                return (
-                                                    <View className="flex-row items-center gap-1 opacity-80">
-                                                        <Text className="text-[9px] text-muted-foreground line-through">{currentBaseAmt > 0 ? "+" : ""}{currentBaseAmt}</Text>
-                                                        <Text className="text-[9px] text-muted-foreground">→</Text>
-                                                        <Text className={`text-[9px] font-bold ${newAmt > 0 ? 'text-emerald-500' : 'text-orange-500'}`}>{newAmt > 0 ? "+" : ""}{newAmt}</Text>
-                                                    </View>
-                                                );
-                                            }
-                                            return <Text className="text-[10px] text-muted-foreground" numberOfLines={2}>{log.note || "-"}</Text>;
-                                        })() : (
-                                            <Text className="text-[10px] text-muted-foreground" numberOfLines={2}>
-                                                {log.note || "-"}
-                                            </Text>
-                                        )}
-                                    </View>
-
-                                    <View className="items-end w-14">
-                                        <Text className={`text-xs font-bold ${amount >= 0 ? "text-emerald-500" : "text-destructive"}`}>
-                                            {amount >= 0 ? "+" : ""}{amount.toFixed(1)}
+                            return groups.map((group, groupIndex) => (
+                                <View
+                                    key={group.dateKey}
+                                    className={`mx-3 mt-3 rounded-2xl border-2 overflow-hidden ${DATE_BORDER_PALETTE[groupIndex % DATE_BORDER_PALETTE.length]}`}
+                                >
+                                    <View className="px-4 py-1.5 bg-muted/20">
+                                        <Text className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
+                                            {format(new Date(group.logs[0].createdAt), "dd MMM yyyy")}
                                         </Text>
                                     </View>
+
+                                    {group.logs.map((log: any) => {
+                                        const ti = typeIcon(log.type);
+                                        const amount = Number(log.amount);
+
+                                        return (
+                                            <View key={log.id} className="flex-row items-center py-3 border-b border-border/5 px-4">
+                                                <View className="flex-[1.3] flex-row items-center gap-1">
+                                                    <View className={`w-4 h-4 rounded items-center justify-center ${ti.bg}`}>
+                                                        <Icon as={ti.icon} size={10} className={ti.color} />
+                                                    </View>
+                                                    <View className="flex-1">
+                                                        <Text className="text-[11px] font-bold text-foreground leading-tight" numberOfLines={2}>
+                                                            {log.type == "TRANSFER_OUT" ? "TRANSFER OUT" : log.type == "TRANSFER_IN" ? "TRANSFER IN" : log.type}
+                                                        </Text>
+                                                        {log.feedType && (
+                                                            <Text className="text-[9px] text-primary font-black uppercase tracking-wide" numberOfLines={1}>
+                                                                {log.feedType}
+                                                            </Text>
+                                                        )}
+                                                    </View>
+                                                </View>
+
+                                                <View className="flex-1 pr-2 justify-center">
+                                                    {log.type === "ADJUSTMENT" && log.referenceId ? (() => {
+                                                        const originalLog = stockLogs.find((l: any) => l.id === log.referenceId);
+                                                        if (originalLog) {
+                                                            const origAmt = parseFloat(originalLog.amount);
+                                                            const priorCorrections = stockLogs.filter((l: any) =>
+                                                                l.type === "ADJUSTMENT" &&
+                                                                l.referenceId === log.referenceId &&
+                                                                new Date(l.createdAt).getTime() < new Date(log.createdAt).getTime()
+                                                            );
+                                                            const priorDeltaSum = priorCorrections.reduce((sum: number, l: any) => sum + parseFloat(l.amount), 0);
+
+                                                            const currentBaseAmt = origAmt + priorDeltaSum;
+                                                            const newAmt = currentBaseAmt + parseFloat(log.amount);
+                                                            return (
+                                                                <View className="flex-row items-center gap-1 opacity-80">
+                                                                    <Text className="text-[9px] text-muted-foreground line-through">{currentBaseAmt > 0 ? "+" : ""}{currentBaseAmt}</Text>
+                                                                    <Text className="text-[9px] text-muted-foreground">→</Text>
+                                                                    <Text className={`text-[9px] font-bold ${newAmt > 0 ? 'text-emerald-500' : 'text-orange-500'}`}>{newAmt > 0 ? "+" : ""}{newAmt}</Text>
+                                                                </View>
+                                                            );
+                                                        }
+                                                        return <Text className="text-[10px] text-muted-foreground" numberOfLines={2}>{log.note || "-"}</Text>;
+                                                    })() : (
+                                                        <Text className="text-[10px] text-muted-foreground" numberOfLines={2}>
+                                                            {log.note || "-"}
+                                                        </Text>
+                                                    )}
+                                                </View>
+
+                                                <View className="items-end w-14">
+                                                    <Text className={`text-xs font-bold ${amount >= 0 ? "text-emerald-500" : "text-destructive"}`}>
+                                                        {amount >= 0 ? "+" : ""}{amount.toFixed(1)}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
                                 </View>
-                            );
-                        })
+                            ));
+                        })()
                     ) : (
                         <View className="px-3 py-6 items-center">
                             <Text className="text-xs text-muted-foreground">No logs found</Text>

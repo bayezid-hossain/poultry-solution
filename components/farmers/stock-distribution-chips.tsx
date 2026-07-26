@@ -1,6 +1,6 @@
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
-import { Info } from "lucide-react-native";
+import { Info, Pencil } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 import { toast } from "sonner-native";
 
@@ -8,9 +8,11 @@ interface StockDistributionChipsProps {
     data?: { byType: { feedType: string; amount: number }[]; unspecified: number; total: number } | null;
     isLoading?: boolean;
     className?: string;
+    /** When provided, shows an "Edit" pill that jumps to where the underlying logs can be retagged. */
+    onEditPress?: () => void;
 }
 
-export function StockDistributionChips({ data, isLoading, className }: StockDistributionChipsProps) {
+export function StockDistributionChips({ data, isLoading, className, onEditPress }: StockDistributionChipsProps) {
     if (isLoading || !data) return null;
 
     const { byType, unspecified, total } = data;
@@ -43,6 +45,15 @@ export function StockDistributionChips({ data, isLoading, className }: StockDist
             >
                 <Icon as={Info} size={12} className="text-muted-foreground" />
             </Pressable>
+            {onEditPress && (
+                <Pressable
+                    onPress={onEditPress}
+                    className="flex-row items-center gap-1 bg-blue-500/10 px-2 py-1 rounded-md border border-blue-500/20 active:opacity-70"
+                >
+                    <Icon as={Pencil} size={10} className="text-blue-500" />
+                    <Text className="text-[10px] font-bold text-blue-500">Edit</Text>
+                </Pressable>
+            )}
         </View>
     );
 }

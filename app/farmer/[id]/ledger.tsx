@@ -403,6 +403,8 @@ export default function FarmerLedgerScreen() {
                         utils.officer.stock.getImportHistory.invalidate();
                         utils.management.stock.getAllFarmersStock.invalidate();
                         utils.management.stock.getImportHistory.invalidate();
+                        id && utils.officer.stock.getStockBreakdown.invalidate({ farmerId: id });
+                        id && utils.management.stock.getStockBreakdown.invalidate({ farmerId: id });
                         farmer?.id && utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
                         farmer?.id && utils.management.farmers.getDetails.invalidate({ farmerId: farmer.id });
                     }}
@@ -419,6 +421,8 @@ export default function FarmerLedgerScreen() {
                     utils.officer.stock.getImportHistory.invalidate();
                     utils.management.stock.getAllFarmersStock.invalidate();
                     utils.management.stock.getImportHistory.invalidate();
+                    id && utils.officer.stock.getStockBreakdown.invalidate({ farmerId: id });
+                    id && utils.management.stock.getStockBreakdown.invalidate({ farmerId: id });
                     farmer?.id && utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
                     farmer?.id && utils.management.farmers.getDetails.invalidate({ farmerId: farmer.id });
                 }}
@@ -433,6 +437,8 @@ export default function FarmerLedgerScreen() {
                     stockQuery.refetch();
                     utils.officer.stock.getAllFarmersStock.invalidate();
                     utils.officer.stock.getImportHistory.invalidate();
+                    id && utils.officer.stock.getStockBreakdown.invalidate({ farmerId: id });
+                    id && utils.management.stock.getStockBreakdown.invalidate({ farmerId: id });
                     farmer?.id && utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
                 }}
             />
