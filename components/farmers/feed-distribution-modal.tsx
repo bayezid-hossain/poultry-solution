@@ -78,19 +78,20 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
 
     // A single bucket (Unspecified especially) shouldn't reasonably be corrected past the
     // farmer's entire current stock — bounds fat-finger typos and stops raw float-drift values
-    // (e.g. "123.456789") from ever needing to be typed in full.
-    const editMax = Math.round(Number(breakdown?.total ?? 0) * 10) / 10;
+    // (e.g. "123.456789") from ever needing to be typed in full. Floor (never round up) so this
+    // cap never overstates what's actually in stock.
+    const editMax = Math.floor(Number(breakdown?.total ?? 0) * 100) / 100;
 
     const handleStartEdit = (key: string, currentAmount: number) => {
         setEditingChip(key);
-        setEditValue((Math.round(currentAmount * 10) / 10).toFixed(1));
+        setEditValue(currentAmount.toFixed(2));
     };
 
     const handleEditValueChange = (value: string) => {
         if (!/^\d*\.?\d*$/.test(value)) return;
         const num = parseFloat(value);
         if (!isNaN(num) && num > editMax) {
-            setEditValue(editMax.toFixed(1));
+            setEditValue(editMax.toFixed(2));
             return;
         }
         setEditValue(value);
@@ -104,7 +105,7 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
             return;
         }
         if (newAmount > editMax) {
-            toast.error(`Cannot exceed total stock (${editMax.toFixed(1)} bags)`);
+            toast.error(`Cannot exceed total stock (${editMax.toFixed(2)} bags)`);
             return;
         }
         adjustMutation.mutate({
@@ -197,7 +198,7 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
                                                             value={editValue}
                                                             onChangeText={handleEditValueChange}
                                                         />
-                                                        <Text className="text-[9px] font-bold text-muted-foreground mt-0.5">Max: {editMax.toFixed(1)}</Text>
+                                                        <Text className="text-[9px] font-bold text-muted-foreground mt-0.5">Max: {editMax.toFixed(2)}</Text>
                                                     </View>
                                                 ) : (
                                                     <Pressable onPress={() => handleStartEdit(chip.key, chip.amount)}
@@ -205,7 +206,7 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
                                                         className="flex-row items-center gap-1.5 active:opacity-60"
                                                     >
                                                         <Text className={`text-xs font-bold ${chip.isUnspecified ? 'text-amber-600' : 'text-foreground'}`}>
-                                                            {chip.amount.toFixed(1)}
+                                                            {chip.amount.toFixed(2)}
                                                         </Text>
                                                         <Icon as={Pencil} size={11} className="text-muted-foreground" />
                                                     </Pressable>
@@ -246,7 +247,7 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
                             ) : (
                                 <>
                                     <Text className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
-                                        Assign {reassignable.toFixed(1)} bags to
+                                        Assign {reassignable.toFixed(2)} bags to
                                     </Text>
 
                                     <View className="gap-3">
@@ -291,8 +292,8 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
 
                                         <Text className={`text-xs font-bold ml-1 ${overAllocated ? 'text-destructive' : 'text-muted-foreground'}`}>
                                             {overAllocated
-                                                ? `Over by ${Math.abs(remaining).toFixed(1)} bags`
-                                                : `${remaining.toFixed(1)} of ${reassignable.toFixed(1)} bags left unspecified`}
+                                                ? `Over by ${Math.abs(remaining).toFixed(2)} bags`
+                                                : `${remaining.toFixed(2)} of ${reassignable.toFixed(2)} bags left unspecified`}
                                         </Text>
                                     </View>
 

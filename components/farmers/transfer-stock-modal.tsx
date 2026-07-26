@@ -126,9 +126,11 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
     const handleQuantityChange = (key: string, value: string, max: number) => {
         if (!/^\d*\.?\d*$/.test(value)) return;
         const num = parseFloat(value);
-        const roundedMax = Math.round(max * 10) / 10;
-        if (!isNaN(num) && num > roundedMax) {
-            setQuantities(prev => ({ ...prev, [key]: String(roundedMax) }));
+        // Floor (never round up) so the enforced cap never exceeds what's actually available —
+        // rounding to nearest could let e.g. 0.08 become an offered/allowed 0.1.
+        const safeMax = Math.floor(max * 100) / 100;
+        if (!isNaN(num) && num > safeMax) {
+            setQuantities(prev => ({ ...prev, [key]: String(safeMax) }));
             return;
         }
         setQuantities(prev => ({ ...prev, [key]: value }));
@@ -189,7 +191,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                     {/* Available stock badge */}
                     <View className="flex-row items-center gap-2 mt-3 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
                         <Icon as={Package} size={14} className="text-amber-600" />
-                        <Text className="text-xs font-bold text-amber-700">Available: {Number(availableStock).toFixed(1)} bags</Text>
+                        <Text className="text-xs font-bold text-amber-700">Available: {Number(availableStock).toFixed(2)} bags</Text>
                     </View>
                 </View>
 
@@ -336,7 +338,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                                                         {t.label}
                                                     </Text>
                                                     <Text className="text-[10px] text-muted-foreground font-medium">
-                                                        {t.amount.toFixed(1)} bags available
+                                                        {t.amount.toFixed(2)} bags available
                                                     </Text>
                                                 </View>
                                             </View>
@@ -355,7 +357,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
 
                         {typeOptions.length > 0 && (
                             <Text className="text-xs font-bold ml-1 mt-2.5 text-muted-foreground">
-                                Total: {totalRequested.toFixed(1)} of {Number(availableStock).toFixed(1)} bags
+                                Total: {totalRequested.toFixed(2)} of {Number(availableStock).toFixed(2)} bags
                             </Text>
                         )}
                     </View>

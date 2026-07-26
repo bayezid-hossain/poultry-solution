@@ -230,7 +230,7 @@ export function StockCorrectionModal({
                                                 </Text>
                                             </View>
                                             <Text className={`text-sm font-black ${isSelected ? 'text-orange-600' : 'text-muted-foreground'}`}>
-                                                {t.amount.toFixed(1)} bags
+                                                {t.amount.toFixed(2)} bags
                                             </Text>
                                         </Pressable>
                                     );
@@ -250,7 +250,7 @@ export function StockCorrectionModal({
                             </View>
                             {selectedOption && (
                                 <Text className={`text-[10px] font-black uppercase ${isOverLimit ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                    Max: {selectedOption.amount.toFixed(1)}
+                                    Max: {selectedOption.amount.toFixed(2)}
                                 </Text>
                             )}
                         </View>
