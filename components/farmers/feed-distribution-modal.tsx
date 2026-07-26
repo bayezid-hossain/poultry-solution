@@ -4,7 +4,7 @@ import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { Plus, Trash2, X } from "lucide-react-native";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import { toast } from "sonner-native";
@@ -23,6 +23,8 @@ interface AllocationRow {
     quantity: string;
 }
 
+const UNSPECIFIED = "__UNSPECIFIED__";
+
 export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onSuccess }: FeedDistributionModalProps) {
     const utils = trpc.useUtils();
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -35,24 +37,63 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
     );
 
     const [allocations, setAllocations] = useState<AllocationRow[]>([{ type: "", quantity: "" }]);
+    const [editingChip, setEditingChip] = useState<string | null>(null);
+    const [editValue, setEditValue] = useState("");
 
     useEffect(() => {
-        if (open) setAllocations([{ type: "", quantity: "" }]);
+        if (open) {
+            setAllocations([{ type: "", quantity: "" }]);
+            setEditingChip(null);
+            setEditValue("");
+        }
     }, [open]);
+
+    const invalidateAll = () => {
+        refetchBreakdown();
+        utils.officer.stock.getStockBreakdown.invalidate({ farmerId });
+        utils.management.stock.getStockBreakdown.invalidate({ farmerId });
+        utils.officer.stock.getHistory.invalidate({ farmerId });
+        utils.management.stock.getHistory.invalidate({ farmerId });
+    };
 
     const mutation = trpc.officer.stock.reassignUnspecifiedFeed.useMutation({
         onSuccess: () => {
             toast.success("Feed type reassigned");
             setAllocations([{ type: "", quantity: "" }]);
-            refetchBreakdown();
-            utils.officer.stock.getStockBreakdown.invalidate({ farmerId });
-            utils.management.stock.getStockBreakdown.invalidate({ farmerId });
-            utils.officer.stock.getHistory.invalidate({ farmerId });
-            utils.management.stock.getHistory.invalidate({ farmerId });
+            invalidateAll();
             onSuccess?.();
         },
         onError: (err: any) => toast.error(err.message || "Failed to reassign feed type"),
     });
+
+    const adjustMutation = trpc.officer.stock.adjustFeedTypeAmount.useMutation({
+        onSuccess: () => {
+            toast.success("Stock updated");
+            setEditingChip(null);
+            invalidateAll();
+            onSuccess?.();
+        },
+        onError: (err: any) => toast.error(err.message || "Failed to update stock"),
+    });
+
+    const handleStartEdit = (key: string, currentAmount: number) => {
+        setEditingChip(key);
+        setEditValue(currentAmount.toFixed(1));
+    };
+
+    const handleSaveEdit = () => {
+        if (!editingChip) return;
+        const newAmount = parseFloat(editValue);
+        if (isNaN(newAmount) || newAmount < 0) {
+            toast.error("Please enter a valid amount");
+            return;
+        }
+        adjustMutation.mutate({
+            farmerId,
+            feedType: editingChip === UNSPECIFIED ? undefined : editingChip,
+            newAmount,
+        });
+    };
 
     const reassignable = Number(breakdown?.reassignableUnspecified ?? 0);
     const allocatedTotal = allocations.reduce((sum, a) => sum + (Number(a.quantity) || 0), 0);
@@ -90,7 +131,7 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
                     <View className="flex-1">
                         <Text className="text-xl font-bold text-foreground">Feed Type Breakdown</Text>
                         <Text className="text-xs text-muted-foreground mt-0.5">
-                            Move bags out of Unspecified into a real feed type
+                            Correct a type&apos;s amount, or move Unspecified bags into a real feed type
                         </Text>
                     </View>
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onPress={() => onOpenChange(false)}>
@@ -105,18 +146,72 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
                         </View>
                     ) : (
                         <>
-                            {/* Current breakdown */}
-                            <View className="flex-row flex-wrap gap-1.5 mb-5">
-                                {(breakdown?.byType ?? []).map((t: any) => (
-                                    <View key={t.feedType} className="bg-muted/50 px-2.5 py-1.5 rounded-lg border border-border/40">
-                                        <Text className="text-xs font-bold text-foreground">{t.feedType} · {t.amount.toFixed(1)}</Text>
-                                    </View>
-                                ))}
-                                {breakdown?.unspecified !== 0 && (
-                                    <View className="bg-amber-500/10 px-2.5 py-1.5 rounded-lg border border-amber-400/40">
-                                        <Text className="text-xs font-bold text-amber-600">Unspecified · {Number(breakdown?.unspecified ?? 0).toFixed(1)}</Text>
-                                    </View>
-                                )}
+                            {/* Current breakdown — tap a row to correct its amount directly */}
+                            <View className="gap-2 mb-5">
+                                {[
+                                    ...((breakdown?.byType ?? []) as { feedType: string; amount: number }[]).map(t => ({ key: t.feedType, label: t.feedType, amount: t.amount, isUnspecified: false })),
+                                    ...(Number(breakdown?.unspecified ?? 0) !== 0
+                                        ? [{ key: UNSPECIFIED, label: "Unspecified", amount: Number(breakdown!.unspecified), isUnspecified: true }]
+                                        : []),
+                                ].map(chip => {
+                                    const isEditing = editingChip === chip.key;
+                                    return (
+                                        <View
+                                            key={chip.key}
+                                            className={`px-3 py-2 rounded-xl border ${isEditing
+                                                ? 'bg-primary/5 border-primary'
+                                                : chip.isUnspecified ? 'bg-amber-500/10 border-amber-400/40' : 'bg-muted/50 border-border/40'
+                                                }`}
+                                        >
+                                            <View className="flex-row items-center justify-between">
+                                                <Text className={`text-xs font-bold ${chip.isUnspecified && !isEditing ? 'text-amber-600' : 'text-foreground'}`}>
+                                                    {chip.label}
+                                                </Text>
+
+                                                {isEditing ? (
+                                                    <Input
+                                                        autoFocus
+                                                        className="w-24 h-9 bg-background border-border/50 text-sm font-mono text-right px-2"
+                                                        keyboardType="numeric"
+                                                        value={editValue}
+                                                        onChangeText={setEditValue}
+                                                    />
+                                                ) : (
+                                                    <Pressable
+                                                        onPress={() => handleStartEdit(chip.key, chip.amount)}
+                                                        className="flex-row items-center gap-1.5 active:opacity-60"
+                                                    >
+                                                        <Text className={`text-xs font-bold ${chip.isUnspecified ? 'text-amber-600' : 'text-foreground'}`}>
+                                                            {chip.amount.toFixed(1)}
+                                                        </Text>
+                                                        <Icon as={Pencil} size={11} className="text-muted-foreground" />
+                                                    </Pressable>
+                                                )}
+                                            </View>
+
+                                            {isEditing && (
+                                                <View className="flex-row gap-2 mt-2.5">
+                                                    <Pressable
+                                                        onPress={() => setEditingChip(null)}
+                                                        className="flex-1 h-9 items-center justify-center rounded-lg bg-muted active:bg-muted/70"
+                                                    >
+                                                        <Text className="text-xs font-bold text-muted-foreground">Cancel</Text>
+                                                    </Pressable>
+                                                    <Pressable
+                                                        onPress={handleSaveEdit}
+                                                        disabled={adjustMutation.isPending}
+                                                        className="flex-1 h-9 flex-row items-center justify-center gap-1.5 rounded-lg bg-emerald-500/15 active:bg-emerald-500/25"
+                                                    >
+                                                        <Icon as={Check} size={13} className="text-emerald-600" />
+                                                        <Text className="text-xs font-bold text-emerald-600">
+                                                            {adjustMutation.isPending ? "Saving..." : "Confirm"}
+                                                        </Text>
+                                                    </Pressable>
+                                                </View>
+                                            )}
+                                        </View>
+                                    );
+                                })}
                             </View>
 
                             {reassignable <= 0.01 ? (

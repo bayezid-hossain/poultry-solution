@@ -170,9 +170,20 @@ export function StockCorrectionModal({
                     {/* Section 1: Feed Type */}
                     <View>
                         <View className="flex-row items-center justify-between mb-2 ml-1">
-                            <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Feed Type</Text>
-                            {typeOptions.length > 0 && (
-                                <Text className="text-[10px] font-black text-destructive uppercase">Required *</Text>
+                            <View className="flex-row items-center gap-2">
+                                <View className={`w-5 h-5 rounded-full items-center justify-center ${selectedOption ? 'bg-emerald-500' : 'bg-orange-500'}`}>
+                                    {selectedOption ? (
+                                        <Icon as={CheckCircle2} size={12} className="text-white" />
+                                    ) : (
+                                        <Text className="text-[10px] font-black text-white">1</Text>
+                                    )}
+                                </View>
+                                <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                    {selectedOption ? "Feed Type" : "Choose a Feed Type to Remove From"}
+                                </Text>
+                            </View>
+                            {typeOptions.length > 0 && !selectedOption && (
+                                <Text className="text-[10px] font-black text-orange-500 uppercase">Tap One ↓</Text>
                             )}
                         </View>
 
@@ -231,30 +242,41 @@ export function StockCorrectionModal({
                     {/* Section 2: Amount */}
                     <View>
                         <View className="flex-row items-center justify-between mb-2 ml-1">
-                            <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Bags to Remove</Text>
+                            <View className="flex-row items-center gap-2">
+                                <View className={`w-5 h-5 rounded-full items-center justify-center ${selectedOption ? 'bg-orange-500' : 'bg-muted'}`}>
+                                    <Text className={`text-[10px] font-black ${selectedOption ? 'text-white' : 'text-muted-foreground'}`}>2</Text>
+                                </View>
+                                <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Bags to Remove</Text>
+                            </View>
                             {selectedOption && (
                                 <Text className={`text-[10px] font-black uppercase ${isOverLimit ? 'text-destructive' : 'text-muted-foreground'}`}>
                                     Max: {selectedOption.amount.toFixed(1)}
                                 </Text>
                             )}
                         </View>
-                        <View className={`flex-row items-center bg-card border-2 rounded-2xl px-4 h-14 ${isOverLimit ? 'border-destructive' : 'border-border'} ${!selectedOption ? 'opacity-50' : ''}`}>
-                            <Icon as={PackageMinus} size={18} className="text-muted-foreground mr-3" />
-                            <TextInput
-                                ref={amountRef}
-                                placeholder="Enter amount..."
-                                placeholderTextColor="rgba(128,128,128,0.5)"
-                                keyboardType="decimal-pad"
-                                value={amount}
-                                onChangeText={handleAmountChange}
-                                editable={!!selectedOption}
-                                className="flex-1 h-12 text-lg font-bold text-foreground"
-                                returnKeyType="next"
-                                onSubmitEditing={() => noteRef.current?.focus()}
-                            />
-                        </View>
-                        {!selectedOption && typeOptions.length > 0 && (
-                            <Text className="text-muted-foreground text-xs ml-1 mt-1.5 font-medium">Pick a feed type above first</Text>
+                        {selectedOption ? (
+                            <View className={`flex-row items-center bg-card border-2 rounded-2xl px-4 h-14 ${isOverLimit ? 'border-destructive' : 'border-border'}`}>
+                                <Icon as={PackageMinus} size={18} className="text-muted-foreground mr-3" />
+                                <TextInput
+                                    ref={amountRef}
+                                    placeholder="Enter amount..."
+                                    placeholderTextColor="rgba(128,128,128,0.5)"
+                                    keyboardType="decimal-pad"
+                                    value={amount}
+                                    onChangeText={handleAmountChange}
+                                    autoFocus
+                                    className="flex-1 h-12 text-lg font-bold text-foreground"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => noteRef.current?.focus()}
+                                />
+                            </View>
+                        ) : (
+                            <View className="flex-row items-center gap-2 bg-muted/10 border-2 border-dashed border-border/40 rounded-2xl px-4 h-14">
+                                <Icon as={AlertCircle} size={16} className="text-muted-foreground/60" />
+                                <Text className="text-muted-foreground text-sm font-medium">
+                                    {typeOptions.length > 0 ? "Select a feed type above first" : "No stock to remove"}
+                                </Text>
+                            </View>
                         )}
                     </View>
 
