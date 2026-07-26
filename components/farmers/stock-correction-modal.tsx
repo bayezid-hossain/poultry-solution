@@ -4,10 +4,9 @@ import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { AlertCircle, X } from "lucide-react-native";
-import { useRef, useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
-import { FeedTypeInput } from "./feed-type-input";
+import { AlertCircle, Check, X } from "lucide-react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
 
 interface StockCorrectionModalProps {
     farmerId: string;
@@ -16,6 +15,8 @@ interface StockCorrectionModalProps {
     onOpenChange: (open: boolean) => void;
     onSuccess?: () => void;
 }
+
+const UNSPECIFIED = "__UNSPECIFIED__";
 
 export function StockCorrectionModal({
     farmerId,
@@ -26,7 +27,7 @@ export function StockCorrectionModal({
 }: StockCorrectionModalProps) {
     const [amount, setAmount] = useState("");
     const [note, setNote] = useState("");
-    const [feedType, setFeedType] = useState("");
+    const [selectedType, setSelectedType] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const amountRef = useRef<TextInput>(null);
@@ -35,13 +36,67 @@ export function StockCorrectionModal({
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
 
+    const breakdownProcedure = isManagement ? trpc.management.stock.getStockBreakdown : trpc.officer.stock.getStockBreakdown;
+    const { data: breakdown, isLoading: isBreakdownLoading } = (breakdownProcedure as any).useQuery(
+        { farmerId, orgId: membership?.orgId },
+        { enabled: open && !!farmerId }
+    );
+
+    const typeOptions = [
+        ...((breakdown?.byType ?? []) as { feedType: string; amount: number }[])
+            .filter(t => t.amount > 0.001)
+            .map(t => ({ key: t.feedType, label: t.feedType, amount: t.amount })),
+        ...(Number(breakdown?.unspecified ?? 0) > 0.001
+            ? [{ key: UNSPECIFIED, label: "Unspecified", amount: Number(breakdown!.unspecified) }]
+            : []),
+    ];
+
+    useEffect(() => {
+        if (open) {
+            setAmount("");
+            setNote("");
+            setSelectedType(null);
+            setError(null);
+        }
+    }, [open]);
+
+    useEffect(() => {
+        // Auto-pick when there's only one type to remove from
+        if (open && !selectedType && typeOptions.length === 1) {
+            setSelectedType(typeOptions[0].key);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, selectedType, typeOptions.length]);
+
+    const selectedOption = typeOptions.find(t => t.key === selectedType);
+    const maxAmount = selectedOption?.amount ?? 0;
+
+    const handleAmountChange = (val: string) => {
+        if (!/^\d*\.?\d*$/.test(val)) return;
+        const num = parseFloat(val);
+        if (!isNaN(num) && selectedOption && num > maxAmount) {
+            setAmount(String(maxAmount));
+            return;
+        }
+        setAmount(val);
+    };
+
+    const handleSelectType = (key: string) => {
+        setSelectedType(key);
+        const option = typeOptions.find(t => t.key === key);
+        const num = parseFloat(amount);
+        if (option && !isNaN(num) && num > option.amount) {
+            setAmount(String(option.amount));
+        }
+    };
+
     const deductStockProcedure = isManagement ? trpc.management.stock.deductStock : trpc.officer.stock.deductStock;
     const mutation = (deductStockProcedure as any).useMutation({
         onSuccess: () => {
             onOpenChange(false);
             setAmount("");
             setNote("");
-            setFeedType("");
+            setSelectedType(null);
             onSuccess?.();
         },
         onError: (err: any) => {
@@ -55,12 +110,20 @@ export function StockCorrectionModal({
             setError("Please enter a valid amount");
             return;
         }
+        if (!selectedOption) {
+            setError("Please select a feed type to remove from");
+            return;
+        }
+        if (numAmount > selectedOption.amount) {
+            setError(`Cannot exceed available stock (${selectedOption.amount.toFixed(2)} bags)`);
+            return;
+        }
         setError(null);
         mutation.mutate({
             farmerId,
             amount: numAmount,
             note: note || "Manual Correction",
-            feedType: feedType.trim() || undefined,
+            feedType: selectedType === UNSPECIFIED ? undefined : selectedType || undefined,
             orgId: isManagement ? membership?.orgId : undefined
         });
     };
@@ -89,26 +152,60 @@ export function StockCorrectionModal({
                 {/* Form */}
                 <View className="p-6 space-y-4">
                     <View className="gap-2">
-                        <Text className="text-sm font-bold text-foreground ml-1">Bags to Remove</Text>
+                        <Text className="text-sm font-bold text-foreground ml-1">Remove From</Text>
+                        {isBreakdownLoading ? (
+                            <View className="py-6 items-center justify-center">
+                                <ActivityIndicator />
+                            </View>
+                        ) : typeOptions.length === 0 ? (
+                            <View className="py-6 items-center bg-muted/10 rounded-2xl border border-dashed border-border/40">
+                                <Text className="text-sm text-muted-foreground text-center px-4">
+                                    No stock available to remove.
+                                </Text>
+                            </View>
+                        ) : (
+                            <View className="flex-row flex-wrap gap-2">
+                                {typeOptions.map(t => {
+                                    const isSelected = selectedType === t.key;
+                                    return (
+                                        <Pressable
+                                            key={t.key}
+                                            onPress={() => handleSelectType(t.key)}
+                                            className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${isSelected
+                                                ? 'bg-orange-500/15 border-orange-500'
+                                                : t.key === UNSPECIFIED
+                                                    ? 'bg-amber-500/10 border-amber-400/40'
+                                                    : 'bg-muted/50 border-border/40'
+                                                }`}
+                                        >
+                                            {isSelected && <Icon as={Check} size={12} className="text-orange-600" />}
+                                            <Text className={`text-xs font-bold ${isSelected ? 'text-orange-600' : t.key === UNSPECIFIED ? 'text-amber-600' : 'text-foreground'}`}>
+                                                {t.label} · {t.amount.toFixed(1)}
+                                            </Text>
+                                        </Pressable>
+                                    );
+                                })}
+                            </View>
+                        )}
+                    </View>
+
+                    <View className="gap-2">
+                        <View className="flex-row items-center justify-between ml-1">
+                            <Text className="text-sm font-bold text-foreground">Bags to Remove</Text>
+                            {selectedOption && (
+                                <Text className="text-[10px] font-black text-muted-foreground uppercase">Max: {selectedOption.amount.toFixed(1)}</Text>
+                            )}
+                        </View>
                         <Input
                             ref={amountRef}
                             placeholder="0.00"
                             keyboardType="numeric"
                             value={amount}
-                            onChangeText={setAmount}
-                            className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
+                            onChangeText={handleAmountChange}
+                            editable={!!selectedOption}
+                            className={`h-12 bg-muted/30 border-border/50 text-lg font-mono ${!selectedOption ? 'opacity-50' : ''}`}
                             returnKeyType="next"
                             onSubmitEditing={() => noteRef.current?.focus()}
-                        />
-                    </View>
-
-                    <View className="gap-2">
-                        <Text className="text-sm font-bold text-foreground ml-1">Feed Type Removed (Optional)</Text>
-                        <FeedTypeInput
-                            value={feedType}
-                            onChangeText={setFeedType}
-                            orgId={membership?.orgId}
-                            className="h-12 bg-muted/30 border-border/50"
                         />
                     </View>
 
@@ -135,7 +232,11 @@ export function StockCorrectionModal({
                         <Button variant="outline" className="flex-1 h-12 rounded-xl" onPress={() => onOpenChange(false)}>
                             <Text className="font-bold">Cancel</Text>
                         </Button>
-                        <Button className="flex-1 h-12 bg-orange-500 rounded-xl shadow-none" onPress={handleSubmit} disabled={mutation.isPending}>
+                        <Button
+                            className="flex-1 h-12 bg-orange-500 rounded-xl shadow-none"
+                            onPress={handleSubmit}
+                            disabled={mutation.isPending || !selectedOption || !amount || parseFloat(amount) <= 0}
+                        >
                             <Text className="text-white font-bold">
                                 {mutation.isPending ? "Correcting..." : "Correct"}
                             </Text>
