@@ -151,8 +151,9 @@ export const SellModal = ({
     );
     const lastSale = previousSales?.[0];
 
-    // Real current stock by feed type — shown as a read-only reference while entering consumption.
-    const { data: stockBreakdown } = trpc.officer.stock.getStockBreakdown.useQuery(
+    // Real current stock by feed type — corrects "remaining stock" instead of guessing from a
+    // delta against a previous sale's manually-entered values, and shown as a read-only reference.
+    const { data: stockBreakdown, isLoading: isBreakdownLoading } = trpc.officer.stock.getStockBreakdown.useQuery(
         { farmerId },
         { enabled: open }
     );
@@ -193,7 +194,7 @@ export const SellModal = ({
 
     // Initialize form with defaults ONLY ONCE when data is ready
     useEffect(() => {
-        if (open && !isPreviousSalesLoading && !hasInitializedRef.current) {
+        if (open && !isPreviousSalesLoading && !isBreakdownLoading && !hasInitializedRef.current) {
             hasInitializedRef.current = true;
             const currentRemainingBirds = doc - mortality - birdsSold;
 
@@ -203,12 +204,21 @@ export const SellModal = ({
                 { type: "B2", bags: 0 }
             ];
 
-            // "Leftover Feed Return" — bags being handed back to main stock, not a stock display.
-            // Defaults to 0 unless the officer previously declared a return on the last sale.
-            const defaultFeedStock = lastSale?.feedStock ? (typeof lastSale.feedStock === 'string' ? JSON.parse(lastSale.feedStock) : lastSale.feedStock) as any : [
-                { type: "B1", bags: 0 },
-                { type: "B2", bags: 0 }
-            ];
+            // Remaining stock by type = real current balance net of the default consumed guess
+            // above, so the initial state is already consistent with what handleFeedAdjustment
+            // would produce — otherwise the insufficient-stock check double-counts the default
+            // consumed amount against the untouched full balance until the officer edits a field.
+            const netBalances = new Map<string, number>(
+                (stockBreakdown?.byType ?? []).map((t: any) => [(t.feedType || "").toUpperCase().trim(), Number(t.amount)])
+            );
+            defaultFeedConsumed.forEach((c: any) => {
+                const key = (c.type || "").toUpperCase().trim();
+                if (!key) return;
+                netBalances.set(key, (netBalances.get(key) ?? 0) - (Number(c.bags) || 0));
+            });
+            const defaultFeedStock = Array.from(netBalances.entries())
+                .filter(([, bags]) => bags > 0.0001)
+                .map(([type, bags]) => ({ type, bags: parseFloat(bags.toFixed(2)) }));
 
             form.reset({
                 saleDate: format(new Date(), "yyyy-MM-dd"),
@@ -231,7 +241,7 @@ export const SellModal = ({
                 officialInputDate: officialInputDate ? format(new Date(officialInputDate), "yyyy-MM-dd") : (startDate ? format(new Date(startDate), "yyyy-MM-dd") : undefined),
             });
         }
-    }, [open, isPreviousSalesLoading, lastSale, doc, mortality, birdsSold, intake, farmerLocation, farmerMobile, form, officialInputDate, startDate]);
+    }, [open, isPreviousSalesLoading, isBreakdownLoading, lastSale, stockBreakdown, doc, mortality, birdsSold, intake, farmerLocation, farmerMobile, form, officialInputDate, startDate]);
 
     const feedConsumedArray = useFieldArray({
         control: form.control,
@@ -406,31 +416,31 @@ export const SellModal = ({
         const currentType = (form.getValues(`feedConsumed.${index}.type`) || "").toUpperCase().trim();
         if (!currentType) return;
 
-        // Use previous sale's data as baseline, or fall back to defaults
-        const baselineConsumed = lastSale?.feedConsumed
-            ? (typeof lastSale.feedConsumed === 'string' ? JSON.parse(lastSale.feedConsumed) : lastSale.feedConsumed) as { type: string; bags: number }[]
-            : [{ type: "B1", bags: intake || 0 }, { type: "B2", bags: 0 }];
-        const baselineStock = lastSale?.feedStock
-            ? (typeof lastSale.feedStock === 'string' ? JSON.parse(lastSale.feedStock) : lastSale.feedStock) as { type: string; bags: number }[]
-            : [{ type: "B1", bags: 0 }, { type: "B2", bags: 0 }];
-
-        // Find baseline consumption for this type
-        const baseline = baselineConsumed.find(b => (b.type || "").toUpperCase().trim() === currentType);
-        const baselineBags = Number(baseline?.bags || 0);
-        const consumedDelta = newBags - baselineBags;
+        // Remaining stock = real current balance for this type minus what's being consumed now —
+        // not a delta guessed against a previous sale's manually-entered values.
+        const realBalance = Number(
+            stockBreakdown?.byType.find((t: any) => (t.feedType || "").toUpperCase().trim() === currentType)?.amount ?? 0
+        );
+        const newStockBags = parseFloat(Math.max(0, realBalance - newBags).toFixed(2));
 
         const currentStock = [...form.getValues("feedStock")];
         const stockIndex = currentStock.findIndex(s => (s.type || "").toUpperCase().trim() === currentType);
 
-        if (stockIndex > -1) {
-            const bStock = baselineStock.find(bs => (bs.type || "").toUpperCase().trim() === currentType);
-            const baselineStockBags = Number(bStock?.bags || 0);
-            const newStockBags = parseFloat(Math.max(0, baselineStockBags - consumedDelta).toFixed(2));
+        if (newStockBags <= 0.0001) {
+            if (stockIndex > -1) {
+                currentStock.splice(stockIndex, 1);
+                form.setValue("feedStock", currentStock, { shouldValidate: true, shouldDirty: true });
+            }
+            return;
+        }
 
+        if (stockIndex > -1) {
             if (Number(currentStock[stockIndex].bags) !== newStockBags) {
                 currentStock[stockIndex] = { ...currentStock[stockIndex], bags: newStockBags };
                 form.setValue("feedStock", currentStock, { shouldValidate: true, shouldDirty: true });
             }
+        } else {
+            form.setValue("feedStock", [...currentStock, { type: currentType, bags: newStockBags }], { shouldValidate: true, shouldDirty: true });
         }
     };
 
