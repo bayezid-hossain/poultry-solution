@@ -1,6 +1,8 @@
+import { EditFeedTypeModal } from "@/components/farmers/edit-feed-type-modal";
 import { EditStockLogModal } from "@/components/farmers/edit-stock-log-modal";
 import { RevertStockLogModal } from "@/components/farmers/revert-stock-log-modal";
 import { RevertTransferModal } from "@/components/farmers/revert-transfer-modal";
+import { StockDistributionChips } from "@/components/farmers/stock-distribution-chips";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +12,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowDownLeft, ArrowLeft, ArrowUpRight, History, Landmark, Pencil, RotateCcw, Wheat } from "lucide-react-native";
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight, History, Landmark, Pencil, RotateCcw, Tag, Wheat } from "lucide-react-native";
 import { useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
 
@@ -23,6 +25,7 @@ export default function FarmerLedgerScreen() {
     const [editingLog, setEditingLog] = useState<any | null>(null);
     const [revertingLog, setRevertingLog] = useState<any | null>(null);
     const [revertingTransfer, setRevertingTransfer] = useState<{ id: string; note: string | null } | null>(null);
+    const [editingFeedTypeLog, setEditingFeedTypeLog] = useState<any | null>(null);
 
     // Highlighting State
     const flatListRef = useRef<FlatList>(null);
@@ -52,6 +55,12 @@ export default function FarmerLedgerScreen() {
         { enabled: !!id && tab === "stock" && (isManagement ? !!membership?.orgId : true) }
     );
 
+    const stockBreakdownProcedure = isManagement ? trpc.management.stock.getStockBreakdown : trpc.officer.stock.getStockBreakdown;
+    const { data: stockBreakdown, isLoading: isBreakdownLoading } = (stockBreakdownProcedure as any).useQuery(
+        { farmerId: id ?? "", orgId: membership?.orgId ?? "" },
+        { enabled: !!id && tab === "stock" && (isManagement ? !!membership?.orgId : true) }
+    );
+
     const securityHistoryProcedure = isManagement ? trpc.management.farmers.getSecurityMoneyHistory : trpc.officer.farmers.getSecurityMoneyHistory;
     const securityQuery = (securityHistoryProcedure as any).useQuery(
         { farmerId: id ?? "", orgId: membership?.orgId ?? "" },
@@ -69,14 +78,14 @@ export default function FarmerLedgerScreen() {
     // Derived state: Identify logs that have been reverted
     const revertedLogIds = new Set(
         historyData
-            .filter((item: any) => item.type === "CORRECTION" && item.referenceId)
+            .filter((item: any) => item.type === "ADJUSTMENT" && item.referenceId)
             .map((item: any) => item.referenceId)
     );
 
 
 
     const renderStockLog = ({ item }: { item: any }) => {
-        const isCorrection = item.type === "CORRECTION";
+        const isCorrection = item.type === "ADJUSTMENT";
         const isTransfer = item.type === "TRANSFER_IN" || item.type === "TRANSFER_OUT";
         const isCycleClose = item.type === "CYCLE_CLOSE";
         const isReverted = revertedLogIds.has(item.id);
@@ -99,9 +108,16 @@ export default function FarmerLedgerScreen() {
                     <View className={`w-5 h-5 rounded-full items-center justify-center ${parseFloat(item.amount) > 0 ? "bg-emerald-500/10" : "bg-orange-500/10"}`}>
                         <Icon as={parseFloat(item.amount) > 0 ? ArrowUpRight : ArrowDownLeft} size={12} className={parseFloat(item.amount) > 0 ? "text-emerald-500/10" : "text-orange-500/10"} />
                     </View>
-                    <Text className="text-[11px] font-bold text-foreground flex-1 leading-tight" numberOfLines={2}>
-                        {item.type === 'CORRECTION' ? 'Adjustment' : item.type.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase())}
-                    </Text>
+                    <View className="flex-1">
+                        <Text className="text-[11px] font-bold text-foreground leading-tight" numberOfLines={2}>
+                            {item.type === 'ADJUSTMENT' ? 'Adjustment' : item.type.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase())}
+                        </Text>
+                        {item.feedType && (
+                            <Text className="text-[9px] text-primary font-black uppercase tracking-wide" numberOfLines={1}>
+                                {item.feedType}
+                            </Text>
+                        )}
+                    </View>
                 </View>
 
                 {/* Note/Details Column */}
@@ -111,7 +127,7 @@ export default function FarmerLedgerScreen() {
                         if (originalLog) {
                             const origAmt = parseFloat(originalLog.amount);
                             const priorCorrections = historyData.filter((l: any) =>
-                                l.type === "CORRECTION" &&
+                                l.type === "ADJUSTMENT" &&
                                 l.referenceId === item.referenceId &&
                                 new Date(l.createdAt).getTime() < new Date(item.createdAt).getTime()
                             );
@@ -163,9 +179,17 @@ export default function FarmerLedgerScreen() {
 
                 {/* Actions Column */}
                 <View className="w-8 items-end justify-center">
-                    {!isCorrection && !isCycleClose && !isReverted && item.type !== "ADJUSTMENT" && item.type !== "CYCLE_CONSUMPTION" ? (
-                        <View className="gap-1">
-                            {!isTransfer ? (
+                    <View className="gap-0.5 items-end">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded-lg"
+                            onPress={() => setEditingFeedTypeLog(item)}
+                        >
+                            <Icon as={Tag} size={12} className="text-blue-500" />
+                        </Button>
+                        {!isCorrection && !isCycleClose && !isReverted && item.type !== "ADJUSTMENT" && item.type !== "CYCLE_CONSUMPTION" && (
+                            !isTransfer ? (
                                 <View className="gap-0.5">
                                     <Button
                                         variant="ghost"
@@ -193,11 +217,9 @@ export default function FarmerLedgerScreen() {
                                 >
                                     <Icon as={RotateCcw} size={12} className="text-orange-500" />
                                 </Button>
-                            )}
-                        </View>
-                    ) : (
-                        <View className="w-8" />
-                    )}
+                            )
+                        )}
+                    </View>
                 </View>
             </View>
         );
@@ -293,6 +315,10 @@ export default function FarmerLedgerScreen() {
                 </View>
             )}
 
+            {tab === "stock" && (
+                <StockDistributionChips data={stockBreakdown} isLoading={isBreakdownLoading} className="px-4 pt-3" />
+            )}
+
             {/* Tabs */}
             <View className="flex-row p-4 gap-2">
                 <Button
@@ -353,11 +379,14 @@ export default function FarmerLedgerScreen() {
 
             {/* Bottom Sticky Summary (Stock only) */}
             {tab === "stock" && !isLoading && historyData.length > 0 && (
-                <View className="absolute bottom-0 right-0 left-0 flex-row items-center justify-end p-2 gap-3 w-full bg-card">
-                    <Text className="text-[10px] font-black text-muted-foreground tracking-widest uppercase pb-1">Main Stock</Text>
-                    <View className="bg-card border border-border/50 rounded-2xl px-5 py-3 shadow-lg flex-row items-baseline gap-1">
-                        <Text className="text-2xl font-black text-foreground">{mainStock}</Text>
-                        <Text className="text-sm font-medium text-muted-foreground">b</Text>
+                <View className="absolute bottom-0 right-0 left-0 p-2 gap-2 w-full bg-card">
+                    <StockDistributionChips data={stockBreakdown} isLoading={isBreakdownLoading} className="justify-end" />
+                    <View className="flex-row items-center justify-end gap-3">
+                        <Text className="text-[10px] font-black text-muted-foreground tracking-widest uppercase pb-1">Main Stock</Text>
+                        <View className="bg-card border border-border/50 rounded-2xl px-5 py-3 shadow-lg flex-row items-baseline gap-1">
+                            <Text className="text-2xl font-black text-foreground">{mainStock}</Text>
+                            <Text className="text-sm font-medium text-muted-foreground">b</Text>
+                        </View>
                     </View>
                 </View>
             )}
@@ -405,6 +434,18 @@ export default function FarmerLedgerScreen() {
                     utils.officer.stock.getAllFarmersStock.invalidate();
                     utils.officer.stock.getImportHistory.invalidate();
                     farmer?.id && utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
+                }}
+            />
+
+            <EditFeedTypeModal
+                log={editingFeedTypeLog}
+                orgId={membership?.orgId}
+                open={!!editingFeedTypeLog}
+                onOpenChange={(open) => !open && setEditingFeedTypeLog(null)}
+                onSuccess={() => {
+                    stockQuery.refetch();
+                    id && utils.officer.stock.getStockBreakdown.invalidate({ farmerId: id });
+                    id && utils.management.stock.getStockBreakdown.invalidate({ farmerId: id });
                 }}
             />
         </View>

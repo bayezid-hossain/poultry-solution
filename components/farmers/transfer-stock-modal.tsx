@@ -13,12 +13,14 @@ import { Controller, useForm } from "react-hook-form";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { toast } from "sonner-native";
 import { z } from "zod";
+import { FeedTypeInput } from "./feed-type-input";
 
 const transferStockSchema = z.object({
     targetFarmerId: z.string().min(1, "Target farmer is required"),
     amount: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
         message: "Amount must be a positive number",
     }),
+    feedType: z.string().optional(),
     note: z.string().optional(),
 });
 
@@ -44,6 +46,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
         defaultValues: {
             targetFarmerId: "",
             amount: "",
+            feedType: "",
             note: "",
         },
     });
@@ -110,6 +113,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
             sourceFarmerId,
             targetFarmerId: data.targetFarmerId,
             amount: parseFloat(data.amount),
+            feedType: data.feedType || undefined,
             note: data.note,
             orgId: isManagement ? membership?.orgId : undefined
         });
@@ -286,6 +290,26 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                         {!errors.amount && isOverLimit && (
                             <Text className="text-destructive text-xs ml-1 mt-1.5 font-medium">Cannot exceed available stock ({availableStock} bags)</Text>
                         )}
+                    </View>
+
+                    {/* Section 2.5: Feed Type */}
+                    <View>
+                        <View className="flex-row items-center justify-between mb-2 ml-1">
+                            <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Feed Type</Text>
+                            <Text className="text-[10px] font-bold text-muted-foreground/50 uppercase">Optional</Text>
+                        </View>
+                        <Controller
+                            control={control}
+                            name="feedType"
+                            render={({ field: { onChange, value } }) => (
+                                <FeedTypeInput
+                                    value={value ?? ""}
+                                    onChangeText={onChange}
+                                    orgId={membership?.orgId}
+                                    className="h-14 bg-card border-2 border-border rounded-2xl"
+                                />
+                            )}
+                        />
                     </View>
 
                     {/* Section 3: Note */}

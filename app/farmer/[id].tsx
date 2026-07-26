@@ -16,6 +16,7 @@ import { ProblematicFeedModal } from "@/components/farmers/problematic-feed-moda
 import { RestockModal } from "@/components/farmers/restock-modal";
 import { SecurityMoneyModal } from "@/components/farmers/security-money-modal";
 import { StockCorrectionModal } from "@/components/farmers/stock-correction-modal";
+import { StockDistributionChips } from "@/components/farmers/stock-distribution-chips";
 import { TransferStockModal } from "@/components/farmers/transfer-stock-modal";
 import { ProAccessModal } from "@/components/pro-access-modal";
 import { ScreenHeader } from "@/components/screen-header";
@@ -128,6 +129,12 @@ export default function FarmerDetailScreen() {
     const { data: ledgerData, isLoading: ledgerLoading } = (stockHistoryProcedure as any).useQuery(
         { farmerId: id ?? "", orgId: membership?.orgId ?? "" },
         { enabled: !!id && (isManagement ? !!membership?.orgId : true) && ledgerExpanded }
+    );
+
+    const stockBreakdownProcedure = isManagement ? trpc.management.stock.getStockBreakdown : trpc.officer.stock.getStockBreakdown;
+    const { data: stockBreakdown, isLoading: isBreakdownLoading } = (stockBreakdownProcedure as any).useQuery(
+        { farmerId: id ?? "", orgId: membership?.orgId ?? "" },
+        { enabled: !!id && (isManagement ? !!membership?.orgId : true) }
     );
 
     const refetchAll = useCallback(async () => {
@@ -362,6 +369,8 @@ export default function FarmerDetailScreen() {
                             <View className="h-full bg-emerald-500" style={{ width: `${mainStock > 0 ? (availableStock / mainStock) * 100 : 0}%` }} />
                             <View className="h-full bg-orange-500" style={{ width: `${mainStock > 0 ? (activeConsumption / mainStock) * 100 : 0}%` }} />
                         </View>
+
+                        <StockDistributionChips data={stockBreakdown} isLoading={isBreakdownLoading} className="mt-4" />
                     </CardContent>
                 </Card>
 
@@ -578,12 +587,15 @@ export default function FarmerDetailScreen() {
                         </Pressable>
                         {ledgerExpanded && (
                             <View className="pb-5">
-                                <View className="flex-row items-center justify-between mb-4 bg-muted/10 p-3 rounded-xl border border-border/30">
-                                    <Text className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Main Stock</Text>
-                                    <View className="flex-row items-baseline gap-1">
-                                        <Text className="text-xl font-black text-foreground">{farmer.mainStock.toFixed(2) || 0}</Text>
-                                        <Text className="text-xs font-medium text-muted-foreground">b</Text>
+                                <View className="mb-4 bg-muted/10 p-3 rounded-xl border border-border/30 gap-2">
+                                    <View className="flex-row items-center justify-between">
+                                        <Text className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Main Stock</Text>
+                                        <View className="flex-row items-baseline gap-1">
+                                            <Text className="text-xl font-black text-foreground">{farmer.mainStock.toFixed(2) || 0}</Text>
+                                            <Text className="text-xs font-medium text-muted-foreground">b</Text>
+                                        </View>
                                     </View>
+                                    <StockDistributionChips data={stockBreakdown} isLoading={isBreakdownLoading} />
                                 </View>
                                 {ledgerLoading ? (
                                     <View className="py-20 items-center justify-center">

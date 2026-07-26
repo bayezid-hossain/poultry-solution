@@ -1,5 +1,6 @@
 /// <reference types="nativewind/types" />
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
+import { StockDistributionChips } from "@/components/farmers/stock-distribution-chips";
 import { ProBlocker } from "@/components/pro-blocker";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { Link, router } from "expo-router";
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, ChevronDown, ChevronUp, ClipboardList, Package, RotateCcw, Search, User, Wheat } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, TextInput, View } from "react-native";
 
 export default function StockLedgerScreen() {
@@ -198,12 +199,20 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
         { enabled: expanded && (isManagement ? !!orgId : true) }
     );
 
+    const stockBreakdownProcedure = isManagement ? trpc.management.stock.getStockBreakdown : trpc.officer.stock.getStockBreakdown;
+    const { data: stockBreakdown, isLoading: isBreakdownLoading } = (stockBreakdownProcedure as any).useQuery(
+        { farmerId: farmer.id, orgId: isManagement ? orgId : undefined },
+        { enabled: expanded && (isManagement ? !!orgId : true) }
+    );
+
     const typeIcon = (type: string) => {
         switch (type) {
-            case "RESTOCK": return { icon: ArrowDownLeft, color: "text-emerald-500", bg: "bg-emerald-500/10" };
+            case "STOCK_ADDED": return { icon: ArrowDownLeft, color: "text-emerald-500", bg: "bg-emerald-500/10" };
+            case "STOCK_DEDUCTED": return { icon: ArrowUpRight, color: "text-orange-500", bg: "bg-orange-500/10" };
             case "TRANSFER_IN": return { icon: ArrowDownLeft, color: "text-blue-500", bg: "bg-blue-500/10" };
             case "TRANSFER_OUT": return { icon: ArrowUpRight, color: "text-amber-500", bg: "bg-amber-500/10" };
-            case "CORRECTION": return { icon: RotateCcw, color: "text-destructive", bg: "bg-destructive/10" };
+            case "ADJUSTMENT": return { icon: RotateCcw, color: "text-destructive", bg: "bg-destructive/10" };
+            case "CYCLE_CLOSE": return { icon: RotateCcw, color: "text-muted-foreground", bg: "bg-muted/10" };
             default: return { icon: Wheat, color: "text-muted-foreground", bg: "bg-muted/10" };
         }
     };
@@ -243,12 +252,15 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
 
             {expanded && (
                 <View className="border-t border-border/50 bg-muted/5 pb-2">
-                    <View className="mb-2 bg-muted/10 p-3 rounded-xl border border-border/30 mx-3 mt-3 flex-row items-center justify-between">
-                        <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Main Stock</Text>
-                        <View className="flex-row items-baseline gap-1">
-                            <Text className="text-xl font-black text-foreground">{farmer.mainStock || 0}</Text>
-                            <Text className="text-[10px] font-medium text-muted-foreground">b</Text>
+                    <View className="mb-2 bg-muted/10 p-3 rounded-xl border border-border/30 mx-3 mt-3 gap-2">
+                        <View className="flex-row items-center justify-between">
+                            <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Main Stock</Text>
+                            <View className="flex-row items-baseline gap-1">
+                                <Text className="text-xl font-black text-foreground">{farmer.mainStock || 0}</Text>
+                                <Text className="text-[10px] font-medium text-muted-foreground">b</Text>
+                            </View>
                         </View>
+                        <StockDistributionChips data={stockBreakdown} isLoading={isBreakdownLoading} />
                     </View>
 
                     <View className="flex-row items-center bg-muted/20 px-4 py-2 mb-1 border-y border-border/10">
@@ -279,18 +291,25 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                                         <View className={`w-4 h-4 rounded items-center justify-center ${ti.bg}`}>
                                             <Icon as={ti.icon} size={10} className={ti.color} />
                                         </View>
-                                        <Text className="text-[11px] font-bold text-foreground flex-1 leading-tight" numberOfLines={2}>
-                                            {log.type == "TRANSFER_OUT" ? "TRANSFER OUT" : log.type == "TRANSFER_IN" ? "TRANSFER IN" : log.type}
-                                        </Text>
+                                        <View className="flex-1">
+                                            <Text className="text-[11px] font-bold text-foreground leading-tight" numberOfLines={2}>
+                                                {log.type == "TRANSFER_OUT" ? "TRANSFER OUT" : log.type == "TRANSFER_IN" ? "TRANSFER IN" : log.type}
+                                            </Text>
+                                            {log.feedType && (
+                                                <Text className="text-[9px] text-primary font-black uppercase tracking-wide" numberOfLines={1}>
+                                                    {log.feedType}
+                                                </Text>
+                                            )}
+                                        </View>
                                     </View>
 
                                     <View className="flex-1 pr-2 justify-center">
-                                        {log.type === "CORRECTION" && log.referenceId ? (() => {
+                                        {log.type === "ADJUSTMENT" && log.referenceId ? (() => {
                                             const originalLog = stockLogs.find((l: any) => l.id === log.referenceId);
                                             if (originalLog) {
                                                 const origAmt = parseFloat(originalLog.amount);
                                                 const priorCorrections = stockLogs.filter((l: any) =>
-                                                    l.type === "CORRECTION" &&
+                                                    l.type === "ADJUSTMENT" &&
                                                     l.referenceId === log.referenceId &&
                                                     new Date(l.createdAt).getTime() < new Date(log.createdAt).getTime()
                                                 );
@@ -429,6 +448,19 @@ function BatchHistoryRow({ batch, isManagement, orgId }: { batch: any; isManagem
         { enabled: expanded && (isManagement ? !!orgId : true) }
     );
 
+    // A farmer can have multiple log lines per batch (one per feed type) — group for display
+    const groupedByFarmer = useMemo(() => {
+        if (!details) return [];
+        const map = new Map<string, { farmerId: string; farmerName: string; total: number; lines: { feedType: string | null; amount: number }[] }>();
+        details.forEach((d: any) => {
+            if (!map.has(d.farmerId)) map.set(d.farmerId, { farmerId: d.farmerId, farmerName: d.farmerName, total: 0, lines: [] });
+            const g = map.get(d.farmerId)!;
+            g.total += Number(d.amount);
+            g.lines.push({ feedType: d.feedType ?? null, amount: Number(d.amount) });
+        });
+        return Array.from(map.values());
+    }, [details]);
+
     return (
         <View className="mb-4 border border-border/70 rounded-2xl bg-card/60 p-4">
             <View className="p-4 flex-row gap-4">
@@ -486,14 +518,13 @@ function BatchHistoryRow({ batch, isManagement, orgId }: { batch: any; isManagem
                             <BirdyLoader size={48} />
                             <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Fetching Details</Text>
                         </View>
-                    ) : details && details.length > 0 ? (
+                    ) : groupedByFarmer.length > 0 ? (
                         <View className="bg-card/40 rounded-2xl border border-border/10 overflow-hidden">
-                            {details.map((item: any, index: number) => {
-                                const amount = Number(item.amount);
+                            {groupedByFarmer.map((item, index) => {
                                 return (
                                     <View
-                                        key={item.logId}
-                                        className={`flex-row items-center px-4 py-4 ${index !== details.length - 1 ? "border-b border-border/5" : ""}`}
+                                        key={item.farmerId}
+                                        className={`flex-row items-center px-4 py-4 ${index !== groupedByFarmer.length - 1 ? "border-b border-border/5" : ""}`}
                                     >
                                         <View className="flex-[2]">
 
@@ -508,12 +539,23 @@ function BatchHistoryRow({ batch, isManagement, orgId }: { batch: any; isManagem
                                                 <View className="w-1.5 h-1.5 rounded-full bg-primary/40" />
                                                 <Text className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider text-wrap flex-1" pointerEvents="none">Confirmed Receipt</Text>
                                             </View>
+                                            {item.lines.some(l => l.feedType) && (
+                                                <View className="flex-row flex-wrap gap-1 mt-2">
+                                                    {item.lines.map((l, i) => (
+                                                        <View key={i} className="bg-muted/50 px-2 py-0.5 rounded-md">
+                                                            <Text className="text-[9px] font-bold text-muted-foreground">
+                                                                {l.feedType || "Unspecified"} · {l.amount}
+                                                            </Text>
+                                                        </View>
+                                                    ))}
+                                                </View>
+                                            )}
                                         </View>
 
                                         <View className="flex-1 items-end">
                                             <View className="bg-primary/10 px-4 py-2 rounded-2xl border border-primary/20">
                                                 <Text className="text-sm font-black text-primary">
-                                                    +{amount.toFixed(0)} <Text className="text-[10px] font-medium opacity-60">bags</Text>
+                                                    +{item.total.toFixed(0)} <Text className="text-[10px] font-medium opacity-60">bags</Text>
                                                 </Text>
                                             </View>
                                             <Link href={`/farmer/${item.farmerId}/ledger` as any} asChild>

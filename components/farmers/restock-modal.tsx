@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { Wheat, X } from "lucide-react-native";
 import { useRef, useState } from "react";
 import { ScrollView, TextInput, View } from "react-native";
+import { FeedTypeInput } from "./feed-type-input";
 
 interface RestockModalProps {
     farmerId: string;
@@ -25,6 +26,7 @@ export function RestockModal({
 }: RestockModalProps) {
     const [amount, setAmount] = useState("");
     const [note, setNote] = useState("");
+    const [feedType, setFeedType] = useState("");
     const [error, setError] = useState<string | null>(null);
 
     const amountRef = useRef<TextInput>(null);
@@ -39,6 +41,7 @@ export function RestockModal({
             onOpenChange(false);
             setAmount("");
             setNote("");
+            setFeedType("");
             onSuccess?.();
         },
         onError: (err: any) => {
@@ -57,6 +60,7 @@ export function RestockModal({
             farmerId,
             amount: numAmount,
             note: note || "Manual Restock",
+            feedType: feedType.trim() || undefined,
             orgId: isManagement ? membership?.orgId : undefined
         });
     };
@@ -95,6 +99,16 @@ export function RestockModal({
                             className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
                             returnKeyType="next"
                             onSubmitEditing={() => noteRef.current?.focus()}
+                        />
+                    </View>
+
+                    <View className="gap-2">
+                        <Text className="text-sm font-bold text-foreground ml-1">Feed Type (Optional)</Text>
+                        <FeedTypeInput
+                            value={feedType}
+                            onChangeText={setFeedType}
+                            orgId={membership?.orgId}
+                            className="h-12 bg-muted/30 border-border/50"
                         />
                     </View>
 
