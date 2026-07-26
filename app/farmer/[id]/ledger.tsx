@@ -1,4 +1,5 @@
 import { EditFeedTypeModal } from "@/components/farmers/edit-feed-type-modal";
+import { FeedDistributionModal } from "@/components/farmers/feed-distribution-modal";
 import { EditStockLogModal } from "@/components/farmers/edit-stock-log-modal";
 import { RevertStockLogModal } from "@/components/farmers/revert-stock-log-modal";
 import { RevertTransferModal } from "@/components/farmers/revert-transfer-modal";
@@ -26,6 +27,7 @@ export default function FarmerLedgerScreen() {
     const [revertingLog, setRevertingLog] = useState<any | null>(null);
     const [revertingTransfer, setRevertingTransfer] = useState<{ id: string; note: string | null } | null>(null);
     const [editingFeedTypeLog, setEditingFeedTypeLog] = useState<any | null>(null);
+    const [isFeedDistributionOpen, setIsFeedDistributionOpen] = useState(false);
 
     // Highlighting State
     const flatListRef = useRef<FlatList>(null);
@@ -316,7 +318,12 @@ export default function FarmerLedgerScreen() {
             )}
 
             {tab === "stock" && (
-                <StockDistributionChips data={stockBreakdown} isLoading={isBreakdownLoading} className="px-4 pt-3" />
+                <StockDistributionChips
+                    data={stockBreakdown}
+                    isLoading={isBreakdownLoading}
+                    className="px-4 pt-3"
+                    onEditPress={() => setIsFeedDistributionOpen(true)}
+                />
             )}
 
             {/* Tabs */}
@@ -380,7 +387,12 @@ export default function FarmerLedgerScreen() {
             {/* Bottom Sticky Summary (Stock only) */}
             {tab === "stock" && !isLoading && historyData.length > 0 && (
                 <View className="absolute bottom-0 right-0 left-0 p-2 gap-2 w-full bg-card">
-                    <StockDistributionChips data={stockBreakdown} isLoading={isBreakdownLoading} className="justify-end" />
+                    <StockDistributionChips
+                        data={stockBreakdown}
+                        isLoading={isBreakdownLoading}
+                        className="justify-end"
+                        onEditPress={() => setIsFeedDistributionOpen(true)}
+                    />
                     <View className="flex-row items-center justify-end gap-3">
                         <Text className="text-[10px] font-black text-muted-foreground tracking-widest uppercase pb-1">Main Stock</Text>
                         <View className="bg-card border border-border/50 rounded-2xl px-5 py-3 shadow-lg flex-row items-baseline gap-1">
@@ -441,6 +453,14 @@ export default function FarmerLedgerScreen() {
                     id && utils.management.stock.getStockBreakdown.invalidate({ farmerId: id });
                     farmer?.id && utils.officer.farmers.getDetails.invalidate({ farmerId: farmer.id });
                 }}
+            />
+
+            <FeedDistributionModal
+                farmerId={id ?? ""}
+                orgId={membership?.orgId}
+                open={isFeedDistributionOpen}
+                onOpenChange={setIsFeedDistributionOpen}
+                onSuccess={() => stockQuery.refetch()}
             />
 
             <EditFeedTypeModal

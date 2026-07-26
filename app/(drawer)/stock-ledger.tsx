@@ -1,5 +1,6 @@
 /// <reference types="nativewind/types" />
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
+import { FeedDistributionModal } from "@/components/farmers/feed-distribution-modal";
 import { StockDistributionChips } from "@/components/farmers/stock-distribution-chips";
 import { ProBlocker } from "@/components/pro-blocker";
 import { ScreenHeader } from "@/components/screen-header";
@@ -192,6 +193,7 @@ function StockTab({
 
 function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string; name: string; mainStock: number; updatedAt: Date | null }; isManagement: boolean; orgId: string }) {
     const [expanded, setExpanded] = useState(false);
+    const [isFeedDistributionOpen, setIsFeedDistributionOpen] = useState(false);
 
     const stockHistoryProcedure = isManagement ? trpc.management.stock.getHistory : trpc.officer.stock.getHistory;
     const { data: stockLogs, isLoading } = (stockHistoryProcedure as any).useQuery(
@@ -219,6 +221,7 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
 
 
     return (
+        <>
         <Card className="pl-2 mb-2 border-border/50 overflow-hidden">
             <CardContent className="p-0 flex-row items-center justify-between">
 
@@ -263,7 +266,7 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                         <StockDistributionChips
                             data={stockBreakdown}
                             isLoading={isBreakdownLoading}
-                            onEditPress={() => router.push(`/farmer/${farmer.id}/ledger` as any)}
+                            onEditPress={() => setIsFeedDistributionOpen(true)}
                         />
                     </View>
 
@@ -389,6 +392,13 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                 </View>
             )}
         </Card>
+        <FeedDistributionModal
+            farmerId={farmer.id}
+            orgId={isManagement ? orgId : undefined}
+            open={isFeedDistributionOpen}
+            onOpenChange={setIsFeedDistributionOpen}
+        />
+        </>
     );
 }
 
