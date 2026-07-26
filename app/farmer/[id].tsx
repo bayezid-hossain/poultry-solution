@@ -476,7 +476,9 @@ export default function FarmerDetailScreen() {
                                             key={cycle.id}
                                             cycle={{
                                                 ...cycle,
-                                                intake: Number(cycle.intake)
+                                                intake: Number(cycle.intake),
+                                                farmerMainStock: mainStock,
+                                                farmerProblematicFeed: Number(farmer.problematicFeed ?? 0),
                                             }}
                                             onPress={() => router.push(`/cycle/${cycle.id}` as any)}
                                             onAction={handleCycleAction}
