@@ -439,7 +439,10 @@ export const SellModal = ({
     const totalBagsNeeded = form.watch("feedConsumed").reduce((acc, item) => acc + (item.bags || 0), 0) +
         form.watch("feedStock").reduce((acc, item) => acc + (item.bags || 0), 0);
 
-    const isStockInsufficient = totalBagsNeeded > mainStock;
+    // Don't flag insufficient stock until real data has actually loaded — otherwise mainStock's
+    // `|| 0` loading-state fallback combined with the form's placeholder defaults falsely trips
+    // this on first render, and it only "goes away" once the farmer/breakdown queries resolve.
+    const isStockInsufficient = !!farmer && hasInitializedRef.current && totalBagsNeeded > mainStock;
     const [showRestockModal, setShowRestockModal] = useState(false);
 
     // Form errors checking helper
