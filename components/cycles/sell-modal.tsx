@@ -1034,7 +1034,7 @@ export const SellModal = ({
                                                 <Text className="text-sm font-bold text-amber-700 dark:text-amber-400">Insufficient Stock</Text>
                                             </View>
                                             <Text className="text-xs text-amber-700/80 dark:text-amber-500/80">
-                                                Trying to use {totalBagsNeeded} bags, but main stock only has {mainStock} bags.
+                                                Trying to use {Number(totalBagsNeeded).toFixed(1)} bags, but main stock only has {Number(mainStock).toFixed(1)} bags.
                                             </Text>
                                             <Button
                                                 variant="outline"

@@ -259,7 +259,7 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                         <View className="flex-row items-center justify-between">
                             <Text className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Main Stock</Text>
                             <View className="flex-row items-baseline gap-1">
-                                <Text className="text-xl font-black text-foreground">{farmer.mainStock || 0}</Text>
+                                <Text className="text-xl font-black text-foreground">{Number(farmer.mainStock || 0).toFixed(1)}</Text>
                                 <Text className="text-[10px] font-medium text-muted-foreground">b</Text>
                             </View>
                         </View>
@@ -350,9 +350,9 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                                                             const newAmt = currentBaseAmt + parseFloat(log.amount);
                                                             return (
                                                                 <View className="flex-row items-center gap-1 opacity-80">
-                                                                    <Text className="text-[9px] text-muted-foreground line-through">{currentBaseAmt > 0 ? "+" : ""}{currentBaseAmt}</Text>
+                                                                    <Text className="text-[9px] text-muted-foreground line-through">{currentBaseAmt > 0 ? "+" : ""}{currentBaseAmt.toFixed(1)}</Text>
                                                                     <Text className="text-[9px] text-muted-foreground">→</Text>
-                                                                    <Text className={`text-[9px] font-bold ${newAmt > 0 ? 'text-emerald-500' : 'text-orange-500'}`}>{newAmt > 0 ? "+" : ""}{newAmt}</Text>
+                                                                    <Text className={`text-[9px] font-bold ${newAmt > 0 ? 'text-emerald-500' : 'text-orange-500'}`}>{newAmt > 0 ? "+" : ""}{newAmt.toFixed(1)}</Text>
                                                                 </View>
                                                             );
                                                         }
@@ -585,7 +585,7 @@ function BatchHistoryRow({ batch, isManagement, orgId }: { batch: any; isManagem
                                                     {item.lines.map((l, i) => (
                                                         <View key={i} className="bg-muted/50 px-2 py-0.5 rounded-md">
                                                             <Text className="text-[9px] font-bold text-muted-foreground">
-                                                                {l.feedType || "Unspecified"} · {l.amount}
+                                                                {l.feedType || "Unspecified"} · {Number(l.amount).toFixed(1)}
                                                             </Text>
                                                         </View>
                                                     ))}

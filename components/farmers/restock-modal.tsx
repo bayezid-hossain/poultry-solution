@@ -151,7 +151,7 @@ export function RestockModal({
                         </Pressable>
 
                         {feeds.length > 1 && (
-                            <Text className="text-xs font-bold text-muted-foreground ml-1">Total: {totalBags} bags</Text>
+                            <Text className="text-xs font-bold text-muted-foreground ml-1">Total: {totalBags.toFixed(1)} bags</Text>
                         )}
                     </View>
 

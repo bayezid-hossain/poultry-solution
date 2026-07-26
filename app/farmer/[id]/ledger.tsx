@@ -396,7 +396,7 @@ export default function FarmerLedgerScreen() {
                     <View className="flex-row items-center justify-end gap-3">
                         <Text className="text-[10px] font-black text-muted-foreground tracking-widest uppercase pb-1">Main Stock</Text>
                         <View className="bg-card border border-border/50 rounded-2xl px-5 py-3 shadow-lg flex-row items-baseline gap-1">
-                            <Text className="text-2xl font-black text-foreground">{mainStock}</Text>
+                            <Text className="text-2xl font-black text-foreground">{mainStock.toFixed(1)}</Text>
                             <Text className="text-sm font-medium text-muted-foreground">b</Text>
                         </View>
                     </View>

@@ -76,9 +76,24 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
         onError: (err: any) => toast.error(err.message || "Failed to update stock"),
     });
 
+    // A single bucket (Unspecified especially) shouldn't reasonably be corrected past the
+    // farmer's entire current stock — bounds fat-finger typos and stops raw float-drift values
+    // (e.g. "123.456789") from ever needing to be typed in full.
+    const editMax = Math.round(Number(breakdown?.total ?? 0) * 10) / 10;
+
     const handleStartEdit = (key: string, currentAmount: number) => {
         setEditingChip(key);
-        setEditValue(currentAmount.toFixed(1));
+        setEditValue((Math.round(currentAmount * 10) / 10).toFixed(1));
+    };
+
+    const handleEditValueChange = (value: string) => {
+        if (!/^\d*\.?\d*$/.test(value)) return;
+        const num = parseFloat(value);
+        if (!isNaN(num) && num > editMax) {
+            setEditValue(editMax.toFixed(1));
+            return;
+        }
+        setEditValue(value);
     };
 
     const handleSaveEdit = () => {
@@ -86,6 +101,10 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
         const newAmount = parseFloat(editValue);
         if (isNaN(newAmount) || newAmount < 0) {
             toast.error("Please enter a valid amount");
+            return;
+        }
+        if (newAmount > editMax) {
+            toast.error(`Cannot exceed total stock (${editMax.toFixed(1)} bags)`);
             return;
         }
         adjustMutation.mutate({
@@ -163,22 +182,26 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
                                                 : chip.isUnspecified ? 'bg-amber-500/10 border-amber-400/40' : 'bg-muted/50 border-border/40'
                                                 }`}
                                         >
-                                            <View className="flex-row items-center justify-between">
+                                            <Pressable onPress={() => handleStartEdit(chip.key, chip.amount)}
+                                                className="flex-row items-center justify-between">
                                                 <Text className={`text-xs font-bold ${chip.isUnspecified && !isEditing ? 'text-amber-600' : 'text-foreground'}`}>
                                                     {chip.label}
                                                 </Text>
 
                                                 {isEditing ? (
-                                                    <Input
-                                                        autoFocus
-                                                        className="w-24 h-9 bg-background border-border/50 text-sm font-mono text-right px-2"
-                                                        keyboardType="numeric"
-                                                        value={editValue}
-                                                        onChangeText={setEditValue}
-                                                    />
+                                                    <View className="items-end">
+                                                        <Input
+                                                            autoFocus
+                                                            className="w-24 h-9 bg-background border-border/50 text-sm font-mono text-right px-2"
+                                                            keyboardType="decimal-pad"
+                                                            value={editValue}
+                                                            onChangeText={handleEditValueChange}
+                                                        />
+                                                        <Text className="text-[9px] font-bold text-muted-foreground mt-0.5">Max: {editMax.toFixed(1)}</Text>
+                                                    </View>
                                                 ) : (
-                                                    <Pressable
-                                                        onPress={() => handleStartEdit(chip.key, chip.amount)}
+                                                    <Pressable onPress={() => handleStartEdit(chip.key, chip.amount)}
+
                                                         className="flex-row items-center gap-1.5 active:opacity-60"
                                                     >
                                                         <Text className={`text-xs font-bold ${chip.isUnspecified ? 'text-amber-600' : 'text-foreground'}`}>
@@ -187,7 +210,7 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
                                                         <Icon as={Pencil} size={11} className="text-muted-foreground" />
                                                     </Pressable>
                                                 )}
-                                            </View>
+                                            </Pressable>
 
                                             {isEditing && (
                                                 <View className="flex-row gap-2 mt-2.5">
@@ -200,9 +223,9 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
                                                     <Pressable
                                                         onPress={handleSaveEdit}
                                                         disabled={adjustMutation.isPending}
-                                                        className="flex-1 h-9 flex-row items-center justify-center gap-1.5 rounded-lg bg-emerald-500/15 active:bg-emerald-500/25"
+                                                        className="flex-1  h-9 flex-row items-center justify-center gap-1.5 rounded-lg bg-white active:bg-emerald-500/25"
                                                     >
-                                                        <Icon as={Check} size={13} className="text-emerald-600" />
+                                                        <Icon as={Check} size={13} className="text-emerald-600 " />
                                                         <Text className="text-xs font-bold text-emerald-600">
                                                             {adjustMutation.isPending ? "Saving..." : "Confirm"}
                                                         </Text>

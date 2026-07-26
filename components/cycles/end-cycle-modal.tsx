@@ -159,7 +159,7 @@ export function EndCycleModal({
                         </Pressable>
 
                         {feeds.length > 1 && (
-                            <Text className="text-xs font-bold text-muted-foreground ml-1">Total: {totalBags} bags</Text>
+                            <Text className="text-xs font-bold text-muted-foreground ml-1">Total: {totalBags.toFixed(1)} bags</Text>
                         )}
                         <Text className="text-[10px] text-muted-foreground ml-1">
                             Enter the actual number of bags physically eaten, broken down by feed type if known.

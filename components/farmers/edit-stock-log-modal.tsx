@@ -85,7 +85,7 @@ export function EditStockLogModal({
                     <View className="gap-2">
                         <View className="flex-row justify-between items-center ml-1">
                             <Text className="text-sm font-bold text-foreground">Amount (Bags)</Text>
-                            <Text className="text-[10px] text-muted-foreground">Original: {log.amount}</Text>
+                            <Text className="text-[10px] text-muted-foreground">Original: {Number(log.amount).toFixed(1)}</Text>
                         </View>
                         <Input
                             placeholder="0.00"
