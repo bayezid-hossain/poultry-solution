@@ -151,9 +151,8 @@ export const SellModal = ({
     );
     const lastSale = previousSales?.[0];
 
-    // Real current stock by feed type — used to correct the "remaining stock" fields instead of
-    // guessing from the delta against a previous sale's manually-entered values.
-    const { data: stockBreakdown, isLoading: isBreakdownLoading } = trpc.officer.stock.getStockBreakdown.useQuery(
+    // Real current stock by feed type — shown as a read-only reference while entering consumption.
+    const { data: stockBreakdown } = trpc.officer.stock.getStockBreakdown.useQuery(
         { farmerId },
         { enabled: open }
     );
@@ -194,7 +193,7 @@ export const SellModal = ({
 
     // Initialize form with defaults ONLY ONCE when data is ready
     useEffect(() => {
-        if (open && !isPreviousSalesLoading && !isBreakdownLoading && !hasInitializedRef.current) {
+        if (open && !isPreviousSalesLoading && !hasInitializedRef.current) {
             hasInitializedRef.current = true;
             const currentRemainingBirds = doc - mortality - birdsSold;
 
@@ -204,11 +203,12 @@ export const SellModal = ({
                 { type: "B2", bags: 0 }
             ];
 
-            // Remaining stock by type: pulled from real current stock, not carried forward from a
-            // previous sale's manual entry. Types with 0 or fewer bags remaining aren't shown.
-            const defaultFeedStock = (stockBreakdown?.byType ?? [])
-                .filter((t: any) => Number(t.amount) > 0)
-                .map((t: any) => ({ type: t.feedType, bags: Number(t.amount) }));
+            // "Leftover Feed Return" — bags being handed back to main stock, not a stock display.
+            // Defaults to 0 unless the officer previously declared a return on the last sale.
+            const defaultFeedStock = lastSale?.feedStock ? (typeof lastSale.feedStock === 'string' ? JSON.parse(lastSale.feedStock) : lastSale.feedStock) as any : [
+                { type: "B1", bags: 0 },
+                { type: "B2", bags: 0 }
+            ];
 
             form.reset({
                 saleDate: format(new Date(), "yyyy-MM-dd"),
@@ -231,7 +231,7 @@ export const SellModal = ({
                 officialInputDate: officialInputDate ? format(new Date(officialInputDate), "yyyy-MM-dd") : (startDate ? format(new Date(startDate), "yyyy-MM-dd") : undefined),
             });
         }
-    }, [open, isPreviousSalesLoading, isBreakdownLoading, lastSale, stockBreakdown, doc, mortality, birdsSold, intake, farmerLocation, farmerMobile, form, officialInputDate, startDate]);
+    }, [open, isPreviousSalesLoading, lastSale, doc, mortality, birdsSold, intake, farmerLocation, farmerMobile, form, officialInputDate, startDate]);
 
     const feedConsumedArray = useFieldArray({
         control: form.control,
@@ -406,32 +406,31 @@ export const SellModal = ({
         const currentType = (form.getValues(`feedConsumed.${index}.type`) || "").toUpperCase().trim();
         if (!currentType) return;
 
-        // Remaining stock = real current balance for this type minus what's being consumed now —
-        // not a delta guessed against a previous sale's manually-entered values.
-        const realBalance = Number(
-            stockBreakdown?.byType.find((t: any) => (t.feedType || "").toUpperCase().trim() === currentType)?.amount ?? 0
-        );
-        const newStockBags = parseFloat(Math.max(0, realBalance - newBags).toFixed(2));
+        // Use previous sale's data as baseline, or fall back to defaults
+        const baselineConsumed = lastSale?.feedConsumed
+            ? (typeof lastSale.feedConsumed === 'string' ? JSON.parse(lastSale.feedConsumed) : lastSale.feedConsumed) as { type: string; bags: number }[]
+            : [{ type: "B1", bags: intake || 0 }, { type: "B2", bags: 0 }];
+        const baselineStock = lastSale?.feedStock
+            ? (typeof lastSale.feedStock === 'string' ? JSON.parse(lastSale.feedStock) : lastSale.feedStock) as { type: string; bags: number }[]
+            : [{ type: "B1", bags: 0 }, { type: "B2", bags: 0 }];
+
+        // Find baseline consumption for this type
+        const baseline = baselineConsumed.find(b => (b.type || "").toUpperCase().trim() === currentType);
+        const baselineBags = Number(baseline?.bags || 0);
+        const consumedDelta = newBags - baselineBags;
 
         const currentStock = [...form.getValues("feedStock")];
         const stockIndex = currentStock.findIndex(s => (s.type || "").toUpperCase().trim() === currentType);
 
-        if (newStockBags <= 0) {
-            // Nothing left of this type — don't show it in the remaining-stock rows
-            if (stockIndex > -1) {
-                currentStock.splice(stockIndex, 1);
-                form.setValue("feedStock", currentStock, { shouldValidate: true, shouldDirty: true });
-            }
-            return;
-        }
-
         if (stockIndex > -1) {
+            const bStock = baselineStock.find(bs => (bs.type || "").toUpperCase().trim() === currentType);
+            const baselineStockBags = Number(bStock?.bags || 0);
+            const newStockBags = parseFloat(Math.max(0, baselineStockBags - consumedDelta).toFixed(2));
+
             if (Number(currentStock[stockIndex].bags) !== newStockBags) {
                 currentStock[stockIndex] = { ...currentStock[stockIndex], bags: newStockBags };
                 form.setValue("feedStock", currentStock, { shouldValidate: true, shouldDirty: true });
             }
-        } else {
-            form.setValue("feedStock", [...currentStock, { type: currentType, bags: newStockBags }], { shouldValidate: true, shouldDirty: true });
         }
     };
 
@@ -903,6 +902,21 @@ export const SellModal = ({
                                             <Icon as={Box} size={16} className="text-muted-foreground" />
                                             <Text className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Feed Inventory</Text>
                                         </View>
+
+                                        {(() => {
+                                            const currentStockTypes = (stockBreakdown?.byType ?? []).filter((t: any) => Number(t.amount) > 0);
+                                            if (currentStockTypes.length === 0) return null;
+                                            return (
+                                                <View className="flex-row flex-wrap gap-1.5 ml-1 mb-1">
+                                                    <Text className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider w-full mb-0.5">Current Stock On Hand</Text>
+                                                    {currentStockTypes.map((t: any) => (
+                                                        <View key={t.feedType} className="bg-muted/50 px-2 py-1 rounded-md border border-border/40">
+                                                            <Text className="text-[10px] font-bold text-foreground">{t.feedType} · {Number(t.amount).toFixed(1)}</Text>
+                                                        </View>
+                                                    ))}
+                                                </View>
+                                            );
+                                        })()}
 
                                         {remainingBirdsAfterTransaction === 0 && (
                                             <View className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-2">
