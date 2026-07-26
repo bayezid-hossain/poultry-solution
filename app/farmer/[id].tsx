@@ -836,12 +836,7 @@ export default function FarmerDetailScreen() {
                 orgId={membership?.orgId}
                 open={!!editingFeedTypeLog}
                 onOpenChange={(open) => !open && setEditingFeedTypeLog(null)}
-                onSuccess={() => {
-                    utils.officer.stock.getHistory.invalidate({ farmerId: id });
-                    utils.management.stock.getHistory.invalidate({ farmerId: id });
-                    id && utils.officer.stock.getStockBreakdown.invalidate({ farmerId: id });
-                    id && utils.management.stock.getStockBreakdown.invalidate({ farmerId: id });
-                }}
+                onSuccess={refetchAll}
             />
 
             {/* Cycle-level Modals */}

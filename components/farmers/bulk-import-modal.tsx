@@ -213,10 +213,6 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
         setParsedData(prev => prev.map(p => p.id === id ? { ...p, mobile: newMobile } : p));
     };
 
-    const handleQuickAmountEdit = (id: string, newAmount: string) => {
-        setParsedData(prev => prev.map(p => p.id === id ? { ...p, feeds: [{ ...p.feeds[0], quantity: newAmount }] } : p));
-    };
-
     const handleAddFeedRow = (id: string) => {
         setParsedData(prev => prev.map(p => p.id === id ? { ...p, feeds: [...p.feeds, { type: "", quantity: "" }] } : p));
     };
@@ -607,68 +603,55 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                                                 )}
                                             </View>
 
-                                            {item.feeds.length === 1 ? (
-                                                <View className="items-end ml-4">
-                                                    <TextInput
-                                                        value={item.feeds[0].quantity}
-                                                        onChangeText={(text) => handleQuickAmountEdit(item.id, text)}
-                                                        keyboardType="numeric"
-                                                        className="text-2xl font-black text-foreground tracking-tight p-0"
-                                                    />
-                                                    <Text className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.1em] -mt-1">Bags</Text>
-                                                    <Pressable onPress={() => handleAddFeedRow(item.id)} className="mt-1.5">
-                                                        <Text className="text-[9px] font-bold text-primary uppercase">Split by Type</Text>
-                                                    </Pressable>
-                                                </View>
-                                            ) : (
-                                                <View className="items-end ml-4">
-                                                    <Text className="text-lg font-black text-foreground tracking-tight">
-                                                        {item.feeds.reduce((s, f) => s + (Number(f.quantity) || 0), 0)}
-                                                    </Text>
-                                                    <Text className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.1em]">Bags Total</Text>
-                                                </View>
-                                            )}
+                                            <View className="items-end ml-4">
+                                                <Text className="text-lg font-black text-foreground tracking-tight">
+                                                    {item.feeds.reduce((s, f) => s + (Number(f.quantity) || 0), 0)}
+                                                </Text>
+                                                <Text className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.1em]">Bags Total</Text>
+                                            </View>
                                         </View>
 
-                                        {item.feeds.length > 1 && (
-                                            <View className="px-5 pb-4 gap-2 bg-muted/30 border-t border-border/50">
-                                                <View className="flex-row gap-2 px-1 pt-3">
-                                                    <Text className="flex-1 text-[9px] text-muted-foreground uppercase font-bold tracking-widest pl-1">Type</Text>
-                                                    <Text className="w-20 text-[9px] text-muted-foreground uppercase font-bold tracking-widest pl-1">Qty</Text>
-                                                    <View className="w-8" />
-                                                </View>
-                                                {item.feeds.map((feed, index) => (
-                                                    <View key={index} className="flex-row gap-2 items-start">
-                                                        <View className="flex-1">
-                                                            <FeedTypeInput
-                                                                value={feed.type}
-                                                                onChangeText={(val) => handleUpdateFeed(item.id, index, 'type', val)}
-                                                                orgId={orgId}
-                                                                placeholder="e.g. B1"
-                                                                className="h-10 bg-background"
-                                                            />
-                                                        </View>
-                                                        <TextInput
-                                                            className="w-20 h-10 bg-background rounded-md border border-input px-3 text-foreground"
-                                                            placeholder="0"
-                                                            keyboardType="numeric"
-                                                            value={feed.quantity}
-                                                            onChangeText={(val) => handleUpdateFeed(item.id, index, 'quantity', val)}
+                                        {/* Feed type breakdown — always shown, like feed order confirmation, so
+                                            bags don't default into Unspecified unless the officer leaves type blank */}
+                                        <View className="px-5 pb-4 gap-2 bg-muted/30 border-t border-border/50">
+                                            <View className="flex-row gap-2 px-1 pt-3">
+                                                <Text className="flex-1 text-[9px] text-muted-foreground uppercase font-bold tracking-widest pl-1">Type</Text>
+                                                <Text className="w-20 text-[9px] text-muted-foreground uppercase font-bold tracking-widest pl-1">Qty</Text>
+                                                <View className="w-8" />
+                                            </View>
+                                            {item.feeds.map((feed, index) => (
+                                                <View key={index} className="flex-row gap-2 items-start">
+                                                    <View className="flex-1">
+                                                        <FeedTypeInput
+                                                            value={feed.type}
+                                                            onChangeText={(val) => handleUpdateFeed(item.id, index, 'type', val)}
+                                                            orgId={orgId}
+                                                            placeholder="e.g. B1"
+                                                            className="h-10 bg-background"
                                                         />
+                                                    </View>
+                                                    <TextInput
+                                                        className="w-20 h-10 bg-background rounded-md border border-input px-3 text-foreground"
+                                                        placeholder="0"
+                                                        keyboardType="numeric"
+                                                        value={feed.quantity}
+                                                        onChangeText={(val) => handleUpdateFeed(item.id, index, 'quantity', val)}
+                                                    />
+                                                    {item.feeds.length > 1 && (
                                                         <Pressable
                                                             onPress={() => handleRemoveFeedRow(item.id, index)}
                                                             className="w-8 h-10 items-center justify-center rounded-lg bg-destructive/10 active:bg-destructive/20"
                                                         >
                                                             <Icon as={Trash2} size={14} className="text-destructive" />
                                                         </Pressable>
-                                                    </View>
-                                                ))}
-                                                <Pressable onPress={() => handleAddFeedRow(item.id)} className="flex-row items-center gap-1.5 pt-1 pb-1">
-                                                    <Icon as={Plus} size={14} className="text-primary" />
-                                                    <Text className="text-[11px] font-bold text-primary">Add Feed Row</Text>
-                                                </Pressable>
-                                            </View>
-                                        )}
+                                                    )}
+                                                </View>
+                                            ))}
+                                            <Pressable onPress={() => handleAddFeedRow(item.id)} className="flex-row items-center gap-1.5 pt-1 pb-1">
+                                                <Icon as={Plus} size={14} className="text-primary" />
+                                                <Text className="text-[11px] font-bold text-primary">Add Feed Row</Text>
+                                            </Pressable>
+                                        </View>
                                     </View>
                                 ))}
                             </View>

@@ -29,7 +29,7 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
     const isManagement = membership?.activeMode === "MANAGEMENT";
 
     const breakdownProcedure = isManagement ? trpc.management.stock.getStockBreakdown : trpc.officer.stock.getStockBreakdown;
-    const { data: breakdown, isLoading } = (breakdownProcedure as any).useQuery(
+    const { data: breakdown, isLoading, refetch: refetchBreakdown } = (breakdownProcedure as any).useQuery(
         { farmerId, orgId },
         { enabled: open && !!farmerId }
     );
@@ -44,6 +44,7 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
         onSuccess: () => {
             toast.success("Feed type reassigned");
             setAllocations([{ type: "", quantity: "" }]);
+            refetchBreakdown();
             utils.officer.stock.getStockBreakdown.invalidate({ farmerId });
             utils.management.stock.getStockBreakdown.invalidate({ farmerId });
             utils.officer.stock.getHistory.invalidate({ farmerId });
