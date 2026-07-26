@@ -112,7 +112,7 @@ export function EditFeedTypeModal({ log, orgId, open, onOpenChange, onSuccess }:
                         )}
 
                         {splits.map((split, index) => (
-                            <View key={index} className="flex-row gap-2 items-center">
+                            <View key={index} className="flex-row gap-2 items-start">
                                 <View className="flex-1">
                                     <FeedTypeInput
                                         value={split.type}

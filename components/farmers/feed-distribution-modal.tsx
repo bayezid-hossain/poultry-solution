@@ -138,7 +138,7 @@ export function FeedDistributionModal({ farmerId, orgId, open, onOpenChange, onS
                                         </View>
 
                                         {allocations.map((row, index) => (
-                                            <View key={index} className="flex-row gap-2 items-center">
+                                            <View key={index} className="flex-row gap-2 items-start">
                                                 <View className="flex-1">
                                                     <FeedTypeInput
                                                         value={row.type}

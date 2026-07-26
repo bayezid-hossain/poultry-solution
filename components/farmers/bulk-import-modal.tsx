@@ -638,7 +638,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                                                     <View className="w-8" />
                                                 </View>
                                                 {item.feeds.map((feed, index) => (
-                                                    <View key={index} className="flex-row gap-2 items-center">
+                                                    <View key={index} className="flex-row gap-2 items-start">
                                                         <View className="flex-1">
                                                             <FeedTypeInput
                                                                 value={feed.type}
