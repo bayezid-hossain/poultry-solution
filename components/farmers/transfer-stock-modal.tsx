@@ -6,25 +6,27 @@ import { Text } from "@/components/ui/text";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, CheckCircle2, ChevronDown, Package, Search, User, X } from "lucide-react-native";
+import { ArrowRight, CheckCircle2, ChevronDown, Package, Plus, Search, Trash2, User, X } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { toast } from "sonner-native";
 import { z } from "zod";
 import { FeedTypeInput } from "./feed-type-input";
+import { StockDistributionChips } from "./stock-distribution-chips";
 
 const transferStockSchema = z.object({
     targetFarmerId: z.string().min(1, "Target farmer is required"),
-    amount: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
-        message: "Amount must be a positive number",
-    }),
-    feedType: z.string().optional(),
     note: z.string().optional(),
 });
 
 type TransferStockFormValues = z.infer<typeof transferStockSchema>;
+
+interface FeedRow {
+    type: string;
+    quantity: string;
+}
 
 interface TransferStockModalProps {
     open: boolean;
@@ -40,24 +42,25 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
     const { colorScheme } = useColorScheme();
     const [searchTerm, setSearchTerm] = useState("");
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [feeds, setFeeds] = useState<FeedRow[]>([{ type: "", quantity: "" }]);
 
     const { control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<TransferStockFormValues>({
         resolver: zodResolver(transferStockSchema) as any,
         defaultValues: {
             targetFarmerId: "",
-            amount: "",
-            feedType: "",
             note: "",
         },
     });
 
-    const amountRef = useRef<TextInput>(null);
     const noteRef = useRef<TextInput>(null);
 
     const targetFarmerId = watch("targetFarmerId");
-    const amountValue = watch("amount");
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
+
+    useEffect(() => {
+        if (open) setFeeds([{ type: "", quantity: "" }]);
+    }, [open]);
 
     // Fetch farmers for selection
     const farmersProcedure = isManagement ? trpc.management.farmers.getMany : trpc.officer.farmers.getMany;
@@ -69,6 +72,21 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
     }, {
         enabled: open && !!membership?.orgId
     });
+
+    // Source farmer's stock by feed type — used as a reference and to cap named-type rows
+    const breakdownProcedure = isManagement ? trpc.management.stock.getStockBreakdown : trpc.officer.stock.getStockBreakdown;
+    const { data: breakdown, isLoading: isBreakdownLoading } = (breakdownProcedure as any).useQuery(
+        { farmerId: sourceFarmerId, orgId: membership?.orgId },
+        { enabled: open && !!sourceFarmerId }
+    );
+
+    const availableByType = useMemo(() => {
+        const map = new Map<string, number>();
+        ((breakdown?.byType ?? []) as { feedType: string; amount: number }[]).forEach(t => {
+            map.set(t.feedType.toLowerCase().trim(), t.amount);
+        });
+        return map;
+    }, [breakdown]);
 
     // Filter and Memoize available farmers
     const availableFarmers = useMemo(() => {
@@ -98,6 +116,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                 utils.management.stock.getStockBreakdown.invalidate({ farmerId: targetFarmerId });
             }
             reset();
+            setFeeds([{ type: "", quantity: "" }]);
             setSearchTerm("");
             setIsDropdownOpen(false);
             onSuccess?.();
@@ -108,9 +127,46 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
         },
     });
 
+    const handleUpdateFeed = (index: number, field: 'type' | 'quantity', value: string) => {
+        setFeeds(prev => prev.map((row, i) => {
+            if (i !== index) return row;
+            if (field === 'quantity') {
+                const key = row.type.toLowerCase().trim();
+                const available = availableByType.get(key);
+                if (available !== undefined) {
+                    const usedByOtherRows = prev.reduce((s, r, ri) => ri !== index && r.type.toLowerCase().trim() === key ? s + (Number(r.quantity) || 0) : s, 0);
+                    const cap = Math.max(0, available - usedByOtherRows);
+                    const num = parseFloat(value);
+                    if (!isNaN(num) && num > cap) {
+                        return { ...row, quantity: String(cap) };
+                    }
+                }
+            }
+            return { ...row, [field]: value };
+        }));
+    };
+
+    const handleAddRow = () => setFeeds(prev => [...prev, { type: "", quantity: "" }]);
+
+    const handleRemoveRow = (index: number) => {
+        setFeeds(prev => {
+            const next = [...prev];
+            next.splice(index, 1);
+            return next.length ? next : [{ type: "", quantity: "" }];
+        });
+    };
+
+    const totalRequested = feeds.reduce((s, f) => s + (Number(f.quantity) || 0), 0);
+    const isOverLimit = totalRequested > availableStock;
+    const hasValidFeed = feeds.some(f => (Number(f.quantity) || 0) > 0);
+
     const onSubmit = (data: TransferStockFormValues) => {
-        const amountNum = parseFloat(data.amount);
-        if (amountNum > availableStock) {
+        const validFeeds = feeds.filter(f => (Number(f.quantity) || 0) > 0);
+        if (validFeeds.length === 0) {
+            toast.error("Enter at least one feed quantity to transfer");
+            return;
+        }
+        if (isOverLimit) {
             toast.error(`Cannot transfer more than available stock (${availableStock.toFixed(2)} bags)`);
             return;
         }
@@ -118,14 +174,11 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
         mutation.mutate({
             sourceFarmerId,
             targetFarmerId: data.targetFarmerId,
-            amount: parseFloat(data.amount),
-            feedType: data.feedType || undefined,
+            feeds: validFeeds.map(f => ({ type: f.type.trim() || undefined, quantity: Number(f.quantity) })),
             note: data.note,
             orgId: isManagement ? membership?.orgId : undefined
         });
     };
-
-    const isOverLimit = amountValue && !isNaN(parseFloat(amountValue)) && parseFloat(amountValue) > availableStock;
 
     return (
         <BottomSheetModal open={open} onOpenChange={onOpenChange}>
@@ -157,11 +210,12 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                         </View>
                     </View>
 
-                    {/* Available stock badge */}
+                    {/* Available stock badge + per-type reference */}
                     <View className="flex-row items-center gap-2 mt-3 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
                         <Icon as={Package} size={14} className="text-amber-600" />
                         <Text className="text-xs font-bold text-amber-700">Available: {availableStock} bags</Text>
                     </View>
+                    <StockDistributionChips data={breakdown} isLoading={isBreakdownLoading} className="mt-2.5" />
                 </View>
 
                 <View className="px-6 pb-6 gap-5">
@@ -206,7 +260,6 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                                             className="flex-1 h-10 border-0 bg-transparent text-sm p-0"
                                             autoFocus
                                             returnKeyType="next"
-                                            onSubmitEditing={() => amountRef.current?.focus()}
                                         />
                                     </View>
                                 </View>
@@ -263,59 +316,56 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                         )}
                     </View>
 
-                    {/* Section 2: Amount */}
+                    {/* Section 2: Feed Types & Quantities */}
                     <View>
                         <View className="flex-row items-center justify-between mb-2 ml-1">
-                            <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Amount (Bags)</Text>
+                            <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Feed Types To Transfer</Text>
                             <Text className={`text-[10px] font-black uppercase ${isOverLimit ? 'text-destructive' : 'text-muted-foreground'}`}>
                                 Max: {availableStock}
                             </Text>
                         </View>
-                        <Controller
-                            control={control}
-                            name="amount"
-                            render={({ field: { onChange, value } }) => (
-                                <View className={`flex-row items-center bg-card border-2 rounded-2xl px-4 h-14 ${errors.amount || isOverLimit ? 'border-destructive' : 'border-border'}`}>
-                                    <Icon as={Package} size={18} className="text-muted-foreground mr-3" />
-                                    <Input
-                                        ref={amountRef}
-                                        placeholder="Enter amount..."
-                                        value={value}
-                                        onChangeText={onChange}
-                                        keyboardType="numeric"
-                                        className="flex-1 h-12 border-0 bg-transparent text-lg font-bold p-0"
-                                        returnKeyType="next"
-                                        onSubmitEditing={() => noteRef.current?.focus()}
-                                    />
-                                </View>
-                            )}
-                        />
-                        {errors.amount && (
-                            <Text className="text-destructive text-xs ml-1 mt-1.5 font-medium">{errors.amount?.message as string}</Text>
-                        )}
-                        {!errors.amount && isOverLimit && (
-                            <Text className="text-destructive text-xs ml-1 mt-1.5 font-medium">Cannot exceed available stock ({availableStock} bags)</Text>
-                        )}
-                    </View>
 
-                    {/* Section 2.5: Feed Type */}
-                    <View>
-                        <View className="flex-row items-center justify-between mb-2 ml-1">
-                            <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Feed Type</Text>
-                            <Text className="text-[10px] font-bold text-muted-foreground/50 uppercase">Optional</Text>
+                        <View className="gap-2.5">
+                            {feeds.map((row, index) => (
+                                <View key={index} className="flex-row gap-2 items-start">
+                                    <View className="flex-1">
+                                        <FeedTypeInput
+                                            value={row.type}
+                                            onChangeText={(val) => handleUpdateFeed(index, 'type', val)}
+                                            orgId={membership?.orgId}
+                                            placeholder="e.g. B1 (leave blank for Unspecified)"
+                                            className="h-12 bg-card border-2 border-border rounded-xl"
+                                        />
+                                    </View>
+                                    <Input
+                                        className="w-24 h-12 bg-card border-2 border-border rounded-xl text-base font-mono text-center"
+                                        placeholder="0"
+                                        keyboardType="numeric"
+                                        value={row.quantity}
+                                        onChangeText={(val) => handleUpdateFeed(index, 'quantity', val)}
+                                    />
+                                    {feeds.length > 1 && (
+                                        <Pressable
+                                            onPress={() => handleRemoveRow(index)}
+                                            className="w-10 h-12 items-center justify-center rounded-xl bg-destructive/10 active:bg-destructive/20"
+                                        >
+                                            <Icon as={Trash2} size={16} className="text-destructive" />
+                                        </Pressable>
+                                    )}
+                                </View>
+                            ))}
                         </View>
-                        <Controller
-                            control={control}
-                            name="feedType"
-                            render={({ field: { onChange, value } }) => (
-                                <FeedTypeInput
-                                    value={value ?? ""}
-                                    onChangeText={onChange}
-                                    orgId={membership?.orgId}
-                                    className="h-14 bg-card border-2 border-border rounded-2xl"
-                                />
-                            )}
-                        />
+
+                        <Pressable onPress={handleAddRow} className="flex-row items-center gap-1.5 self-start mt-3">
+                            <Icon as={Plus} size={14} className="text-primary" />
+                            <Text className="text-xs font-bold text-primary">Add Another Type</Text>
+                        </Pressable>
+
+                        <Text className={`text-xs font-bold ml-1 mt-2 ${isOverLimit ? 'text-destructive' : 'text-muted-foreground'}`}>
+                            {isOverLimit
+                                ? `Over by ${(totalRequested - availableStock).toFixed(1)} bags`
+                                : `Total: ${totalRequested.toFixed(1)} of ${availableStock} bags`}
+                        </Text>
                     </View>
 
                     {/* Section 3: Note */}
@@ -354,7 +404,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                         <Button
                             className="flex-1 h-14 bg-blue-600 rounded-2xl shadow-none"
                             onPress={handleSubmit(onSubmit)}
-                            disabled={mutation.isPending || !!isOverLimit}
+                            disabled={mutation.isPending || isOverLimit || !hasValidFeed}
                         >
                             <Text className="text-white font-black text-base">
                                 {mutation.isPending ? "Transferring..." : "Transfer"}
