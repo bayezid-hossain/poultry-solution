@@ -37,7 +37,7 @@ export default function ProblematicFeedsScreen() {
             <View className="px-4 mt-4">
                 <View className="flex-row justify-between items-center mb-4 bg-destructive/5 p-4 rounded-2xl border border-destructive/20">
                     <View>
-                        <Text className="text-3xl font-black text-destructive">{totalProblematicBags} <Text className="text-lg">bags</Text></Text>
+                        <Text className="text-3xl font-black text-destructive">{totalProblematicBags.toFixed(1)} <Text className="text-lg">bags</Text></Text>
                         <Text className="text-xs font-bold text-destructive/70 uppercase tracking-widest mt-1">Total Problematic Feed</Text>
                     </View>
                 </View>
@@ -88,7 +88,7 @@ export default function ProblematicFeedsScreen() {
                                         </View>
                                         <View className="bg-destructive/10 px-3 py-1 rounded-full border border-destructive/20">
                                             <Text className="text-destructive font-bold text-xs">
-                                                {item.problematicFeed} bags
+                                                {Number(item.problematicFeed).toFixed(1)} bags
                                             </Text>
                                         </View>
                                     </View>
@@ -96,7 +96,7 @@ export default function ProblematicFeedsScreen() {
                                     <View className="flex-row justify-between mt-4">
                                         <View>
                                             <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Main Stock</Text>
-                                            <Text className="text-foreground font-bold">{item.mainStock} bags</Text>
+                                            <Text className="text-foreground font-bold">{Number(item.mainStock).toFixed(1)} bags</Text>
                                         </View>
                                         <View className="items-end">
                                             <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Last Update</Text>

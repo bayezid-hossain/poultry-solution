@@ -9,12 +9,13 @@ import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react
 import { toast } from "sonner-native";
 import { ConfirmModal } from "../cycles/confirm-modal";
 import { BottomSheetModal } from "../ui/bottom-sheet-modal";
+import { FeedTypeInput } from "./feed-type-input";
 
 interface ParsedItem {
     id: string; // Internal ID
     cleanName: string;
     rawName: string;
-    amount: number;
+    feeds: { type: string; quantity: string }[];
     matchedFarmerId: string | null;
     matchedName: string | null;
     confidence: "HIGH" | "MEDIUM" | "LOW";
@@ -212,9 +213,26 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
         setParsedData(prev => prev.map(p => p.id === id ? { ...p, mobile: newMobile } : p));
     };
 
-    const handleAmountEdit = (id: string, newAmount: string) => {
-        const val = parseInt(newAmount) || 0;
-        setParsedData(prev => prev.map(p => p.id === id ? { ...p, amount: val } : p));
+    const handleAddFeedRow = (id: string) => {
+        setParsedData(prev => prev.map(p => p.id === id ? { ...p, feeds: [...p.feeds, { type: "", quantity: "" }] } : p));
+    };
+
+    const handleRemoveFeedRow = (id: string, index: number) => {
+        setParsedData(prev => prev.map(p => {
+            if (p.id !== id) return p;
+            const feeds = [...p.feeds];
+            feeds.splice(index, 1);
+            return { ...p, feeds: feeds.length ? feeds : [{ type: "", quantity: "0" }] };
+        }));
+    };
+
+    const handleUpdateFeed = (id: string, index: number, field: 'type' | 'quantity', value: string) => {
+        setParsedData(prev => prev.map(p => {
+            if (p.id !== id) return p;
+            const feeds = [...p.feeds];
+            feeds[index] = { ...feeds[index], [field]: value };
+            return { ...p, feeds };
+        }));
     };
 
     const handleExtract = async () => {
@@ -232,11 +250,15 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
             });
 
             const rows: ParsedItem[] = (extractedData as any[]).map((item: any, index: number) => {
+                const feeds = Array.isArray(item.feeds) && item.feeds.length > 0
+                    ? item.feeds.map((f: any) => ({ type: f.type || "", quantity: String(f.amount ?? 0) }))
+                    : [{ type: "", quantity: "0" }];
+
                 return {
                     id: `row-${index}`,
                     cleanName: item.name || "Unknown",
                     rawName: item.name || "Unknown",
-                    amount: item.amount || 0,
+                    feeds,
                     matchedFarmerId: item.matchedId || null,
                     matchedName: item.matchedName || null,
                     confidence: item.confidence || "LOW",
@@ -268,12 +290,14 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
     };
 
     const performImport = async () => {
-        const validItems = parsedData.filter(p => p.matchedFarmerId && p.amount > 0);
+        const validItems = parsedData.filter(p => p.matchedFarmerId && p.feeds.some(f => (Number(f.quantity) || 0) > 0));
         const payload = {
             driverName: driverName.trim() || undefined,
             items: validItems.map(p => ({
                 farmerId: p.matchedFarmerId!,
-                amount: p.amount,
+                feeds: p.feeds
+                    .filter(f => (Number(f.quantity) || 0) > 0)
+                    .map(f => ({ type: f.type.trim() || undefined, quantity: Number(f.quantity) })),
                 note: `Bulk Import: ${p.matchedName || p.cleanName}`
             }))
         };
@@ -282,7 +306,7 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
     };
 
     const handleSubmit = async () => {
-        const validItems = parsedData.filter(p => p.matchedFarmerId && p.amount > 0);
+        const validItems = parsedData.filter(p => p.matchedFarmerId && p.feeds.some(f => (Number(f.quantity) || 0) > 0));
 
         if (!driverName.trim()) {
             setDriverNameError(true);
@@ -584,14 +608,53 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
                                             </View>
 
                                             <View className="items-end ml-4">
-                                                <TextInput
-                                                    value={String(item.amount)}
-                                                    onChangeText={(text) => handleAmountEdit(item.id, text)}
-                                                    keyboardType="numeric"
-                                                    className="text-2xl font-black text-foreground tracking-tight p-0"
-                                                />
-                                                <Text className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.1em] -mt-1">Bags</Text>
+                                                <Text className="text-lg font-black text-foreground tracking-tight">
+                                                    {item.feeds.reduce((s, f) => s + (Number(f.quantity) || 0), 0)}
+                                                </Text>
+                                                <Text className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.1em]">Bags Total</Text>
                                             </View>
+                                        </View>
+
+                                        {/* Feed type breakdown — always shown, like feed order confirmation, so
+                                            bags don't default into Unspecified unless the officer leaves type blank */}
+                                        <View className="px-5 pb-4 gap-2 bg-muted/30 border-t border-border/50">
+                                            <View className="flex-row gap-2 px-1 pt-3">
+                                                <Text className="flex-1 text-[9px] text-muted-foreground uppercase font-bold tracking-widest pl-1">Type</Text>
+                                                <Text className="w-20 text-[9px] text-muted-foreground uppercase font-bold tracking-widest pl-1">Qty</Text>
+                                                <View className="w-8" />
+                                            </View>
+                                            {item.feeds.map((feed, index) => (
+                                                <View key={index} className="flex-row gap-2 items-start">
+                                                    <View className="flex-1">
+                                                        <FeedTypeInput
+                                                            value={feed.type}
+                                                            onChangeText={(val) => handleUpdateFeed(item.id, index, 'type', val)}
+                                                            orgId={orgId}
+                                                            placeholder="e.g. B1"
+                                                            className="h-10 bg-background"
+                                                        />
+                                                    </View>
+                                                    <TextInput
+                                                        className="w-20 h-10 bg-background rounded-md border border-input px-3 text-foreground"
+                                                        placeholder="0"
+                                                        keyboardType="numeric"
+                                                        value={feed.quantity}
+                                                        onChangeText={(val) => handleUpdateFeed(item.id, index, 'quantity', val)}
+                                                    />
+                                                    {item.feeds.length > 1 && (
+                                                        <Pressable
+                                                            onPress={() => handleRemoveFeedRow(item.id, index)}
+                                                            className="w-8 h-10 items-center justify-center rounded-lg bg-destructive/10 active:bg-destructive/20"
+                                                        >
+                                                            <Icon as={Trash2} size={14} className="text-destructive" />
+                                                        </Pressable>
+                                                    )}
+                                                </View>
+                                            ))}
+                                            <Pressable onPress={() => handleAddFeedRow(item.id)} className="flex-row items-center gap-1.5 pt-1 pb-1">
+                                                <Icon as={Plus} size={14} className="text-primary" />
+                                                <Text className="text-[11px] font-bold text-primary">Add Feed Row</Text>
+                                            </Pressable>
                                         </View>
                                     </View>
                                 ))}

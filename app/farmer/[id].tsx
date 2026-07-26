@@ -12,10 +12,13 @@ import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
 import { SellModal } from "@/components/cycles/sell-modal";
 import { DeleteFarmerModal } from "@/components/farmers/delete-farmer-modal";
 import { EditFarmerModal } from "@/components/farmers/edit-farmer-modal";
+import { EditFeedTypeModal } from "@/components/farmers/edit-feed-type-modal";
+import { FeedDistributionModal } from "@/components/farmers/feed-distribution-modal";
 import { ProblematicFeedModal } from "@/components/farmers/problematic-feed-modal";
 import { RestockModal } from "@/components/farmers/restock-modal";
 import { SecurityMoneyModal } from "@/components/farmers/security-money-modal";
 import { StockCorrectionModal } from "@/components/farmers/stock-correction-modal";
+import { StockDistributionChips } from "@/components/farmers/stock-distribution-chips";
 import { TransferStockModal } from "@/components/farmers/transfer-stock-modal";
 import { ProAccessModal } from "@/components/pro-access-modal";
 import { ScreenHeader } from "@/components/screen-header";
@@ -27,7 +30,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { Activity, AlertCircle, Archive, ArrowLeft, ArrowRightLeft, Bird, CalendarIcon, ChevronDown, ChevronUp, History, Link, MoreVertical, Package, Pencil, Plus, Scale, ShoppingCart, Trash2, Wrench } from "lucide-react-native";
+import { Activity, AlertCircle, Archive, ArrowLeft, ArrowRightLeft, Bird, CalendarIcon, ChevronDown, ChevronUp, History, Link, MoreVertical, Package, Pencil, Plus, Scale, ShoppingCart, Tag, Trash2, Wrench } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
@@ -44,6 +47,8 @@ export default function FarmerDetailScreen() {
     const [isStartCycleOpen, setIsStartCycleOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isTransferOpen, setIsTransferOpen] = useState(false);
+    const [editingFeedTypeLog, setEditingFeedTypeLog] = useState<any | null>(null);
+    const [isFeedDistributionOpen, setIsFeedDistributionOpen] = useState(false);
 
     // Accordion states
     const [activeExpanded, setActiveExpanded] = useState(true);
@@ -130,6 +135,12 @@ export default function FarmerDetailScreen() {
         { enabled: !!id && (isManagement ? !!membership?.orgId : true) && ledgerExpanded }
     );
 
+    const stockBreakdownProcedure = isManagement ? trpc.management.stock.getStockBreakdown : trpc.officer.stock.getStockBreakdown;
+    const { data: stockBreakdown, isLoading: isBreakdownLoading } = (stockBreakdownProcedure as any).useQuery(
+        { farmerId: id ?? "", orgId: membership?.orgId ?? "" },
+        { enabled: !!id && (isManagement ? !!membership?.orgId : true) }
+    );
+
     const refetchAll = useCallback(async () => {
         await Promise.all([
             refetch(),
@@ -139,6 +150,8 @@ export default function FarmerDetailScreen() {
             utils.management.sales.getRecentSales.invalidate(),
             utils.officer.stock.getHistory.invalidate({ farmerId: id }),
             utils.management.stock.getHistory.invalidate({ farmerId: id }),
+            utils.officer.stock.getStockBreakdown.invalidate({ farmerId: id }),
+            utils.management.stock.getStockBreakdown.invalidate({ farmerId: id }),
             utils.officer.cycles.getDetails.invalidate(),
             utils.management.cycles.getDetails.invalidate(),
         ]);
@@ -362,6 +375,13 @@ export default function FarmerDetailScreen() {
                             <View className="h-full bg-emerald-500" style={{ width: `${mainStock > 0 ? (availableStock / mainStock) * 100 : 0}%` }} />
                             <View className="h-full bg-orange-500" style={{ width: `${mainStock > 0 ? (activeConsumption / mainStock) * 100 : 0}%` }} />
                         </View>
+
+                        <StockDistributionChips
+                            data={stockBreakdown}
+                            isLoading={isBreakdownLoading}
+                            className="mt-4"
+                            onEditPress={() => setIsFeedDistributionOpen(true)}
+                        />
                     </CardContent>
                 </Card>
 
@@ -456,7 +476,9 @@ export default function FarmerDetailScreen() {
                                             key={cycle.id}
                                             cycle={{
                                                 ...cycle,
-                                                intake: Number(cycle.intake)
+                                                intake: Number(cycle.intake),
+                                                farmerMainStock: mainStock,
+                                                farmerProblematicFeed: Number(farmer.problematicFeed ?? 0),
                                             }}
                                             onPress={() => router.push(`/cycle/${cycle.id}` as any)}
                                             onAction={handleCycleAction}
@@ -578,12 +600,19 @@ export default function FarmerDetailScreen() {
                         </Pressable>
                         {ledgerExpanded && (
                             <View className="pb-5">
-                                <View className="flex-row items-center justify-between mb-4 bg-muted/10 p-3 rounded-xl border border-border/30">
-                                    <Text className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Main Stock</Text>
-                                    <View className="flex-row items-baseline gap-1">
-                                        <Text className="text-xl font-black text-foreground">{farmer.mainStock.toFixed(2) || 0}</Text>
-                                        <Text className="text-xs font-medium text-muted-foreground">b</Text>
+                                <View className="mb-4 bg-muted/10 p-3 rounded-xl border border-border/30 gap-2">
+                                    <View className="flex-row items-center justify-between">
+                                        <Text className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Main Stock</Text>
+                                        <View className="flex-row items-baseline gap-1">
+                                            <Text className="text-xl font-black text-foreground">{farmer.mainStock.toFixed(2) || 0}</Text>
+                                            <Text className="text-xs font-medium text-muted-foreground">b</Text>
+                                        </View>
                                     </View>
+                                    <StockDistributionChips
+                                        data={stockBreakdown}
+                                        isLoading={isBreakdownLoading}
+                                        onEditPress={() => setIsFeedDistributionOpen(true)}
+                                    />
                                 </View>
                                 {ledgerLoading ? (
                                     <View className="py-20 items-center justify-center">
@@ -593,37 +622,80 @@ export default function FarmerDetailScreen() {
                                 ) : ledgerData && ledgerData.length > 0 ? (
                                     renderLedgerCards ? (() => {
 
+                                        const DATE_BORDER_PALETTE = [
+                                            "border-primary/30",
+                                            "border-blue-400/30",
+                                            "border-amber-400/30",
+                                            "border-emerald-400/30",
+                                            "border-purple-400/30",
+                                        ];
                                         const entries = ledgerData.slice(0, 5);
+                                        const groups: { dateKey: string; logs: any[] }[] = [];
+                                        entries.forEach((log: any) => {
+                                            const dateKey = format(new Date(log.createdAt), "yyyy-MM-dd");
+                                            const lastGroup = groups[groups.length - 1];
+                                            if (lastGroup && lastGroup.dateKey === dateKey) {
+                                                lastGroup.logs.push(log);
+                                            } else {
+                                                groups.push({ dateKey, logs: [log] });
+                                            }
+                                        });
+
                                         return (
                                             <>
-                                                {entries.map((log: any) => {
-                                                    const amt = parseFloat(log.amount);
-                                                    const isPositive = amt > 0;
-                                                    return (
-                                                        <Card key={log.id} className="mb-2 border border-border/50 bg-card overflow-hidden">
-                                                            <CardContent className="p-0">
-                                                                <View className="flex-row items-center">
-                                                                    {/* Left color strip */}
-                                                                    <View className={`w-1 self-stretch ${isPositive ? 'bg-emerald-500' : 'bg-orange-500'}`} />
-                                                                    <View className="flex-1 p-3">
-                                                                        <View className="flex-row justify-between items-start">
-                                                                            <View className="flex-1">
-                                                                                <Text className="font-bold text-foreground text-sm">{log.type}</Text>
-                                                                                <Text className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(log.createdAt), "MMM d, yyyy")}</Text>
-                                                                                {log.note ? <Text className="text-[10px] text-muted-foreground/70 mt-0.5" numberOfLines={1}>{log.note}</Text> : null}
-                                                                            </View>
-                                                                            <View className="items-end">
-                                                                                <Text className={`font-black text-sm ${isPositive ? 'text-emerald-500' : 'text-orange-500'}`}>
-                                                                                    {isPositive ? '+' : ''}{amt.toFixed(1)} b
-                                                                                </Text>
+                                                {groups.map((group, groupIndex) => (
+                                                    <View
+                                                        key={group.dateKey}
+                                                        className={`mb-3 rounded-2xl border-2 overflow-hidden ${DATE_BORDER_PALETTE[groupIndex % DATE_BORDER_PALETTE.length]}`}
+                                                    >
+                                                        <View className="px-3 py-1.5 bg-muted/20">
+                                                            <Text className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
+                                                                {format(new Date(group.logs[0].createdAt), "dd MMM yyyy")}
+                                                            </Text>
+                                                        </View>
+                                                        {group.logs.map((log: any) => {
+                                                            const amt = parseFloat(log.amount);
+                                                            const isPositive = amt > 0;
+                                                            return (
+                                                                <Card key={log.id} className="border-0 border-t border-border/10 rounded-none bg-card overflow-hidden">
+                                                                    <CardContent className="p-0">
+                                                                        <View className="flex-row items-center">
+                                                                            {/* Left color strip */}
+                                                                            <View className={`w-1 self-stretch ${isPositive ? 'bg-emerald-500' : 'bg-orange-500'}`} />
+                                                                            <View className="flex-1 p-3">
+                                                                                <View className="flex-row justify-between items-start">
+                                                                                    <View className="flex-1">
+                                                                                        <View className="flex-row items-center gap-1.5">
+                                                                                            <Text className="font-bold text-foreground text-sm">{log.type}</Text>
+                                                                                            {log.feedType && (
+                                                                                                <View className="bg-primary/10 px-1.5 py-0.5 rounded">
+                                                                                                    <Text className="text-[9px] font-black text-primary uppercase">{log.feedType}</Text>
+                                                                                                </View>
+                                                                                            )}
+                                                                                        </View>
+                                                                                        {log.note ? <Text className="text-[10px] text-muted-foreground/70 mt-0.5" numberOfLines={1}>{log.note}</Text> : null}
+                                                                                    </View>
+                                                                                    <View className="items-end gap-1">
+                                                                                        <Text className={`font-black text-sm ${isPositive ? 'text-emerald-500' : 'text-orange-500'}`}>
+                                                                                            {isPositive ? '+' : ''}{amt.toFixed(1)} b
+                                                                                        </Text>
+                                                                                        <Pressable
+                                                                                            onPress={() => setEditingFeedTypeLog(log)}
+                                                                                            hitSlop={8}
+                                                                                            className="p-1"
+                                                                                        >
+                                                                                            <Icon as={Tag} size={12} className="text-blue-500" />
+                                                                                        </Pressable>
+                                                                                    </View>
+                                                                                </View>
                                                                             </View>
                                                                         </View>
-                                                                    </View>
-                                                                </View>
-                                                            </CardContent>
-                                                        </Card>
-                                                    );
-                                                })}
+                                                                    </CardContent>
+                                                                </Card>
+                                                            );
+                                                        })}
+                                                    </View>
+                                                ))}
                                                 <Button variant="outline" className="mt-2 h-10 border-border/50" onPress={() => router.push(`/farmer/${farmer.id}/ledger` as any)}>
                                                     <Text className="text-foreground font-bold">View Full Ledger</Text>
                                                 </Button>
@@ -749,6 +821,22 @@ export default function FarmerDetailScreen() {
                     utils.officer.stock.getAllFarmersStock.invalidate();
                     utils.management.stock.getAllFarmersStock.invalidate();
                 }}
+            />
+
+            <FeedDistributionModal
+                farmerId={farmer.id}
+                orgId={membership?.orgId}
+                open={isFeedDistributionOpen}
+                onOpenChange={setIsFeedDistributionOpen}
+                onSuccess={refetchAll}
+            />
+
+            <EditFeedTypeModal
+                log={editingFeedTypeLog}
+                orgId={membership?.orgId}
+                open={!!editingFeedTypeLog}
+                onOpenChange={(open) => !open && setEditingFeedTypeLog(null)}
+                onSuccess={refetchAll}
             />
 
             {/* Cycle-level Modals */}

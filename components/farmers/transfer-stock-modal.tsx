@@ -6,19 +6,16 @@ import { Text } from "@/components/ui/text";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, CheckCircle2, ChevronDown, Package, Search, User, X } from "lucide-react-native";
+import { ArrowRight, CheckCircle2, ChevronDown, Package, PackageX, Search, User, X } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
 import { toast } from "sonner-native";
 import { z } from "zod";
 
 const transferStockSchema = z.object({
     targetFarmerId: z.string().min(1, "Target farmer is required"),
-    amount: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
-        message: "Amount must be a positive number",
-    }),
     note: z.string().optional(),
 });
 
@@ -33,28 +30,32 @@ interface TransferStockModalProps {
     onSuccess?: () => void;
 }
 
+const UNSPECIFIED = "__UNSPECIFIED__";
+
 export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceFarmerName, availableStock, onSuccess }: TransferStockModalProps) => {
     const utils = trpc.useUtils();
     const { colorScheme } = useColorScheme();
     const [searchTerm, setSearchTerm] = useState("");
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [quantities, setQuantities] = useState<Record<string, string>>({});
 
     const { control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<TransferStockFormValues>({
         resolver: zodResolver(transferStockSchema) as any,
         defaultValues: {
             targetFarmerId: "",
-            amount: "",
             note: "",
         },
     });
 
-    const amountRef = useRef<TextInput>(null);
     const noteRef = useRef<TextInput>(null);
 
     const targetFarmerId = watch("targetFarmerId");
-    const amountValue = watch("amount");
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";
+
+    useEffect(() => {
+        if (open) setQuantities({});
+    }, [open]);
 
     // Fetch farmers for selection
     const farmersProcedure = isManagement ? trpc.management.farmers.getMany : trpc.officer.farmers.getMany;
@@ -66,6 +67,22 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
     }, {
         enabled: open && !!membership?.orgId
     });
+
+    // Source farmer's stock by feed type — the list of types available to send
+    const breakdownProcedure = isManagement ? trpc.management.stock.getStockBreakdown : trpc.officer.stock.getStockBreakdown;
+    const { data: breakdown, isLoading: isBreakdownLoading } = (breakdownProcedure as any).useQuery(
+        { farmerId: sourceFarmerId, orgId: membership?.orgId },
+        { enabled: open && !!sourceFarmerId }
+    );
+
+    const typeOptions = useMemo(() => [
+        ...((breakdown?.byType ?? []) as { feedType: string; amount: number }[])
+            .filter(t => t.amount > 0.001)
+            .map(t => ({ key: t.feedType, label: t.feedType, amount: t.amount })),
+        ...(Number(breakdown?.unspecified ?? 0) > 0.001
+            ? [{ key: UNSPECIFIED, label: "Unspecified", amount: Number(breakdown!.unspecified) }]
+            : []),
+    ], [breakdown]);
 
     // Filter and Memoize available farmers
     const availableFarmers = useMemo(() => {
@@ -86,9 +103,16 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
             toast.success("Stock transferred successfully");
             utils.officer.farmers.getDetails.invalidate({ farmerId: sourceFarmerId });
             utils.officer.stock.getHistory.invalidate({ farmerId: sourceFarmerId });
+            utils.officer.stock.getStockBreakdown.invalidate({ farmerId: sourceFarmerId });
             utils.management.farmers.getDetails.invalidate({ farmerId: sourceFarmerId });
             utils.management.stock.getHistory.invalidate({ farmerId: sourceFarmerId });
+            utils.management.stock.getStockBreakdown.invalidate({ farmerId: sourceFarmerId });
+            if (targetFarmerId) {
+                utils.officer.stock.getStockBreakdown.invalidate({ farmerId: targetFarmerId });
+                utils.management.stock.getStockBreakdown.invalidate({ farmerId: targetFarmerId });
+            }
             reset();
+            setQuantities({});
             setSearchTerm("");
             setIsDropdownOpen(false);
             onSuccess?.();
@@ -99,23 +123,40 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
         },
     });
 
+    const handleQuantityChange = (key: string, value: string, max: number) => {
+        if (!/^\d*\.?\d*$/.test(value)) return;
+        const num = parseFloat(value);
+        // Floor (never round up) so the enforced cap never exceeds what's actually available —
+        // rounding to nearest could let e.g. 0.08 become an offered/allowed 0.1.
+        const safeMax = Math.floor(max * 100) / 100;
+        if (!isNaN(num) && num > safeMax) {
+            setQuantities(prev => ({ ...prev, [key]: String(safeMax) }));
+            return;
+        }
+        setQuantities(prev => ({ ...prev, [key]: value }));
+    };
+
+    const totalRequested = typeOptions.reduce((s, t) => s + (Number(quantities[t.key]) || 0), 0);
+    const hasValidFeed = totalRequested > 0;
+
     const onSubmit = (data: TransferStockFormValues) => {
-        const amountNum = parseFloat(data.amount);
-        if (amountNum > availableStock) {
-            toast.error(`Cannot transfer more than available stock (${availableStock.toFixed(2)} bags)`);
+        const validFeeds = typeOptions
+            .filter(t => (Number(quantities[t.key]) || 0) > 0)
+            .map(t => ({ type: t.key === UNSPECIFIED ? undefined : t.key, quantity: Number(quantities[t.key]) }));
+
+        if (validFeeds.length === 0) {
+            toast.error("Enter at least one feed quantity to transfer");
             return;
         }
 
         mutation.mutate({
             sourceFarmerId,
             targetFarmerId: data.targetFarmerId,
-            amount: parseFloat(data.amount),
+            feeds: validFeeds,
             note: data.note,
             orgId: isManagement ? membership?.orgId : undefined
         });
     };
-
-    const isOverLimit = amountValue && !isNaN(parseFloat(amountValue)) && parseFloat(amountValue) > availableStock;
 
     return (
         <BottomSheetModal open={open} onOpenChange={onOpenChange}>
@@ -150,7 +191,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                     {/* Available stock badge */}
                     <View className="flex-row items-center gap-2 mt-3 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
                         <Icon as={Package} size={14} className="text-amber-600" />
-                        <Text className="text-xs font-bold text-amber-700">Available: {availableStock} bags</Text>
+                        <Text className="text-xs font-bold text-amber-700">Available: {Number(availableStock).toFixed(2)} bags</Text>
                     </View>
                 </View>
 
@@ -196,7 +237,6 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                                             className="flex-1 h-10 border-0 bg-transparent text-sm p-0"
                                             autoFocus
                                             returnKeyType="next"
-                                            onSubmitEditing={() => amountRef.current?.focus()}
                                         />
                                     </View>
                                 </View>
@@ -253,38 +293,72 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                         )}
                     </View>
 
-                    {/* Section 2: Amount */}
+                    {/* Section 2: Feed Types & Quantities — pick from what's actually in stock */}
                     <View>
                         <View className="flex-row items-center justify-between mb-2 ml-1">
-                            <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Amount (Bags)</Text>
-                            <Text className={`text-[10px] font-black uppercase ${isOverLimit ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                Max: {availableStock}
-                            </Text>
+                            <Text className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">How Many Bags of Each Type?</Text>
                         </View>
-                        <Controller
-                            control={control}
-                            name="amount"
-                            render={({ field: { onChange, value } }) => (
-                                <View className={`flex-row items-center bg-card border-2 rounded-2xl px-4 h-14 ${errors.amount || isOverLimit ? 'border-destructive' : 'border-border'}`}>
-                                    <Icon as={Package} size={18} className="text-muted-foreground mr-3" />
-                                    <Input
-                                        ref={amountRef}
-                                        placeholder="Enter amount..."
-                                        value={value}
-                                        onChangeText={onChange}
-                                        keyboardType="numeric"
-                                        className="flex-1 h-12 border-0 bg-transparent text-lg font-bold p-0"
-                                        returnKeyType="next"
-                                        onSubmitEditing={() => noteRef.current?.focus()}
-                                    />
-                                </View>
-                            )}
-                        />
-                        {errors.amount && (
-                            <Text className="text-destructive text-xs ml-1 mt-1.5 font-medium">{errors.amount?.message as string}</Text>
+
+                        {isBreakdownLoading ? (
+                            <View className="py-10 items-center justify-center bg-card border-2 border-border/50 rounded-2xl">
+                                <ActivityIndicator />
+                            </View>
+                        ) : typeOptions.length === 0 ? (
+                            <View className="py-8 items-center gap-2 bg-muted/10 rounded-2xl border-2 border-dashed border-border/40">
+                                <Icon as={PackageX} size={22} className="text-muted-foreground/60" />
+                                <Text className="text-sm text-muted-foreground text-center px-4 font-medium">
+                                    No stock available to transfer.
+                                </Text>
+                            </View>
+                        ) : (
+                            <View className="gap-2.5">
+                                {typeOptions.map(t => {
+                                    const isUnspecified = t.key === UNSPECIFIED;
+                                    const qty = quantities[t.key] ?? "";
+                                    const isActive = (Number(qty) || 0) > 0;
+                                    return (
+                                        <View
+                                            key={t.key}
+                                            className={`flex-row items-center justify-between px-4 py-3 rounded-2xl border-2 ${isActive
+                                                ? 'bg-blue-500/10 border-blue-500'
+                                                : 'bg-card border-border'
+                                                }`}
+                                        >
+                                            <View className="flex-row items-center gap-3 flex-1">
+                                                <View className={`w-8 h-8 rounded-full items-center justify-center ${isActive
+                                                    ? 'bg-blue-500'
+                                                    : isUnspecified ? 'bg-amber-500/15' : 'bg-muted/60'
+                                                    }`}>
+                                                    <Text className={`text-xs font-black ${isActive ? 'text-white' : isUnspecified ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                                                        {t.label.charAt(0).toUpperCase()}
+                                                    </Text>
+                                                </View>
+                                                <View className="flex-1">
+                                                    <Text className={`text-sm font-bold ${isActive ? 'text-blue-600' : isUnspecified ? 'text-amber-600' : 'text-foreground'}`}>
+                                                        {t.label}
+                                                    </Text>
+                                                    <Text className="text-[10px] text-muted-foreground font-medium">
+                                                        {t.amount.toFixed(2)} bags available
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <Input
+                                                className="w-20 h-11 bg-background border-border/50 text-base font-mono text-center"
+                                                placeholder="0"
+                                                keyboardType="decimal-pad"
+                                                value={qty}
+                                                onChangeText={(val) => handleQuantityChange(t.key, val, t.amount)}
+                                            />
+                                        </View>
+                                    );
+                                })}
+                            </View>
                         )}
-                        {!errors.amount && isOverLimit && (
-                            <Text className="text-destructive text-xs ml-1 mt-1.5 font-medium">Cannot exceed available stock ({availableStock} bags)</Text>
+
+                        {typeOptions.length > 0 && (
+                            <Text className="text-xs font-bold ml-1 mt-2.5 text-muted-foreground">
+                                Total: {totalRequested.toFixed(2)} of {Number(availableStock).toFixed(2)} bags
+                            </Text>
                         )}
                     </View>
 
@@ -324,7 +398,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                         <Button
                             className="flex-1 h-14 bg-blue-600 rounded-2xl shadow-none"
                             onPress={handleSubmit(onSubmit)}
-                            disabled={mutation.isPending || !!isOverLimit}
+                            disabled={mutation.isPending || !hasValidFeed}
                         >
                             <Text className="text-white font-black text-base">
                                 {mutation.isPending ? "Transferring..." : "Transfer"}

@@ -289,7 +289,7 @@ export function CycleModal({
                                                             <Text className={`font-medium ${farmerId === f.id ? 'text-primary' : 'text-foreground'}`}>
                                                                 {f.name}
                                                             </Text>
-                                                            <Text className="text-xs text-muted-foreground">Stock: {f.mainStock}</Text>
+                                                            <Text className="text-xs text-muted-foreground">Stock: {Number(f.mainStock).toFixed(1)}</Text>
                                                         </View>
                                                         {farmerId === f.id && (
                                                             <Icon as={Check} size={16} className="text-primary" />

@@ -4,9 +4,10 @@ import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { Wheat, X } from "lucide-react-native";
+import { Plus, Trash2, Wheat, X } from "lucide-react-native";
 import { useRef, useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
+import { Pressable, ScrollView, TextInput, View } from "react-native";
+import { FeedTypeInput } from "./feed-type-input";
 
 interface RestockModalProps {
     farmerId: string;
@@ -16,6 +17,13 @@ interface RestockModalProps {
     onSuccess?: () => void;
 }
 
+interface FeedRow {
+    type: string;
+    quantity: string;
+}
+
+const emptyFeed = (): FeedRow => ({ type: "", quantity: "" });
+
 export function RestockModal({
     farmerId,
     farmerName,
@@ -23,11 +31,10 @@ export function RestockModal({
     onOpenChange,
     onSuccess,
 }: RestockModalProps) {
-    const [amount, setAmount] = useState("");
+    const [feeds, setFeeds] = useState<FeedRow[]>([emptyFeed()]);
     const [note, setNote] = useState("");
     const [error, setError] = useState<string | null>(null);
 
-    const amountRef = useRef<TextInput>(null);
     const noteRef = useRef<TextInput>(null);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -37,7 +44,7 @@ export function RestockModal({
     const mutation = (addStockProcedure as any).useMutation({
         onSuccess: () => {
             onOpenChange(false);
-            setAmount("");
+            setFeeds([emptyFeed()]);
             setNote("");
             onSuccess?.();
         },
@@ -46,16 +53,35 @@ export function RestockModal({
         },
     });
 
+    const handleUpdateFeed = (index: number, field: 'type' | 'quantity', value: string) => {
+        setFeeds(prev => prev.map((f, i) => i === index ? { ...f, [field]: value } : f));
+    };
+
+    const handleAddFeedRow = () => setFeeds(prev => [...prev, emptyFeed()]);
+
+    const handleRemoveFeedRow = (index: number) => {
+        setFeeds(prev => {
+            const next = [...prev];
+            next.splice(index, 1);
+            return next.length ? next : [emptyFeed()];
+        });
+    };
+
+    const totalBags = feeds.reduce((sum, f) => sum + (Number(f.quantity) || 0), 0);
+
     const handleSubmit = () => {
-        const numAmount = parseFloat(amount);
-        if (isNaN(numAmount) || numAmount <= 0) {
-            setError("Please enter a valid amount");
+        const validFeeds = feeds
+            .filter(f => (Number(f.quantity) || 0) > 0)
+            .map(f => ({ type: f.type.trim() || undefined, quantity: Number(f.quantity) }));
+
+        if (validFeeds.length === 0) {
+            setError("Please enter at least one valid quantity");
             return;
         }
         setError(null);
         mutation.mutate({
             farmerId,
-            amount: numAmount,
+            feeds: validFeeds,
             note: note || "Manual Restock",
             orgId: isManagement ? membership?.orgId : undefined
         });
@@ -83,19 +109,50 @@ export function RestockModal({
                 </View>
 
                 {/* Form */}
-                <View className="p-6 space-y-4">
-                    <View className="gap-2">
-                        <Text className="text-sm font-bold text-foreground ml-1">Number of Bags</Text>
-                        <Input
-                            ref={amountRef}
-                            placeholder="0.00"
-                            keyboardType="numeric"
-                            value={amount}
-                            onChangeText={setAmount}
-                            className="h-12 bg-muted/30 border-border/50 text-lg font-mono"
-                            returnKeyType="next"
-                            onSubmitEditing={() => noteRef.current?.focus()}
-                        />
+                <View className="p-6 gap-4">
+                    <View className="gap-3">
+                        <View className="flex-row gap-2 px-1">
+                            <Text className="flex-1 text-xs text-muted-foreground uppercase font-bold tracking-widest">Feed Type (Optional)</Text>
+                            <Text className="w-24 text-xs text-muted-foreground uppercase font-bold tracking-widest">Bags</Text>
+                            <View className="w-8" />
+                        </View>
+
+                        {feeds.map((feed, index) => (
+                            <View key={index} className="flex-row gap-2 items-start">
+                                <View className="flex-1">
+                                    <FeedTypeInput
+                                        value={feed.type}
+                                        onChangeText={(val) => handleUpdateFeed(index, 'type', val)}
+                                        orgId={membership?.orgId}
+                                        className="h-12 bg-muted/30 border-border/50"
+                                    />
+                                </View>
+                                <Input
+                                    className="w-24 h-12 bg-muted/30 border-border/50 text-lg font-mono"
+                                    placeholder="0"
+                                    keyboardType="numeric"
+                                    value={feed.quantity}
+                                    onChangeText={(val) => handleUpdateFeed(index, 'quantity', val)}
+                                />
+                                {feeds.length > 1 && (
+                                    <Pressable
+                                        onPress={() => handleRemoveFeedRow(index)}
+                                        className="w-8 h-12 items-center justify-center rounded-lg bg-destructive/10 active:bg-destructive/20"
+                                    >
+                                        <Icon as={Trash2} size={16} className="text-destructive" />
+                                    </Pressable>
+                                )}
+                            </View>
+                        ))}
+
+                        <Pressable onPress={handleAddFeedRow} className="flex-row items-center gap-1.5 self-start">
+                            <Icon as={Plus} size={14} className="text-primary" />
+                            <Text className="text-xs font-bold text-primary">Add Feed Type</Text>
+                        </Pressable>
+
+                        {feeds.length > 1 && (
+                            <Text className="text-xs font-bold text-muted-foreground ml-1">Total: {totalBags.toFixed(1)} bags</Text>
+                        )}
                     </View>
 
                     <View className="gap-2">
@@ -106,7 +163,7 @@ export function RestockModal({
                             value={note}
                             onChangeText={setNote}
                             className="h-12 bg-muted/30 border-border/50"
-                            returnKeyType="next"
+                            returnKeyType="done"
                             onSubmitEditing={handleSubmit}
                         />
                     </View>

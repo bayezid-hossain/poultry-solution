@@ -119,10 +119,7 @@ export const SellModal = ({
                 { type: "B1", bags: intake || 0 },
                 { type: "B2", bags: 0 }
             ],
-            feedStock: [
-                { type: "B1", bags: 0 },
-                { type: "B2", bags: 0 }
-            ],
+            feedStock: [],
             medicineCost: 0,
             recoveryPrice: undefined,
             feedPricePerBag: undefined,
@@ -153,6 +150,13 @@ export const SellModal = ({
         { enabled: open }
     );
     const lastSale = previousSales?.[0];
+
+    // Real current stock by feed type — corrects "remaining stock" instead of guessing from a
+    // delta against a previous sale's manually-entered values, and shown as a read-only reference.
+    const { data: stockBreakdown, isLoading: isBreakdownLoading } = trpc.officer.stock.getStockBreakdown.useQuery(
+        { farmerId },
+        { enabled: open }
+    );
 
     const [step, setStep] = useState<"form" | "preview">("form");
     const [previewData, setPreviewData] = useState<any>(null);
@@ -190,7 +194,7 @@ export const SellModal = ({
 
     // Initialize form with defaults ONLY ONCE when data is ready
     useEffect(() => {
-        if (open && !isPreviousSalesLoading && !hasInitializedRef.current) {
+        if (open && !isPreviousSalesLoading && !isBreakdownLoading && !hasInitializedRef.current) {
             hasInitializedRef.current = true;
             const currentRemainingBirds = doc - mortality - birdsSold;
 
@@ -200,11 +204,21 @@ export const SellModal = ({
                 { type: "B2", bags: 0 }
             ];
 
-            // Auto-fill feed from previous sale if available, otherwise use default
-            const defaultFeedStock = lastSale?.feedStock ? (typeof lastSale.feedStock === 'string' ? JSON.parse(lastSale.feedStock) : lastSale.feedStock) as any : [
-                { type: "B1", bags: 0 },
-                { type: "B2", bags: 0 }
-            ];
+            // Remaining stock by type = real current balance net of the default consumed guess
+            // above, so the initial state is already consistent with what handleFeedAdjustment
+            // would produce — otherwise the insufficient-stock check double-counts the default
+            // consumed amount against the untouched full balance until the officer edits a field.
+            const netBalances = new Map<string, number>(
+                (stockBreakdown?.byType ?? []).map((t: any) => [(t.feedType || "").toUpperCase().trim(), Number(t.amount)])
+            );
+            defaultFeedConsumed.forEach((c: any) => {
+                const key = (c.type || "").toUpperCase().trim();
+                if (!key) return;
+                netBalances.set(key, (netBalances.get(key) ?? 0) - (Number(c.bags) || 0));
+            });
+            const defaultFeedStock = Array.from(netBalances.entries())
+                .filter(([, bags]) => bags > 0.0001)
+                .map(([type, bags]) => ({ type, bags: parseFloat(bags.toFixed(2)) }));
 
             form.reset({
                 saleDate: format(new Date(), "yyyy-MM-dd"),
@@ -227,7 +241,7 @@ export const SellModal = ({
                 officialInputDate: officialInputDate ? format(new Date(officialInputDate), "yyyy-MM-dd") : (startDate ? format(new Date(startDate), "yyyy-MM-dd") : undefined),
             });
         }
-    }, [open, isPreviousSalesLoading, lastSale, doc, mortality, birdsSold, intake, farmerLocation, farmerMobile, form, officialInputDate, startDate]);
+    }, [open, isPreviousSalesLoading, isBreakdownLoading, lastSale, stockBreakdown, doc, mortality, birdsSold, intake, farmerLocation, farmerMobile, form, officialInputDate, startDate]);
 
     const feedConsumedArray = useFieldArray({
         control: form.control,
@@ -402,31 +416,31 @@ export const SellModal = ({
         const currentType = (form.getValues(`feedConsumed.${index}.type`) || "").toUpperCase().trim();
         if (!currentType) return;
 
-        // Use previous sale's data as baseline, or fall back to defaults
-        const baselineConsumed = lastSale?.feedConsumed
-            ? (typeof lastSale.feedConsumed === 'string' ? JSON.parse(lastSale.feedConsumed) : lastSale.feedConsumed) as { type: string; bags: number }[]
-            : [{ type: "B1", bags: intake || 0 }, { type: "B2", bags: 0 }];
-        const baselineStock = lastSale?.feedStock
-            ? (typeof lastSale.feedStock === 'string' ? JSON.parse(lastSale.feedStock) : lastSale.feedStock) as { type: string; bags: number }[]
-            : [{ type: "B1", bags: 0 }, { type: "B2", bags: 0 }];
-
-        // Find baseline consumption for this type
-        const baseline = baselineConsumed.find(b => (b.type || "").toUpperCase().trim() === currentType);
-        const baselineBags = Number(baseline?.bags || 0);
-        const consumedDelta = newBags - baselineBags;
+        // Remaining stock = real current balance for this type minus what's being consumed now —
+        // not a delta guessed against a previous sale's manually-entered values.
+        const realBalance = Number(
+            stockBreakdown?.byType.find((t: any) => (t.feedType || "").toUpperCase().trim() === currentType)?.amount ?? 0
+        );
+        const newStockBags = parseFloat(Math.max(0, realBalance - newBags).toFixed(2));
 
         const currentStock = [...form.getValues("feedStock")];
         const stockIndex = currentStock.findIndex(s => (s.type || "").toUpperCase().trim() === currentType);
 
-        if (stockIndex > -1) {
-            const bStock = baselineStock.find(bs => (bs.type || "").toUpperCase().trim() === currentType);
-            const baselineStockBags = Number(bStock?.bags || 0);
-            const newStockBags = parseFloat(Math.max(0, baselineStockBags - consumedDelta).toFixed(2));
+        if (newStockBags <= 0.0001) {
+            if (stockIndex > -1) {
+                currentStock.splice(stockIndex, 1);
+                form.setValue("feedStock", currentStock, { shouldValidate: true, shouldDirty: true });
+            }
+            return;
+        }
 
+        if (stockIndex > -1) {
             if (Number(currentStock[stockIndex].bags) !== newStockBags) {
                 currentStock[stockIndex] = { ...currentStock[stockIndex], bags: newStockBags };
                 form.setValue("feedStock", currentStock, { shouldValidate: true, shouldDirty: true });
             }
+        } else {
+            form.setValue("feedStock", [...currentStock, { type: currentType, bags: newStockBags }], { shouldValidate: true, shouldDirty: true });
         }
     };
 
@@ -434,7 +448,10 @@ export const SellModal = ({
     const totalBagsNeeded = form.watch("feedConsumed").reduce((acc, item) => acc + (item.bags || 0), 0) +
         form.watch("feedStock").reduce((acc, item) => acc + (item.bags || 0), 0);
 
-    const isStockInsufficient = totalBagsNeeded > mainStock;
+    // Don't flag insufficient stock until real data has actually loaded — otherwise mainStock's
+    // `|| 0` loading-state fallback combined with the form's placeholder defaults falsely trips
+    // this on first render, and it only "goes away" once the farmer/breakdown queries resolve.
+    const isStockInsufficient = !!farmer && hasInitializedRef.current && totalBagsNeeded > mainStock;
     const [showRestockModal, setShowRestockModal] = useState(false);
 
     // Form errors checking helper
@@ -896,6 +913,21 @@ export const SellModal = ({
                                             <Text className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Feed Inventory</Text>
                                         </View>
 
+                                        {(() => {
+                                            const currentStockTypes = (stockBreakdown?.byType ?? []).filter((t: any) => Number(t.amount) > 0);
+                                            if (currentStockTypes.length === 0) return null;
+                                            return (
+                                                <View className="flex-row flex-wrap gap-1.5 ml-1 mb-1">
+                                                    <Text className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider w-full mb-0.5">Current Stock On Hand</Text>
+                                                    {currentStockTypes.map((t: any) => (
+                                                        <View key={t.feedType} className="bg-muted/50 px-2 py-1 rounded-md border border-border/40">
+                                                            <Text className="text-[10px] font-bold text-foreground">{t.feedType} · {Number(t.amount).toFixed(1)}</Text>
+                                                        </View>
+                                                    ))}
+                                                </View>
+                                            );
+                                        })()}
+
                                         {remainingBirdsAfterTransaction === 0 && (
                                             <View className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-2">
                                                 <Text className="text-sm font-bold text-destructive mb-1">Cycle Closing Warning!</Text>
@@ -1002,7 +1034,7 @@ export const SellModal = ({
                                                 <Text className="text-sm font-bold text-amber-700 dark:text-amber-400">Insufficient Stock</Text>
                                             </View>
                                             <Text className="text-xs text-amber-700/80 dark:text-amber-500/80">
-                                                Trying to use {totalBagsNeeded} bags, but main stock only has {mainStock} bags.
+                                                Trying to use {Number(totalBagsNeeded).toFixed(1)} bags, but main stock only has {Number(mainStock).toFixed(1)} bags.
                                             </Text>
                                             <Button
                                                 variant="outline"

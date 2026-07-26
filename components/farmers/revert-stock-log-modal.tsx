@@ -67,7 +67,7 @@ export function RevertStockLogModal({
                     <View className="bg-muted/30 p-4 rounded-2xl border border-border/50 mb-6">
                         <View className="flex-row justify-between items-center mb-2">
                             <Text className="text-xs font-bold text-muted-foreground uppercase">Original Amount</Text>
-                            <Text className="font-mono font-bold text-foreground">{log.amount} Bags</Text>
+                            <Text className="font-mono font-bold text-foreground">{Number(log.amount).toFixed(1)} Bags</Text>
                         </View>
                         <Text className="text-xs text-muted-foreground italic" numberOfLines={2}>
                             {log.note || "No notes provided"}

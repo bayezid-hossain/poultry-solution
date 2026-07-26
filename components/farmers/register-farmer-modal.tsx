@@ -12,10 +12,12 @@ import { Controller, useForm } from "react-hook-form";
 import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
 import { toast } from "sonner-native";
 import { z } from "zod";
+import { FeedTypeInput } from "./feed-type-input";
 
 const createFarmerSchema = z.object({
     name: z.string().min(2, { message: "Name must be at least 2 characters." }),
     initialStock: z.string().regex(/^\d*\.?\d*$/, { message: "Must be a valid number" }),
+    initialStockFeedType: z.string().optional(),
     location: z.string().max(200).optional().or(z.literal("")),
     mobile: z.string().regex(/^(?:\+?88)?01[3-9]\d{8}$/, "Invalid mobile number").optional().or(z.literal(""))
 });
@@ -37,6 +39,7 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
         defaultValues: {
             name: "",
             initialStock: "0",
+            initialStockFeedType: "",
             location: "",
             mobile: ""
         },
@@ -71,6 +74,7 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
         createMutation.mutate({
             name: values.name,
             initialStock: stock,
+            initialStockFeedType: values.initialStockFeedType?.trim() || undefined,
             orgId: membership.orgId,
             location,
             mobile,
@@ -176,6 +180,22 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
                         />
                         {errors.initialStock && <Text className="text-[10px] text-destructive mt-1 ml-1">{errors.initialStock.message}</Text>}
                         <Text className="text-[10px] text-muted-foreground mt-1.5 ml-1 italic">Assign initial bags to the warehouse.</Text>
+                    </View>
+
+                    <View>
+                        <Text className="text-sm font-bold text-foreground mb-1.5 ml-1">Feed Type (Optional)</Text>
+                        <Controller
+                            control={control}
+                            name="initialStockFeedType"
+                            render={({ field: { onChange, value } }) => (
+                                <FeedTypeInput
+                                    value={value || ""}
+                                    onChangeText={onChange}
+                                    orgId={membership?.orgId}
+                                    className="bg-muted/30 h-12 px-4 rounded-xl border border-border/50"
+                                />
+                            )}
+                        />
                     </View>
 
                     <Button
