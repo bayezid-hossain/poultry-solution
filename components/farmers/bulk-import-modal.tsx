@@ -250,11 +250,15 @@ export function BulkImportModal({ open, onOpenChange, orgId, onSuccess }: BulkIm
             });
 
             const rows: ParsedItem[] = (extractedData as any[]).map((item: any, index: number) => {
+                const feeds = Array.isArray(item.feeds) && item.feeds.length > 0
+                    ? item.feeds.map((f: any) => ({ type: f.type || "", quantity: String(f.amount ?? 0) }))
+                    : [{ type: "", quantity: "0" }];
+
                 return {
                     id: `row-${index}`,
                     cleanName: item.name || "Unknown",
                     rawName: item.name || "Unknown",
-                    feeds: [{ type: "", quantity: String(item.amount || 0) }],
+                    feeds,
                     matchedFarmerId: item.matchedId || null,
                     matchedName: item.matchedName || null,
                     confidence: item.confidence || "LOW",
