@@ -12,6 +12,7 @@ import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
 import { SellModal } from "@/components/cycles/sell-modal";
 import { DeleteFarmerModal } from "@/components/farmers/delete-farmer-modal";
 import { EditFarmerModal } from "@/components/farmers/edit-farmer-modal";
+import { EditFeedTypeModal } from "@/components/farmers/edit-feed-type-modal";
 import { ProblematicFeedModal } from "@/components/farmers/problematic-feed-modal";
 import { RestockModal } from "@/components/farmers/restock-modal";
 import { SecurityMoneyModal } from "@/components/farmers/security-money-modal";
@@ -28,7 +29,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { Activity, AlertCircle, Archive, ArrowLeft, ArrowRightLeft, Bird, CalendarIcon, ChevronDown, ChevronUp, History, Link, MoreVertical, Package, Pencil, Plus, Scale, ShoppingCart, Trash2, Wrench } from "lucide-react-native";
+import { Activity, AlertCircle, Archive, ArrowLeft, ArrowRightLeft, Bird, CalendarIcon, ChevronDown, ChevronUp, History, Link, MoreVertical, Package, Pencil, Plus, Scale, ShoppingCart, Tag, Trash2, Wrench } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
@@ -45,6 +46,7 @@ export default function FarmerDetailScreen() {
     const [isStartCycleOpen, setIsStartCycleOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isTransferOpen, setIsTransferOpen] = useState(false);
+    const [editingFeedTypeLog, setEditingFeedTypeLog] = useState<any | null>(null);
 
     // Accordion states
     const [activeExpanded, setActiveExpanded] = useState(true);
@@ -620,14 +622,28 @@ export default function FarmerDetailScreen() {
                                                                     <View className="flex-1 p-3">
                                                                         <View className="flex-row justify-between items-start">
                                                                             <View className="flex-1">
-                                                                                <Text className="font-bold text-foreground text-sm">{log.type}</Text>
+                                                                                <View className="flex-row items-center gap-1.5">
+                                                                                    <Text className="font-bold text-foreground text-sm">{log.type}</Text>
+                                                                                    {log.feedType && (
+                                                                                        <View className="bg-primary/10 px-1.5 py-0.5 rounded">
+                                                                                            <Text className="text-[9px] font-black text-primary uppercase">{log.feedType}</Text>
+                                                                                        </View>
+                                                                                    )}
+                                                                                </View>
                                                                                 <Text className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(log.createdAt), "MMM d, yyyy")}</Text>
                                                                                 {log.note ? <Text className="text-[10px] text-muted-foreground/70 mt-0.5" numberOfLines={1}>{log.note}</Text> : null}
                                                                             </View>
-                                                                            <View className="items-end">
+                                                                            <View className="items-end gap-1">
                                                                                 <Text className={`font-black text-sm ${isPositive ? 'text-emerald-500' : 'text-orange-500'}`}>
                                                                                     {isPositive ? '+' : ''}{amt.toFixed(1)} b
                                                                                 </Text>
+                                                                                <Pressable
+                                                                                    onPress={() => setEditingFeedTypeLog(log)}
+                                                                                    hitSlop={8}
+                                                                                    className="p-1"
+                                                                                >
+                                                                                    <Icon as={Tag} size={12} className="text-blue-500" />
+                                                                                </Pressable>
                                                                             </View>
                                                                         </View>
                                                                     </View>
@@ -760,6 +776,19 @@ export default function FarmerDetailScreen() {
                     refetchAll();
                     utils.officer.stock.getAllFarmersStock.invalidate();
                     utils.management.stock.getAllFarmersStock.invalidate();
+                }}
+            />
+
+            <EditFeedTypeModal
+                log={editingFeedTypeLog}
+                orgId={membership?.orgId}
+                open={!!editingFeedTypeLog}
+                onOpenChange={(open) => !open && setEditingFeedTypeLog(null)}
+                onSuccess={() => {
+                    utils.officer.stock.getHistory.invalidate({ farmerId: id });
+                    utils.management.stock.getHistory.invalidate({ farmerId: id });
+                    id && utils.officer.stock.getStockBreakdown.invalidate({ farmerId: id });
+                    id && utils.management.stock.getStockBreakdown.invalidate({ farmerId: id });
                 }}
             />
 
