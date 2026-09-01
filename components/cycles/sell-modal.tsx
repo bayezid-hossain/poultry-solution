@@ -133,6 +133,9 @@ export const SellModal = ({
     const locationRef = useRef<TextInput>(null);
     const partyRef = useRef<TextInput>(null);
     const birdsSoldRef = useRef<TextInput>(null);
+    // Tracks whether the officer typed the sold count themselves. Until they do, the field
+    // keeps auto-filling with every bird left in the house.
+    const birdsSoldTouchedRef = useRef(false);
     const birdsRejectedRef = useRef<TextInput>(null);
     const mortalityChangeRef = useRef<TextInput>(null);
     const totalWeightRef = useRef<TextInput>(null);
@@ -188,6 +191,7 @@ export const SellModal = ({
             setStep("form");
             setPreviewData(null);
             hasInitializedRef.current = false;
+            birdsSoldTouchedRef.current = false;
             setIsSubmitting(false);
         }
     }, [open]);
@@ -226,7 +230,10 @@ export const SellModal = ({
                 party: "",
                 farmerMobile: farmerMobile || "",
                 birdsSold: currentRemainingBirds,
-                birdsRejected: lastSale?.birdsRejected || 0,
+                // Rejected birds are recorded per sale event and are already removed from
+                // the house by the server (cycle.birdsSold includes them). Carrying the
+                // previous sale's count forward would reserve those birds a second time.
+                birdsRejected: 0,
                 mortalityChange: 0,
                 totalWeight: 0,
                 pricePerKg: 0,
@@ -383,10 +390,17 @@ export const SellModal = ({
     // Birds currently in the house before this transaction
     const birdsInHouse = doc - mortality - birdsSold;
 
-    // Auto-correction logic: bird sold + rejected + mortality cannot exceed total birds in house
+    // Auto-correction logic: bird sold + rejected + mortality cannot exceed total birds in house.
+    // While the sold count is untouched it tracks the free space exactly (so lowering rejected
+    // or mortality gives those birds back), otherwise it is only clamped down.
     useEffect(() => {
-        if (watchBirdsSold + watchBirdsRejected + mortalityChange > birdsInHouse) {
-            form.setValue("birdsSold", Math.max(0, birdsInHouse - watchBirdsRejected - mortalityChange));
+        const available = Math.max(0, birdsInHouse - watchBirdsRejected - mortalityChange);
+        if (!birdsSoldTouchedRef.current) {
+            if (watchBirdsSold !== available) {
+                form.setValue("birdsSold", available);
+            }
+        } else if (watchBirdsSold + watchBirdsRejected + mortalityChange > birdsInHouse) {
+            form.setValue("birdsSold", available);
         }
     }, [watchBirdsSold, watchBirdsRejected, mortalityChange, birdsInHouse, form]);
 
@@ -709,7 +723,10 @@ export const SellModal = ({
                                                         <Input
                                                             ref={birdsSoldRef}
                                                             value={value?.toString() || ""}
-                                                            onChangeText={(t) => onChange(parseInt(t, 10) || 0)}
+                                                            onChangeText={(t) => {
+                                                                birdsSoldTouchedRef.current = true;
+                                                                onChange(parseInt(t, 10) || 0);
+                                                            }}
                                                             keyboardType="number-pad"
                                                             className={`h-12 bg-muted/40 border-border/50 font-mono text-xl text-center ${hasError("birdsSold") ? "border-destructive/50" : ""}`}
                                                             returnKeyType="next"
