@@ -46,11 +46,13 @@ export const FarmerPickerList = ({
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
+        isError,
     } = trpc.officer.farmers.listWithStock.useInfiniteQuery(
         { orgId, pageSize, search: debouncedSearch.trim() || undefined },
         {
             enabled: enabled && !!orgId,
             getNextPageParam: (lastPage: any) => lastPage.nextCursor,
+            placeholderData: (prev: any) => prev,
         }
     );
 
@@ -102,7 +104,11 @@ export const FarmerPickerList = ({
                     ListEmptyComponent={
                         <View className="p-8 items-center">
                             <Text className="text-muted-foreground">
-                                {isSearching ? "No farmer matches that search." : "No farmers found."}
+                                {isError
+                                    ? "Couldn't load farmers. Pull to retry."
+                                    : isSearching
+                                        ? "No farmer matches that search."
+                                        : "No farmers found."}
                             </Text>
                         </View>
                     }
