@@ -259,6 +259,7 @@ export function CycleModal({
                                 <BottomSheetModal
                                     open={isFarmerOpen}
                                     onOpenChange={(v) => !v && setIsFarmerOpen(false)}
+                                    fullScreen
                                 >
                                     <View className="flex-1" style={{ maxHeight: '100%' }}>
                                         <View className="flex-row justify-between items-center p-4 border-b border-border/50">
