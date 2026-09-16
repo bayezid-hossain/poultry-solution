@@ -13,7 +13,7 @@ import { format, isThisMonth, isThisWeek, isToday } from "date-fns";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Calendar, ChevronDown, ChevronUp, FileText, Search, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Dimensions, Pressable, RefreshControl, ScrollView, SectionList, View } from "react-native";
+import { ActivityIndicator, Dimensions, Pressable, RefreshControl, ScrollView, SectionList, View } from "react-native";
 
 type DateFilter = "all" | "today" | "week" | "month";
 
@@ -41,18 +41,28 @@ export default function SalesScreen() {
         return () => clearTimeout(handler);
     }, [searchQuery]);
 
-    const officerSalesQuery = trpc.officer.sales.getRecentSales.useQuery(
-        { limit: 100, search: debouncedSearch.trim() },
-        { enabled: !!membership?.orgId && !isManagement }
+    const officerSalesQuery = trpc.officer.sales.getRecentSales.useInfiniteQuery(
+        { limit: 20, search: debouncedSearch.trim() },
+        {
+            enabled: !!membership?.orgId && !isManagement,
+            getNextPageParam: (lastPage: any) => lastPage.nextCursor,
+        }
     );
-    const mgmtSalesQuery = trpc.management.sales.getRecentSales.useQuery(
-        { orgId: membership?.orgId ?? "", limit: 100, search: debouncedSearch.trim(), officerId: selectedOfficerId || undefined },
-        { enabled: !!membership?.orgId && isManagement }
+    const mgmtSalesQuery = trpc.management.sales.getRecentSales.useInfiniteQuery(
+        { orgId: membership?.orgId ?? "", limit: 20, search: debouncedSearch.trim(), officerId: selectedOfficerId || undefined },
+        {
+            enabled: !!membership?.orgId && isManagement,
+            getNextPageParam: (lastPage: any) => lastPage.nextCursor,
+        }
     );
-    const recentSales = isManagement ? mgmtSalesQuery.data : officerSalesQuery.data;
-    const salesLoading = isManagement ? mgmtSalesQuery.isLoading : officerSalesQuery.isLoading;
-    const salesError = isManagement ? mgmtSalesQuery.error : officerSalesQuery.error;
-    const refetch = isManagement ? mgmtSalesQuery.refetch : officerSalesQuery.refetch;
+    const activeSalesQuery = isManagement ? mgmtSalesQuery : officerSalesQuery;
+    const recentSales = activeSalesQuery.data?.pages.flatMap((p: any) => p.items) ?? [];
+    const salesLoading = activeSalesQuery.isLoading;
+    const salesError = activeSalesQuery.error;
+    const refetch = activeSalesQuery.refetch;
+    const fetchNextPage = activeSalesQuery.fetchNextPage;
+    const hasNextPage = activeSalesQuery.hasNextPage;
+    const isFetchingNextPage = activeSalesQuery.isFetchingNextPage;
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
@@ -358,6 +368,19 @@ export default function SalesScreen() {
                         extraData={expandedDates}
                         keyboardShouldPersistTaps="handled"
                         contentContainerClassName="p-4 pb-20 pt-0"
+                        onEndReachedThreshold={0.4}
+                        onEndReached={() => {
+                            if (hasNextPage && !isFetchingNextPage) {
+                                fetchNextPage();
+                            }
+                        }}
+                        ListFooterComponent={
+                            isFetchingNextPage ? (
+                                <View className="py-6 items-center">
+                                    <ActivityIndicator />
+                                </View>
+                            ) : null
+                        }
 
                         refreshControl={
                             <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
@@ -462,7 +485,6 @@ export default function SalesScreen() {
                             </View>
                         }
                         SectionSeparatorComponent={() => null}
-                        ListFooterComponent={<View className="" />}
                     />
                 </>
             )}
