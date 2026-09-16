@@ -47,6 +47,7 @@ export const FarmerPickerList = ({
         hasNextPage,
         fetchNextPage,
         isError,
+        isFetching,
     } = trpc.officer.farmers.listWithStock.useInfiniteQuery(
         { orgId, pageSize, search: debouncedSearch.trim() || undefined },
         {
@@ -70,8 +71,13 @@ export const FarmerPickerList = ({
                         placeholder={placeholder}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
-                        className="pl-10 h-10"
+                        className="pl-10 pr-10 h-10"
                     />
+                    {isFetching && !isFetchingNextPage && (
+                        <View className="absolute right-3 z-10">
+                            <ActivityIndicator size="small" />
+                        </View>
+                    )}
                 </View>
             </View>
 
