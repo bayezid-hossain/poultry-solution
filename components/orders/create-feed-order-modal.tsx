@@ -1,15 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
-import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
+import { FarmerPickerList } from "@/components/farmers/farmer-picker-list";
 import { trpc } from "@/lib/trpc";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
-import { Calendar as CalendarIcon, CheckCircle2, Copy, Edit2, Factory, Plus, Search, Trash2 } from "lucide-react-native";
+import { Calendar as CalendarIcon, CheckCircle2, Copy, Edit2, Factory, Plus, Trash2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 import { BottomSheetModal } from "../ui/bottom-sheet-modal";
@@ -85,18 +85,7 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
     }, [open, initialData]);
 
     // Search State
-    const [searchQuery, setSearchQuery] = useState("");
     const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-    const { data: searchResults, isFetching: isSearching } = trpc.officer.farmers.listWithStock.useQuery(
-        {
-            orgId,
-            page: 1,
-            pageSize: 20,
-            search: searchQuery
-        },
-        { enabled: isSearchOpen }
-    );
 
     const createMutation = trpc.officer.feedOrders.create.useMutation({
         onSuccess: (data, variables) => {
@@ -305,58 +294,36 @@ export function CreateFeedOrderModal({ open, onOpenChange, orgId, onSuccess, ini
     if (isSearchOpen) {
         return (
             <BottomSheetModal open={open} onOpenChange={() => setIsSearchOpen(false)} fullScreen>
-
                 <View className="flex-1 bg-background">
                     <View className="px-4 py-4 border-b border-border/50 flex-row gap-2 items-center">
-                        <View className="flex-1 relative justify-center">
-                            <View className="absolute left-3 z-10 w-5 h-5 justify-center items-center">
-                                <Icon as={Search} size={18} className="text-muted-foreground" />
-                            </View>
-                            <Input
-                                placeholder="Search inventory to add..."
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                                className="pl-10 h-10"
-                            />
-                        </View>
+                        <Text className="flex-1 text-lg font-bold text-foreground">Add Farmers</Text>
                         <Pressable onPress={() => setIsSearchOpen(false)}>
                             <Text className="text-primary font-bold">Done</Text>
                         </Pressable>
                     </View>
 
-                    {isSearching && !searchResults ? (
-                        <View className="flex-1 items-center justify-center">
-                            <BirdyLoader size={36} />
-                            <Text className="mt-4 text-muted-foreground font-black uppercase tracking-tight text-xs">Searching farmers...</Text>
-                        </View>
-                    ) : (
-                        <FlatList
-                            data={searchResults?.items || []}
-                            keyExtractor={(item) => item.id}
-                            renderItem={({ item }) => {
-                                const isSelected = items.some(i => i.farmerId === item.id);
-                                return (
-                                    <Pressable
-                                        onPress={() => handleToggleFarmer(item)}
-                                        className="p-4 border-b border-border/50 flex-row justify-between items-center active:bg-accent"
-                                    >
-                                        <View>
-                                            <Text className="font-bold text-base">{item.name}</Text>
-                                            {item.location && <Text className="text-xs text-muted-foreground">{item.location}</Text>}
-                                        </View>
-                                        <View className={`w-6 h-6 rounded-full border ${isSelected ? 'bg-primary border-primary items-center justify-center' : 'border-muted-foreground'}`}>
-                                            {isSelected && <Icon as={CheckCircle2} size={16} className="text-white" />}
-                                        </View>
-                                    </Pressable>
-                                );
-                            }}
-                            ListEmptyComponent={
-                                <View className="p-8 items-center">
-                                    <Text className="text-muted-foreground">{isSearching ? "Loading farmers..." : "No farmers found."}</Text>
-                                </View>
-                            }
-                        />
-                    )}
+                    <FarmerPickerList
+                        orgId={orgId}
+                        enabled={isSearchOpen}
+                        placeholder="Search inventory to add..."
+                        renderRow={(item) => {
+                            const isSelected = items.some(i => i.farmerId === item.id);
+                            return (
+                                <Pressable
+                                    onPress={() => handleToggleFarmer(item as any)}
+                                    className="p-4 border-b border-border/50 flex-row justify-between items-center active:bg-accent"
+                                >
+                                    <View>
+                                        <Text className="font-bold text-base">{item.name}</Text>
+                                        {item.location && <Text className="text-xs text-muted-foreground">{item.location}</Text>}
+                                    </View>
+                                    <View className={`w-6 h-6 rounded-full border ${isSelected ? 'bg-primary border-primary items-center justify-center' : 'border-muted-foreground'}`}>
+                                        {isSelected && <Icon as={CheckCircle2} size={16} className="text-white" />}
+                                    </View>
+                                </Pressable>
+                            );
+                        }}
+                    />
                 </View>
             </BottomSheetModal>
         );
