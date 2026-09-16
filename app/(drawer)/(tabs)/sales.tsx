@@ -56,13 +56,34 @@ export default function SalesScreen() {
         }
     );
     const activeSalesQuery = isManagement ? mgmtSalesQuery : officerSalesQuery;
-    const recentSales = activeSalesQuery.data?.pages.flatMap((p: any) => p.items) ?? [];
+    const recentSales = useMemo(
+        () => activeSalesQuery.data?.pages.flatMap((p: any) => p.items) ?? [],
+        [activeSalesQuery.data]
+    );
     const salesLoading = activeSalesQuery.isLoading;
     const salesError = activeSalesQuery.error;
     const refetch = activeSalesQuery.refetch;
     const fetchNextPage = activeSalesQuery.fetchNextPage;
     const hasNextPage = activeSalesQuery.hasNextPage;
     const isFetchingNextPage = activeSalesQuery.isFetchingNextPage;
+
+    const [listViewportHeight, setListViewportHeight] = useState(0);
+    const [listContentHeight, setListContentHeight] = useState(0);
+
+    // onEndReached never fires when the content does not fill the screen -- which happens
+    // here because date groups render collapsed and the date chips can filter a page down
+    // to a few rows. Keep pulling pages until the list is scrollable or exhausted.
+    useEffect(() => {
+        if (
+            hasNextPage &&
+            !isFetchingNextPage &&
+            listViewportHeight > 0 &&
+            listContentHeight > 0 &&
+            listContentHeight <= listViewportHeight
+        ) {
+            fetchNextPage();
+        }
+    }, [hasNextPage, isFetchingNextPage, listViewportHeight, listContentHeight, fetchNextPage]);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
@@ -368,6 +389,8 @@ export default function SalesScreen() {
                         extraData={expandedDates}
                         keyboardShouldPersistTaps="handled"
                         contentContainerClassName="p-4 pb-20 pt-0"
+                        onLayout={(e) => setListViewportHeight(e.nativeEvent.layout.height)}
+                        onContentSizeChange={(_w, h) => setListContentHeight(h)}
                         onEndReachedThreshold={0.4}
                         onEndReached={() => {
                             if (hasNextPage && !isFetchingNextPage) {
