@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.59] - 2026-09-18
+
+### Added
+- Farmer picker in the feed order modal now loads every farmer as you scroll instead of stopping at the first 20
+- Cycle create screen now has a farmer search box — previously the list was capped at 100 farmers with no way to search it
+- Sales history now scrolls back through the entire record instead of stopping at the most recent 100 sales
+
+### Changed
+- Sales search now runs on the server across farmer name, buyer and location, so it finds matches anywhere in the history rather than only within the loaded sales
+
+### Fixed
+- Cycles created by confirming a DOC order now read day 0 on the day the chicks arrive, and day 1 the following day. The actual placement date is recorded on the cycle, so deaths on arrival day can still be logged
+- Rejected birds are no longer carried over from the previous sale when recording a new one — the field starts at 0, so the remaining bird count no longer gets stuck with birds that were already removed
+- Sale preview now counts rejected birds from every earlier sale, so a final sale correctly shows zero birds remaining and offers to close the cycle
+- Cycle-level rejected bird totals, survival rate and FCR/EPI now sum rejected birds across all sales instead of reading only the latest sale
+
 ## [v1.0.56] - 2026-07-08
 
 ### Added
