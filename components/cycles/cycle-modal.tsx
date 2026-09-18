@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
+import { FarmerPickerList } from "@/components/farmers/farmer-picker-list";
 import { trpc } from "@/lib/trpc";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { differenceInDays, format, startOfDay, subDays } from "date-fns";
@@ -52,12 +53,6 @@ export function CycleModal({
     const utils = trpc.useUtils();
 
     // Queries
-    const { data: farmersData, isLoading: isLoadingFarmers } = trpc.officer.farmers.listWithStock.useQuery(
-        { orgId, pageSize: 100 },
-        { enabled: open && !!orgId && !initialFarmer }
-    );
-    const farmers = farmersData?.items || [];
-
     const { data: birdTypes, isLoading: isLoadingBirdTypes } = trpc.officer.docOrders.getBirdTypes.useQuery(undefined, {
         enabled: open,
     });
@@ -256,7 +251,7 @@ export function CycleModal({
                                     className="h-14 bg-muted/30 border border-border/50 rounded-xl px-4 flex-row items-center justify-between active:bg-muted/50"
                                 >
                                     <Text className={`text-base font-medium ${farmerId ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                        {farmerName || (isLoadingFarmers ? "Loading farmers..." : "Select Farmer")}
+                                        {farmerName || "Select Farmer"}
                                     </Text>
                                     <Icon as={isFarmerOpen ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
                                 </Pressable>
@@ -264,18 +259,20 @@ export function CycleModal({
                                 <BottomSheetModal
                                     open={isFarmerOpen}
                                     onOpenChange={(v) => !v && setIsFarmerOpen(false)}
+                                    fullScreen
                                 >
-                                    <View className="p-4" style={{ maxHeight: '100%' }}>
-                                        <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-border/50">
+                                    <View className="flex-1" style={{ maxHeight: '100%' }}>
+                                        <View className="flex-row justify-between items-center p-4 border-b border-border/50">
                                             <Text className="text-xl font-bold">Select Farmer</Text>
                                             <Button variant="ghost" size="icon" onPress={() => setIsFarmerOpen(false)}>
                                                 <Icon as={X} size={20} className="text-muted-foreground" />
                                             </Button>
                                         </View>
-                                        <FlatList
-                                            data={farmers}
-                                            keyExtractor={(f) => f.id}
-                                            renderItem={({ item: f }) => (
+                                        <FarmerPickerList
+                                            orgId={orgId}
+                                            enabled={isFarmerOpen}
+                                            placeholder="Search farmers..."
+                                            renderRow={(f) => (
                                                 <Pressable
                                                     onPress={() => {
                                                         setFarmerId(f.id);
@@ -296,11 +293,6 @@ export function CycleModal({
                                                         )}
                                                     </View>
                                                 </Pressable>
-                                            )}
-                                            ListEmptyComponent={() => (
-                                                <View className="p-8 items-center">
-                                                    <Text className="text-muted-foreground">{isLoadingFarmers ? "Loading farmers..." : "No farmers found"}</Text>
-                                                </View>
                                             )}
                                         />
                                     </View>
