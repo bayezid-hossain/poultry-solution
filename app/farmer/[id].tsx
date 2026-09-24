@@ -852,7 +852,7 @@ export default function FarmerDetailScreen() {
                         cycleAge={selectedCycle.age || 0}
                         doc={selectedCycle.doc}
                         mortality={selectedCycle.mortality || 0}
-                        birdsSold={selectedCycle.birdsSold || 0}
+                        birdsSold={selectedCycle.birdsOut ?? selectedCycle.birdsSold ?? 0}
                         intake={parseFloat(String(selectedCycle.intake || 0))}
                         startDate={selectedCycle.createdAt ? new Date(selectedCycle.createdAt) : new Date()}
                         officialInputDate={selectedCycle.officialInputDate ? new Date(selectedCycle.officialInputDate) : undefined}

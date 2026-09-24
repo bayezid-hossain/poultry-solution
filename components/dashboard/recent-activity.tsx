@@ -16,6 +16,7 @@ interface RecentActivityProps {
         doc: number;
         mortality: number;
         birdsSold?: number;
+        birdsOut?: number;
     }>;
 }
 
@@ -48,7 +49,7 @@ export const RecentActivity = ({ cycles }: RecentActivityProps) => {
                         </View>
                     ) : (
                         cycles.slice(0, 5).map((cycle) => {
-                            const liveBirds = (cycle.doc || 0) - (cycle.mortality || 0) - (cycle.birdsSold || 0);
+                            const liveBirds = (cycle.doc || 0) - (cycle.mortality || 0) - (cycle.birdsOut ?? cycle.birdsSold ?? 0);
                             const mortalityRate = cycle.doc > 0 ? (((cycle.mortality || 0) / cycle.doc) * 100).toFixed(1) : "0";
                             return (
                                 <View key={cycle.id} className="flex-row items-center px-3 py-3 border-b border-border/20">

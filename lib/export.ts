@@ -1012,7 +1012,7 @@ export async function exportActiveStockExcel(activeCycles: any[], title: string,
     const summaryData = [
         { Metric: "Farmers", Value: Object.keys(groups).length },
         { Metric: "DOC", Value: activeCycles.reduce((acc, c) => acc + (c.doc || 0), 0) },
-        { Metric: "Live Birds", Value: activeCycles.reduce((acc, c) => acc + ((c.doc || 0) - (c.mortality || 0) - (c.birdsSold || 0)), 0) },
+        { Metric: "Live Birds", Value: activeCycles.reduce((acc, c) => acc + ((c.doc || 0) - (c.mortality || 0) - (c.birdsOut ?? c.birdsSold ?? 0)), 0) },
         { Metric: "Stock (bags)", Value: totalStock.toFixed(2) }
     ];
 
@@ -1097,7 +1097,7 @@ export async function exportActiveStockPDF(activeCycles: any[], title: string, r
                 <div class="kpi-label">Total DOC</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-value">${activeCycles.reduce((acc, c) => acc + ((c.doc || 0) - (c.mortality || 0) - (c.birdsSold || 0)), 0).toLocaleString()}</div>
+                <div class="kpi-value">${activeCycles.reduce((acc, c) => acc + ((c.doc || 0) - (c.mortality || 0) - (c.birdsOut ?? c.birdsSold ?? 0)), 0).toLocaleString()}</div>
                 <div class="kpi-label">Total Live Birds</div>
             </div>
             <div class="kpi-card">
