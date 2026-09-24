@@ -470,6 +470,35 @@ git commit -m "refactor(cycles): read birdsOut, keep deprecated birdsSold alias 
 
 ---
 
+### Task 5b: Keep `birdsRejected` maintained, close the alias gaps
+
+Added during execution. Task 5's review found that `cycles.birdsRejected` was written only as
+a reset to 0 — the migration backfills it once and then it goes stale the first time anyone
+records a sale with rejects. The spec specified the backfill but never the ongoing
+maintenance. Implemented in commits `040e566` and `a74253e`.
+
+**Part 1 — maintain the counter** (`trpc/routers/officer/sales.ts`). Wherever `birdsOut`
+changes, `birdsRejected` changes by the rejected component of the same delta:
+
+- Sale creation: `cycle.birdsRejected + (input.birdsRejected || 0)`.
+- Adjustment, both the `cycles` and `cycleHistory` branches:
+  `Math.max(0, X.birdsRejected + ((input.birdsRejected || 0) - previousBirdsRejected))`.
+- Version switch: `sql\`GREATEST(${cycles.birdsRejected} + ${birdsRejectedDiff}, 0)\`` where
+  `birdsRejectedDiff = (report.birdsRejected || 0) - (event.birdsRejected || 0)`.
+- Revert-all-sales and cycle reopen already zero both counters — verified, unchanged.
+
+The invariant each path must preserve: `cycles.birdsRejected` equals
+`SUM(COALESCE(sale_reports.birds_rejected, sale_events.birds_rejected))` over the cycle's
+events via `selected_report_id`.
+
+**Part 2 — alias gaps.** The deprecated `birdsSold` alias reached each endpoint's main `data`
+object but not the `combinedHistory` arrays in the three `cycles.ts` routers' detail
+endpoints, nor `management/farmers.ts` `getManagementHub`. Both spread raw DB rows and feed
+`MobileCycleCard`, which reads `cycle.birdsSold` and would have got `undefined → 0`. Alias
+added to all ten mapped objects. No UI component was touched.
+
+---
+
 ### Task 6: Fix the stored metrics
 
 **Files:**
