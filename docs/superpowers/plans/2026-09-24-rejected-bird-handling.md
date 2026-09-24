@@ -202,94 +202,136 @@ git commit -m "feat(db): rename cycle birds_sold to birds_out, add birds_rejecte
 
 ---
 
-### Task 3: Migration SQL, reviewed before it runs
+### Task 3: Write the migration DDL by hand
 
-`drizzle-kit push` cannot tell a rename from a drop-and-add. This task generates the SQL and checks it by eye.
+**These databases are managed by `drizzle-kit push`, not by migrations.** The `drizzle/`
+folder holds ten migration files, but `drizzle.__drizzle_migrations` is EMPTY — verified on
+dev. Running `drizzle-kit migrate` would treat all ten as unapplied and replay them against
+a database that already has those tables.
+
+**Never run `drizzle-kit migrate` or `drizzle-kit generate` on this project.**
+
+`drizzle-kit push` would work, but on a rename it stops and asks whether `birds_out` is a new
+column or a rename of `birds_sold`. Answering wrong drops the column and every cycle's bird
+count with it, and the prompt cannot be answered from a non-interactive shell. So the DDL is
+written by hand, and `push` is used afterwards only as a read-only confirmation.
 
 **Files:**
-- Create: `feed-reminder-up/drizzle/<generated>.sql`
+- Create: `feed-reminder-up/scripts/migrate-rejected-birds.ts`
 
-- [ ] **Step 1: Generate**
+- [ ] **Step 1: Write the migration script**
 
-Run: `npx drizzle-kit generate`
-If prompted `Is birds_out column created or renamed from another column?`, choose **`~ birds_sold › birds_out  rename column`** for both `cycles` and `cycle_history`.
+```ts
+import "dotenv/config";
+import { sql } from "drizzle-orm";
+import { db } from "../db";
 
-- [ ] **Step 2: Read the generated SQL — this is the gate**
+async function main() {
+    const before: any = await db.execute(sql`
+        SELECT COUNT(*) FILTER (WHERE birds_sold > 0) AS with_sales, COUNT(*) AS total FROM cycles
+    `);
+    const beforeRows = Array.isArray(before) ? before : before.rows;
+    console.log("before:", JSON.stringify(beforeRows));
 
-Run: `ls -t drizzle/*.sql | head -1` then open that file.
+    await db.execute(sql`
+        BEGIN;
 
-Expected to contain:
+        ALTER TABLE "cycles" RENAME COLUMN "birds_sold" TO "birds_out";
+        ALTER TABLE "cycle_history" RENAME COLUMN "birds_sold" TO "birds_out";
 
-```sql
-ALTER TABLE "cycles" RENAME COLUMN "birds_sold" TO "birds_out";
-ALTER TABLE "cycle_history" RENAME COLUMN "birds_sold" TO "birds_out";
-ALTER TABLE "cycles" ADD COLUMN "birds_rejected" integer DEFAULT 0 NOT NULL;
-ALTER TABLE "cycle_history" ADD COLUMN "birds_rejected" integer DEFAULT 0 NOT NULL;
-ALTER TABLE "sale_metrics" ADD COLUMN "total_birds_rejected" integer DEFAULT 0 NOT NULL;
+        ALTER TABLE "cycles" ADD COLUMN "birds_rejected" integer DEFAULT 0 NOT NULL;
+        ALTER TABLE "cycle_history" ADD COLUMN "birds_rejected" integer DEFAULT 0 NOT NULL;
+        ALTER TABLE "sale_metrics" ADD COLUMN "total_birds_rejected" integer DEFAULT 0 NOT NULL;
+
+        UPDATE "cycles" SET "birds_rejected" = COALESCE((
+            SELECT SUM(COALESCE(r."birds_rejected", e."birds_rejected"))
+            FROM "sale_events" e
+            LEFT JOIN "sale_reports" r ON r."id" = e."selected_report_id"
+            WHERE e."cycle_id" = "cycles"."id"
+        ), 0);
+
+        UPDATE "cycle_history" SET "birds_rejected" = COALESCE((
+            SELECT SUM(COALESCE(r."birds_rejected", e."birds_rejected"))
+            FROM "sale_events" e
+            LEFT JOIN "sale_reports" r ON r."id" = e."selected_report_id"
+            WHERE e."history_id" = "cycle_history"."id"
+        ), 0);
+
+        COMMIT;
+    `);
+
+    const after: any = await db.execute(sql`
+        SELECT COUNT(*) FILTER (WHERE birds_out > 0) AS with_sales,
+               COUNT(*) FILTER (WHERE birds_rejected > 0) AS with_rejects,
+               COUNT(*) AS total
+        FROM cycles
+    `);
+    console.log("after:", JSON.stringify(Array.isArray(after) ? after : after.rows));
+    process.exit(0);
+}
+
+main().catch((e) => {
+    console.error("MIGRATION FAILED:", e.message);
+    process.exit(1);
+});
 ```
 
-**STOP if the file contains `DROP COLUMN "birds_sold"`.** That destroys every cycle's bird count. Delete the generated file, re-run `generate`, and pick the rename option.
+The whole thing runs inside one `BEGIN`/`COMMIT`, so a failure on any statement rolls back
+every earlier one. The script is NOT idempotent — running it twice fails on the second
+`RENAME`, which is the desired behaviour.
 
-- [ ] **Step 3: Append the backfill to the same migration file**
+- [ ] **Step 2: Register it**
 
-Add at the end of that `.sql` file:
+In `package.json` scripts, after `"backfill:metrics"`:
 
-```sql
---> statement-breakpoint
-UPDATE "cycles" SET "birds_rejected" = COALESCE((
-  SELECT SUM(COALESCE(r."birds_rejected", e."birds_rejected"))
-  FROM "sale_events" e
-  LEFT JOIN "sale_reports" r ON r."id" = e."selected_report_id"
-  WHERE e."cycle_id" = "cycles"."id"
-), 0);--> statement-breakpoint
-UPDATE "cycle_history" SET "birds_rejected" = COALESCE((
-  SELECT SUM(COALESCE(r."birds_rejected", e."birds_rejected"))
-  FROM "sale_events" e
-  LEFT JOIN "sale_reports" r ON r."id" = e."selected_report_id"
-  WHERE e."history_id" = "cycle_history"."id"
-), 0);
+```json
+"migrate:rejected-birds": "tsx scripts/migrate-rejected-birds.ts"
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add drizzle/
-git commit -m "feat(db): migration renaming birds_sold and backfilling birds_rejected"
+git add scripts/migrate-rejected-birds.ts package.json
+git commit -m "chore(scripts): hand-written DDL for the birds_out rename"
 ```
 
 ---
 
 ### Task 4: Apply to dev
 
-**Targets the dev database** (`.env` line 5 uncommented).
+**Targets the dev database** (`.env` line 5 uncommented, line 2 commented).
 
 - [ ] **Step 1: Fresh backup**
 
 Run: `npm run db:backup`
-Expected: `✅ Backup completed successfully: backup_N_<date>.sql`
+Expected: `✅ Backup completed successfully: backup_N_<date>.sql`. Note the filename.
 
 - [ ] **Step 2: Apply**
 
-Run: `npx drizzle-kit migrate`
-Expected: applies the migration with no prompts.
+Run: `npm run migrate:rejected-birds`
+Expected:
+```
+before: [{"with_sales":<n>,"total":<m>}]
+after:  [{"with_sales":<n>,"with_rejects":<k>,"total":<m>}]
+```
+`with_sales` and `total` must be IDENTICAL before and after. If `with_sales` drops to 0, the
+rename became a drop — restore from the Step 1 backup with `npm run db:restore` immediately.
 
-- [ ] **Step 3: Verify the columns and the backfill**
+- [ ] **Step 3: Confirm the backfill landed**
 
 Run:
 ```bash
-npx tsx -e "import 'dotenv/config';import {sql} from 'drizzle-orm';import {db} from './db';db.execute(sql\`SELECT name, doc, birds_out, birds_rejected, mortality FROM cycles ORDER BY updated_at DESC LIMIT 5\`).then((r:any)=>{console.log(Array.isArray(r)?r:r.rows);process.exit(0)})"
+npx tsx -e "import 'dotenv/config';import {sql} from 'drizzle-orm';import {db} from './db';db.execute(sql\`SELECT name, doc, birds_out, birds_rejected, mortality FROM cycles WHERE birds_rejected > 0 ORDER BY updated_at DESC LIMIT 5\`).then((r:any)=>{console.log(Array.isArray(r)?r:r.rows);process.exit(0)})"
 ```
-Expected: five rows, `birds_out` holding the values `birds_sold` held, `birds_rejected` matching the rejects recorded against those cycles' sales.
+Expected: rows whose `birds_rejected` matches the rejects recorded against those cycles' sales,
+and whose `birds_out` still holds what `birds_sold` held.
 
-- [ ] **Step 4: Prove no data was lost**
+- [ ] **Step 4: Confirm Drizzle agrees the schema matches**
 
-Run:
-```bash
-npx tsx -e "import 'dotenv/config';import {sql} from 'drizzle-orm';import {db} from './db';db.execute(sql\`SELECT COUNT(*) FILTER (WHERE birds_out > 0) AS with_sales, COUNT(*) AS total FROM cycles\`).then((r:any)=>{console.log(Array.isArray(r)?r:r.rows);process.exit(0)})"
-```
-Expected: `with_sales` matches what the app showed before the migration. A `with_sales` of 0 means the column was dropped rather than renamed — restore from the backup taken in Step 1.
-
----
+Run: `npx drizzle-kit push`
+Expected: it reports no changes to apply. **If it prompts about a column rename, answer
+nothing and abort (Ctrl-C)** — that means the hand-written DDL did not match `db/schema.ts`,
+and the mismatch must be resolved before going near production.
 
 ### Task 5: Fix the backend call sites
 
@@ -904,8 +946,10 @@ Expected: non-zero exit, mismatches listed.
 
 - [ ] **Step 3: Migrate**
 
-Run: `npx drizzle-kit migrate`
-Expected: the same statements reviewed in Task 3, applied without prompts.
+Run: `npm run migrate:rejected-birds`
+Expected: the `before:` and `after:` lines, with `with_sales` and `total` IDENTICAL across
+them. **Never run `drizzle-kit migrate` on this project** — `drizzle.__drizzle_migrations`
+is empty, so it would replay all ten historical migrations against a populated database.
 
 - [ ] **Step 4: Confirm the rename kept the data**
 
@@ -913,7 +957,11 @@ Run:
 ```bash
 npx tsx -e "import 'dotenv/config';import {sql} from 'drizzle-orm';import {db} from './db';db.execute(sql\`SELECT COUNT(*) FILTER (WHERE birds_out > 0) AS with_sales, COUNT(*) FILTER (WHERE birds_rejected > 0) AS with_rejects, COUNT(*) AS total FROM cycles\`).then((r:any)=>{console.log(Array.isArray(r)?r:r.rows);process.exit(0)})"
 ```
-Expected: `with_sales` greater than zero. **If it is zero, stop and restore from the Step 1 backup with `npm run db:restore`.**
+Expected: `with_sales` greater than zero and equal to the `before:` count printed in Step 3.
+**If it is zero, stop and restore from the Step 1 backup with `npm run db:restore`.**
+
+Then run `npx drizzle-kit push` and confirm it reports no changes. If it prompts about a
+column rename, abort without answering — the live schema does not match `db/schema.ts`.
 
 - [ ] **Step 5: Deploy backend and web together**
 
@@ -1092,6 +1140,6 @@ Comment on the PR with the four outcomes. Anything that fails goes back to the t
 ## Notes for whoever executes this
 
 - **`sale_events.birdsSold` and `sale_reports.birdsSold` are not renamed.** Those are per-sale and already mean sold-only. Only the two cycle-level columns move.
-- **The rename is the only destructive step.** Task 3 Step 2 is the gate; if the generated SQL says `DROP`, stop.
+- **The rename is the only destructive step.** It is hand-written DDL inside one transaction (Task 3), because these databases are push-managed and `drizzle.__drizzle_migrations` is empty. Never run `drizzle-kit migrate` or `generate` here. The gate is the `before:`/`after:` count printed by the migration script.
 - **Two omissions are deliberate,** recorded in the spec: no shared arithmetic module, and the `averageAge` numerator/denominator mismatch at `sale-metrics-service.ts:188` stays as it is. Do not fix either as a drive-by.
 - **Expect stored survival rates to fall** for cycles with rejects in a non-final sale. That is the repair, not a regression.
