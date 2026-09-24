@@ -432,7 +432,7 @@ export default function CyclesScreen() {
                             cycleAge={selectedCycle.age || 0}
                             doc={selectedCycle.doc}
                             mortality={selectedCycle.mortality || 0}
-                            birdsSold={selectedCycle.birdsSold || 0}
+                            birdsSold={selectedCycle.birdsOut ?? selectedCycle.birdsSold ?? 0}
                             intake={parseFloat(String(selectedCycle.intake || 0))}
                             startDate={selectedCycle.createdAt ? new Date(selectedCycle.createdAt) : new Date()}
                             officialInputDate={selectedCycle.officialInputDate ? new Date(selectedCycle.officialInputDate) : undefined}
@@ -579,11 +579,11 @@ export default function CyclesScreen() {
                                             <View className="w-8 items-center justify-center mr-3"><Icon as={Skull} size={20} className="text-foreground" /></View>
                                             <Text className="text-base font-medium text-foreground">Add Mortality</Text>
                                         </Pressable>
-                                        <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${(groupMenuCycle?.birdsSold || 0) > 0 ? 'opacity-50' : ''}`} onPress={() => { if ((groupMenuCycle?.birdsSold || 0) === 0) { setIsGroupMenuOpen(false); handleCycleAction('edit_doc', groupMenuCycle); } }}>
+                                        <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${((groupMenuCycle?.birdsOut ?? groupMenuCycle?.birdsSold) || 0) > 0 ? 'opacity-50' : ''}`} onPress={() => { if (((groupMenuCycle?.birdsOut ?? groupMenuCycle?.birdsSold) || 0) === 0) { setIsGroupMenuOpen(false); handleCycleAction('edit_doc', groupMenuCycle); } }}>
                                             <View className="w-8 items-center justify-center mr-3"><Icon as={Pencil} size={20} className="text-foreground" /></View>
                                             <Text className="text-base font-medium text-foreground">Edit Initial Birds (DOC)</Text>
                                         </Pressable>
-                                        <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${(groupMenuCycle?.birdsSold || 0) > 0 ? 'opacity-50' : ''}`} onPress={() => { if ((groupMenuCycle?.birdsSold || 0) === 0) { setIsGroupMenuOpen(false); handleCycleAction('edit_age', groupMenuCycle); } }}>
+                                        <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${((groupMenuCycle?.birdsOut ?? groupMenuCycle?.birdsSold) || 0) > 0 ? 'opacity-50' : ''}`} onPress={() => { if (((groupMenuCycle?.birdsOut ?? groupMenuCycle?.birdsSold) || 0) === 0) { setIsGroupMenuOpen(false); handleCycleAction('edit_age', groupMenuCycle); } }}>
                                             <View className="w-8 items-center justify-center mr-3"><Icon as={Activity} size={20} className="text-foreground" /></View>
                                             <Text className="text-base font-medium text-foreground">Edit Age</Text>
                                         </Pressable>
@@ -591,7 +591,7 @@ export default function CyclesScreen() {
                                             <View className="w-8 items-center justify-center mr-3"><Icon as={Activity} size={20} className="text-foreground" /></View>
                                             <Text className="text-base font-medium text-foreground">Edit Official Input Date</Text>
                                         </Pressable>
-                                        <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${(groupMenuCycle?.birdsSold || 0) > 0 ? 'opacity-50' : ''}`} onPress={() => { if ((groupMenuCycle?.birdsSold || 0) === 0) { setIsGroupMenuOpen(false); handleCycleAction('correct_mortality', groupMenuCycle); } }}>
+                                        <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${((groupMenuCycle?.birdsOut ?? groupMenuCycle?.birdsSold) || 0) > 0 ? 'opacity-50' : ''}`} onPress={() => { if (((groupMenuCycle?.birdsOut ?? groupMenuCycle?.birdsSold) || 0) === 0) { setIsGroupMenuOpen(false); handleCycleAction('correct_mortality', groupMenuCycle); } }}>
                                             <View className="w-8 items-center justify-center mr-3"><Icon as={Pencil} size={20} className="text-foreground" /></View>
                                             <Text className="text-base font-medium text-foreground">Correct Total Mortality</Text>
                                         </Pressable>

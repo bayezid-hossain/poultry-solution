@@ -154,7 +154,7 @@ export default function OverviewScreen() {
                         );
                         const totalBirds = officer.farmers.reduce(
                             (acc: number, f: any) => acc + f.activeCycles?.reduce(
-                                (a: number, c: any) => a + (c.doc - c.mortality - (c.birdsSold || 0)), 0
+                                (a: number, c: any) => a + (c.doc - c.mortality - (c.birdsOut ?? c.birdsSold ?? 0)), 0
                             ), 0
                         );
 

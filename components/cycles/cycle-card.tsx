@@ -19,7 +19,9 @@ interface CycleCardProps {
         doc: number;
         mortality: number;
         intake: number;
-        birdsSold: number;
+        birdsSold?: number;
+        birdsOut?: number;
+        birdsRejected?: number;
         birdType?: string | null;
         status: string;
         createdAt?: string | Date | null;
@@ -52,8 +54,11 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
 
     const docValue = Number(cycle.doc || 0);
     const mortalityValue = Number(cycle.mortality || 0);
-    const soldValue = Number(cycle.birdsSold || 0);
-    const liveBirdsValue = Math.max(0, docValue - mortalityValue - soldValue);
+    // birdsOut counts every bird that left the house, rejected ones included.
+    const birdsOutValue = Number(cycle.birdsOut ?? cycle.birdsSold ?? 0);
+    const rejectedValue = Number(cycle.birdsRejected || 0);
+    const soldValue = Math.max(0, birdsOutValue - rejectedValue);
+    const liveBirdsValue = Math.max(0, docValue - mortalityValue - birdsOutValue);
     const feed = Number(cycle.intake ?? 0);
     const mainStock = Number(cycle.farmerMainStock ?? 0);
     const problematicFeed = Number(cycle.farmerProblematicFeed ?? 0);
@@ -93,7 +98,7 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                                 </TouchableOpacity>
                             )}
 
-                            {soldValue > 0 && (
+                            {birdsOutValue > 0 && (
                                 <View className={`flex-row items-center gap-1 px-1.5 py-0.5 rounded ${isActive ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-muted/30 border border-border/50'}`}>
                                     {isActive && (
                                         <View className="animate-spin">
@@ -102,6 +107,14 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                                     )}
                                     <Text className={`text-[9px] font-bold uppercase ${isActive ? 'text-emerald-600' : 'text-muted-foreground'}`}>
                                         {soldValue} SOLD {isActive ? '• RUNNING' : ''}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {rejectedValue > 0 && (
+                                <View className="bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                                    <Text className="text-[9px] font-bold uppercase text-amber-600 dark:text-amber-400">
+                                        {rejectedValue} REJECTED
                                     </Text>
                                 </View>
                             )}
@@ -229,11 +242,11 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                                 <View className="w-8 items-center justify-center mr-3"><Icon as={Skull} size={20} className="text-foreground" /></View>
                                 <Text className="text-base font-medium text-foreground">Add Mortality</Text>
                             </Pressable>
-                            <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('edit_doc')}>
+                            <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${birdsOutValue > 0 ? 'opacity-50' : ''}`} onPress={() => birdsOutValue === 0 && handleAction('edit_doc')}>
                                 <View className="w-8 items-center justify-center mr-3"><Icon as={Pencil} size={20} className="text-foreground" /></View>
                                 <Text className="text-base font-medium text-foreground">Edit Initial Birds (DOC)</Text>
                             </Pressable>
-                            <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('edit_age')}>
+                            <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${birdsOutValue > 0 ? 'opacity-50' : ''}`} onPress={() => birdsOutValue === 0 && handleAction('edit_age')}>
                                 <View className="w-8 items-center justify-center mr-3"><Icon as={CalendarDays} size={20} className="text-foreground" /></View>
                                 <Text className="text-base font-medium text-foreground">Edit Age</Text>
                             </Pressable>
@@ -241,7 +254,7 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                                 <View className="w-8 items-center justify-center mr-3"><Icon as={CalendarDays} size={20} className="text-foreground" /></View>
                                 <Text className="text-base font-medium text-foreground">Edit Official Input Date</Text>
                             </Pressable>
-                            <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`} onPress={() => soldValue === 0 && handleAction('correct_mortality')}>
+                            <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${birdsOutValue > 0 ? 'opacity-50' : ''}`} onPress={() => birdsOutValue === 0 && handleAction('correct_mortality')}>
                                 <View className="w-8 items-center justify-center mr-3"><Icon as={Wrench} size={20} className="text-foreground" /></View>
                                 <Text className="text-base font-medium text-foreground">Correct Total Mortality</Text>
                             </Pressable>
