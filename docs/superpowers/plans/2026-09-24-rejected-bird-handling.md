@@ -219,6 +219,14 @@ written by hand, and `push` is used afterwards only as a read-only confirmation.
 **Files:**
 - Create: `feed-reminder-up/scripts/migrate-rejected-birds.ts`
 
+> **Implemented as committed:** `scripts/migrate-rejected-birds.ts` (commit `c17f7d3`) uses
+> `db.transaction()` with one `tx.execute()` per statement, NOT the single multi-statement
+> string sketched below. Reason, documented in the file's header: a multi-statement
+> `db.execute` only works here because zero interpolations leave `params` empty, which routes
+> through Postgres's simple-query protocol; adding any `${...}` would switch it to the
+> extended protocol, which rejects multi-statement strings. The transaction form does not
+> depend on that. The SQL statements themselves are exactly as below.
+
 - [ ] **Step 1: Write the migration script**
 
 ```ts
@@ -326,12 +334,27 @@ npx tsx -e "import 'dotenv/config';import {sql} from 'drizzle-orm';import {db} f
 Expected: rows whose `birds_rejected` matches the rejects recorded against those cycles' sales,
 and whose `birds_out` still holds what `birds_sold` held.
 
-- [ ] **Step 4: Confirm Drizzle agrees the schema matches**
+- [ ] **Step 4: Confirm the live columns match the schema**
 
-Run: `npx drizzle-kit push`
-Expected: it reports no changes to apply. **If it prompts about a column rename, answer
-nothing and abort (Ctrl-C)** — that means the hand-written DDL did not match `db/schema.ts`,
-and the mismatch must be resolved before going near production.
+Do NOT use `drizzle-kit push` to verify. Push is the command that prompts destructively on a
+rename; using it as a check invites the accident this whole task exists to avoid. Read
+`information_schema` instead:
+
+```bash
+npx tsx -e "import 'dotenv/config';import {sql} from 'drizzle-orm';import {db} from './db';db.execute(sql\`SELECT table_name, column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE (table_name IN ('cycles','cycle_history') AND column_name IN ('birds_out','birds_rejected','birds_sold')) OR (table_name = 'sale_metrics' AND column_name = 'total_birds_rejected') ORDER BY table_name, column_name\`).then((r:any)=>{for(const x of (Array.isArray(r)?r:r.rows))console.log(JSON.stringify(x));process.exit(0)})"
+```
+
+Expected: five rows — `birds_out` and `birds_rejected` on both `cycles` and `cycle_history`,
+plus `total_birds_rejected` on `sale_metrics`, all `integer`, `is_nullable: NO`, default `0`.
+**No row may name `birds_sold`** on either table; if one does, the rename did not happen.
+
+- [ ] **Step 5: Confirm the backfill agrees with the sale events**
+
+```bash
+npx tsx -e "import 'dotenv/config';import {sql} from 'drizzle-orm';import {db} from './db';db.execute(sql\`SELECT COUNT(*) AS disagreements FROM cycle_history h WHERE h.birds_rejected <> COALESCE((SELECT SUM(COALESCE(r.birds_rejected, e.birds_rejected)) FROM sale_events e LEFT JOIN sale_reports r ON r.id = e.selected_report_id WHERE e.history_id = h.id), 0)\`).then((r:any)=>{console.log(Array.isArray(r)?r:r.rows);process.exit(0)})"
+```
+
+Expected: `disagreements: 0`.
 
 ### Task 5: Fix the backend call sites
 
@@ -960,8 +983,9 @@ npx tsx -e "import 'dotenv/config';import {sql} from 'drizzle-orm';import {db} f
 Expected: `with_sales` greater than zero and equal to the `before:` count printed in Step 3.
 **If it is zero, stop and restore from the Step 1 backup with `npm run db:restore`.**
 
-Then run `npx drizzle-kit push` and confirm it reports no changes. If it prompts about a
-column rename, abort without answering — the live schema does not match `db/schema.ts`.
+Then run the two `information_schema` and backfill-agreement checks from Task 4 Steps 4-5
+against production. Do NOT use `drizzle-kit push` to verify — it is the command that prompts
+destructively on a rename.
 
 - [ ] **Step 5: Deploy backend and web together**
 
