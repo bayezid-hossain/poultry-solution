@@ -95,8 +95,8 @@ export default function CycleDetailsScreen() {
     const docValue = cycle.doc ?? 0;
     const mortalityValue = cycle.mortality ?? 0;
     // cycles.birdsSold counts every bird that left the house, rejected ones included.
-    const birdsOutValue = cycle.birdsSold ?? 0;
-    const rejectedValue = (cycle as any).totalBirdsRejected ?? 0;
+    const birdsOutValue = (cycle as any).birdsOut ?? cycle.birdsSold ?? 0;
+    const rejectedValue = (cycle as any).birdsRejected ?? (cycle as any).totalBirdsRejected ?? 0;
     const soldValue = Math.max(0, birdsOutValue - rejectedValue);
     const liveBirds = Math.max(0, docValue - mortalityValue - birdsOutValue);
 
@@ -342,6 +342,7 @@ export default function CycleDetailsScreen() {
                                                                     mortality: item.mortality,
                                                                     intake: Number(item.finalIntake || item.intake || 0),
                                                                     birdsSold: item.birdsSold,
+                                                                    birdsOut: item.birdsOut,
                                                                     startDate: item.startDate || item.createdAt,
                                                                     endDate: item.endDate,
                                                                 };
@@ -632,7 +633,7 @@ export default function CycleDetailsScreen() {
                         cycleAge={selectedActionCycle?.age || cycle.age}
                         doc={selectedActionCycle?.doc || cycle.doc}
                         mortality={selectedActionCycle?.mortality || cycle.mortality || 0}
-                        birdsSold={selectedActionCycle?.birdsSold || cycle.birdsSold || 0}
+                        birdsSold={selectedActionCycle?.birdsOut ?? selectedActionCycle?.birdsSold ?? cycle.birdsOut ?? cycle.birdsSold ?? 0}
                         intake={Number(selectedActionCycle?.intake || cycle.intake || 0)}
                         startDate={new Date(selectedActionCycle?.startDate || cycle.startDate)}
                         officialInputDate={selectedActionCycle?.officialInputDate ? new Date(selectedActionCycle.officialInputDate) : (cycle.officialInputDate ? new Date(cycle.officialInputDate) : undefined)}
