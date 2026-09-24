@@ -94,9 +94,11 @@ export default function CycleDetailsScreen() {
 
     const docValue = cycle.doc ?? 0;
     const mortalityValue = cycle.mortality ?? 0;
-    const soldValue = cycle.birdsSold ?? 0;
+    // cycles.birdsSold counts every bird that left the house, rejected ones included.
+    const birdsOutValue = cycle.birdsSold ?? 0;
     const rejectedValue = (cycle as any).totalBirdsRejected ?? 0;
-    const liveBirds = Math.max(0, docValue - mortalityValue - soldValue);
+    const soldValue = Math.max(0, birdsOutValue - rejectedValue);
+    const liveBirds = Math.max(0, docValue - mortalityValue - birdsOutValue);
 
     const survivalRate = docValue > 0 ? (((docValue - mortalityValue - rejectedValue) / docValue) * 100).toFixed(2) : "0.00";
 
@@ -182,6 +184,13 @@ export default function CycleDetailsScreen() {
                             <Text className="text-sm text-muted-foreground font-medium">Birds Sold</Text>
                             <Text className="text-[15px] font-bold text-foreground">{soldValue.toLocaleString()} birds</Text>
                         </View>
+
+                        {rejectedValue > 0 && (
+                            <View className="flex-row justify-between items-center py-3 border-b border-border/10">
+                                <Text className="text-sm text-muted-foreground font-medium">Birds Rejected</Text>
+                                <Text className="text-[15px] font-bold text-amber-600 dark:text-amber-400">{rejectedValue.toLocaleString()} birds</Text>
+                            </View>
+                        )}
 
                         <View className="flex-row justify-between items-center py-3 border-b border-border/10">
                             <Text className="text-sm text-muted-foreground font-medium">Mortality</Text>
@@ -451,46 +460,46 @@ export default function CycleDetailsScreen() {
                                     <Text className="font-medium text-foreground text-base flex-1">Add Mortality</Text>
                                 </Pressable>
                                 <Pressable
-                                    className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`}
+                                    className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${birdsOutValue > 0 ? 'opacity-50' : ''}`}
                                     onPress={() => {
-                                        if (soldValue > 0) return;
+                                        if (birdsOutValue > 0) return;
                                         setIsMenuOpen(false);
                                         if (!membership?.isPro) { setProModal({ open: true, feature: "Edit Initial Birds (DOC)" }); return; }
                                         setIsDocModalOpen(true);
                                     }}
                                 >
                                     <View className="w-8 items-center justify-center mr-3">
-                                        <Icon as={Bird} size={20} className={soldValue > 0 ? "text-muted-foreground" : "text-foreground"} />
+                                        <Icon as={Bird} size={20} className={birdsOutValue > 0 ? "text-muted-foreground" : "text-foreground"} />
                                     </View>
-                                    <Text className={`font-medium text-base flex-1 ${soldValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Edit Initial Birds (DOC)</Text>
+                                    <Text className={`font-medium text-base flex-1 ${birdsOutValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Edit Initial Birds (DOC)</Text>
                                 </Pressable>
                                 <Pressable
-                                    className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`}
+                                    className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${birdsOutValue > 0 ? 'opacity-50' : ''}`}
                                     onPress={() => {
-                                        if (soldValue > 0) return;
+                                        if (birdsOutValue > 0) return;
                                         setIsMenuOpen(false);
                                         if (!membership?.isPro) { setProModal({ open: true, feature: "Edit Age" }); return; }
                                         setIsAgeModalOpen(true);
                                     }}
                                 >
                                     <View className="w-8 items-center justify-center mr-3">
-                                        <Icon as={Activity} size={20} className={soldValue > 0 ? "text-muted-foreground" : "text-foreground"} />
+                                        <Icon as={Activity} size={20} className={birdsOutValue > 0 ? "text-muted-foreground" : "text-foreground"} />
                                     </View>
-                                    <Text className={`font-medium text-base flex-1 ${soldValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Edit Age</Text>
+                                    <Text className={`font-medium text-base flex-1 ${birdsOutValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Edit Age</Text>
                                 </Pressable>
                                 <Pressable
-                                    className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${soldValue > 0 ? 'opacity-50' : ''}`}
+                                    className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${birdsOutValue > 0 ? 'opacity-50' : ''}`}
                                     onPress={() => {
-                                        if (soldValue > 0) return;
+                                        if (birdsOutValue > 0) return;
                                         setIsMenuOpen(false);
                                         if (!membership?.isPro) { setProModal({ open: true, feature: "Correct Total Mortality" }); return; }
                                         setIsMortalityCorrectionOpen(true);
                                     }}
                                 >
                                     <View className="w-8 items-center justify-center mr-3">
-                                        <Icon as={Pencil} size={20} className={soldValue > 0 ? "text-muted-foreground" : "text-foreground"} />
+                                        <Icon as={Pencil} size={20} className={birdsOutValue > 0 ? "text-muted-foreground" : "text-foreground"} />
                                     </View>
-                                    <Text className={`font-medium text-base flex-1 ${soldValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Correct Total Mortality</Text>
+                                    <Text className={`font-medium text-base flex-1 ${birdsOutValue > 0 ? 'text-muted-foreground' : 'text-foreground'}`}>Correct Total Mortality</Text>
                                 </Pressable>
                                 <Pressable className="flex-row items-center py-4 mt-2 active:bg-red-500/10 rounded-xl" onPress={() => { setIsMenuOpen(false); setIsEndCycleOpen(true); }}>
                                     <View className="w-8 items-center justify-center mr-3">

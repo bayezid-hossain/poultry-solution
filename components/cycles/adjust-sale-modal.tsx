@@ -335,8 +335,22 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         });
     };
 
-    const availableBirdsBeforeThisSale = (saleEvent.cycleContext?.doc || saleEvent.houseBirds || 0) -
-        ((saleEvent.cycleContext?.cumulativeBirdsSold || saleEvent.birdsSold) - saleEvent.birdsSold);
+    // Birds that left the house in OTHER (earlier) sales: sold AND rejected both leave.
+    // Backend sends the per-sale split; fall back to cumulative sold when it's missing.
+    const birdsGoneInOtherSales = (() => {
+        const prevSold = Number(saleEvent.previousBirdsSold);
+        const prevRejected = Number(saleEvent.previousBirdsRejected);
+        if (Number.isFinite(prevSold) && Number.isFinite(prevRejected)) {
+            return Math.max(prevSold + prevRejected, 0);
+        }
+        const cumulative = saleEvent.cycleContext?.cumulativeBirdsSold || saleEvent.birdsSold || 0;
+        return Math.max(cumulative - (saleEvent.birdsSold || 0), 0);
+    })();
+
+    const availableBirdsBeforeThisSale = Math.max(
+        (saleEvent.cycleContext?.doc || saleEvent.houseBirds || 0) - birdsGoneInOtherSales,
+        0
+    );
 
     // Auto-correction logic: bird sold + rejected + mortality cannot exceed total birds available before this sale
     useEffect(() => {

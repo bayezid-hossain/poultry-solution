@@ -100,7 +100,23 @@ export const generateReportText = (sale: any, report: any, isLatest: boolean): s
     const isEnded = sale.cycleContext?.isEnded || false;
 
     const saleAge = sale.saleAge ?? sale.cycleContext?.age ?? "N/A";
-    const previousSold = sale.houseBirds - sale.remainingBirds - birdsSold - totalMortality - birdsRejected;
+    // Birds that left the house in EARLIER sales of this cycle, split into sold vs rejected.
+    // The backend sends the per-sale split; older API versions don't, so fall back to
+    // deriving the pool from remainingBirds and splitting it with the cycle-wide reject total.
+    const serverPrevSold = Number(sale.previousBirdsSold);
+    const serverPrevRejected = Number(sale.previousBirdsRejected);
+    const hasServerSplit = Number.isFinite(serverPrevSold) && Number.isFinite(serverPrevRejected);
+
+    const docBirds = sale.cycleContext?.doc || sale.houseBirds || 0;
+    const previousPool = Math.max(docBirds - (sale.remainingBirds ?? 0) - birdsSold - totalMortality - birdsRejected, 0);
+    const cumulativeRejected = Math.max(sale.cycleContext?.totalBirdsRejected ?? birdsRejected, birdsRejected);
+
+    const previousRejected = hasServerSplit
+        ? Math.max(serverPrevRejected, 0)
+        : Math.min(Math.max(cumulativeRejected - birdsRejected, 0), previousPool);
+    const previousSold = hasServerSplit
+        ? Math.max(serverPrevSold, 0)
+        : previousPool - previousRejected;
     const ageText = `Age: ${saleAge} days`;
 
     const officialInputDate = report?.officialInputDate || sale.cycleContext?.officialInputDate || sale.cycleContext?.createdAt || sale.history?.startDate || sale.cycle?.createdAt;
@@ -113,8 +129,8 @@ Farmer: ${sale.farmerName || "N/A"}
 Location: ${sale.location || "N/A"}
 ${sale.cycleContext?.birdType ? `\nBird Type: ${sale.cycleContext?.birdType}` : ""}
 DOC In: ${docInputDateStr}
-${sale.houseBirds ? `House bird : ${sale.houseBirds}pcs` : ""}
-${previousSold > 0 ? `Previously Sold: ${previousSold}pcs\n` : ""}Today's Sale : ${birdsSold}pcs${birdsRejected > 0 ? `\nRejected : ${birdsRejected}pcs` : ""}
+${docBirds ? `House bird : ${docBirds}pcs` : ""}
+${previousSold > 0 ? `Previously Sold: ${previousSold}pcs\n` : ""}${previousRejected > 0 ? `Previously Rejected: ${previousRejected}pcs\n` : ""}Today's Sale : ${birdsSold}pcs${birdsRejected > 0 ? `\nRejected : ${birdsRejected}pcs` : ""}
 Total Mortality: ${totalMortality} pcs
 ${(!isEnded || !isLatest) ? `\nRemaining Birds: ${sale.remainingBirds ?? 0} pcs` : ""}
 

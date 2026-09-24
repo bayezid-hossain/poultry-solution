@@ -1820,7 +1820,9 @@ export async function exportSalesLedgerExcel(sales: any[], title: string, return
         const isLatest = cycleSalesMap[s.cycleId || s.historyId || "unknown"]?.[0] === s.id;
         const showWeighted = isEnded && isLatest;
 
-        const feedConsumed = s.feedConsumed || s.reports?.[0]?.feedConsumed;
+        // The active version is the SELECTED report, not simply the newest one.
+        const selectedReport = s.reports?.find((r: any) => r.id === s.selectedReportId) || s.reports?.[0];
+        const feedConsumed = s.feedConsumed || selectedReport?.feedConsumed;
         let feedTotal = 0;
         try {
             const parsed = typeof feedConsumed === 'string' ? JSON.parse(feedConsumed) : feedConsumed;
@@ -1829,7 +1831,7 @@ export async function exportSalesLedgerExcel(sales: any[], title: string, return
 
         const birdsSold = s.birdsSold || 1;
         const avgWeight = (Number(s.totalWeight) / birdsSold).toFixed(2);
-        const rejectedBirds = s.reports?.[0]?.birdsRejected ?? s.birdsRejected ?? "-";
+        const rejectedBirds = selectedReport?.birdsRejected ?? s.birdsRejected ?? "-";
 
         return {
             Farmer: s.farmerName || s.cycle?.farmer?.name || s.history?.farmer?.name || "-",
@@ -1842,7 +1844,7 @@ export async function exportSalesLedgerExcel(sales: any[], title: string, return
             Revenue: `৳${(s.totalRevenue || (Number(s.totalWeight) * Number(s.pricePerKg)) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             Cash: `৳${(s.cashReceived || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             "Feed (Bags)": feedTotal ? Number(feedTotal.toFixed(2)) : "-",
-            Mortality: s.reports?.[0]?.totalMortality ?? s.totalMortality ?? "-",
+            Mortality: selectedReport?.totalMortality ?? s.totalMortality ?? "-",
             "Rejected Birds": rejectedBirds,
             FCR: showWeighted ? ctx.fcr : "-",
             EPI: showWeighted ? ctx.epi : "-",
@@ -1948,7 +1950,9 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
         const isLatest = cycleSalesMap[s.cycleId || s.historyId || "unknown"]?.[0] === s.id;
         const showWeighted = isEnded && isLatest;
 
-        const feedConsumed = s.feedConsumed || s.reports?.[0]?.feedConsumed;
+        // The active version is the SELECTED report, not simply the newest one.
+        const selectedReport = s.reports?.find((r: any) => r.id === s.selectedReportId) || s.reports?.[0];
+        const feedConsumed = s.feedConsumed || selectedReport?.feedConsumed;
         let feedTotal = 0;
         try {
             const parsed = typeof feedConsumed === 'string' ? JSON.parse(feedConsumed) : feedConsumed;
@@ -1957,7 +1961,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
 
         const birdsSold = s.birdsSold || 1;
         const avgWeight = (Number(s.totalWeight) / birdsSold).toFixed(2);
-        const rejectedBirds = s.reports?.[0]?.birdsRejected ?? s.birdsRejected ?? "-";
+        const rejectedBirds = selectedReport?.birdsRejected ?? s.birdsRejected ?? "-";
 
         return `
             <tr>
@@ -1965,7 +1969,7 @@ export async function exportSalesLedgerPDF(sales: any[], title: string, returnOp
                 <td><b>${s.farmerName || s.cycle?.farmer?.name || s.history?.farmer?.name || "-"}</b></td>
                 <td>${showWeighted ? `<b>${ctx.age}</b>` : (s.saleAge ?? ctx?.age ?? "N/A")} d</td>
                 <td>${s.birdsSold}</td>
-                <td>${s.reports?.[0]?.totalMortality ?? s.totalMortality ?? "-"}</td>
+                <td>${selectedReport?.totalMortality ?? s.totalMortality ?? "-"}</td>
                 <td>${rejectedBirds}</td>
                 <td>${Number(s.totalWeight).toFixed(2)}</td>
                 <td>${avgWeight}</td>

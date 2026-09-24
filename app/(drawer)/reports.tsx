@@ -307,13 +307,14 @@ export default function ReportsScreen() {
         if (isManagement) {
             const officerId = lockedSelection ? lockedSelection.id : selectedOfficerId;
             if (officerId) {
-                const data = await utils.management.sales.getRecentSales.fetch({ limit: 100, officerId, orgId });
+                // getRecentSales is paginated: it returns { items, nextCursor }, not an array.
+                const { items: data } = await utils.management.sales.getRecentSales.fetch({ limit: 100, officerId, orgId });
                 const subtitle = getReportSubtitle(undefined, lockedSelection);
                 return type === 'pdf' ? exportSalesLedgerPDF(data as any, getReportTitle("Sales Ledger"), false, subtitle) : exportSalesLedgerExcel(data as any, getReportTitle("Sales Ledger"), false, subtitle);
             } else {
                 const officers = await utils.management.performanceReports.getOfficersInOrg.fetch({ orgId });
                 const officerPromises = officers.map(async (officer: any) => {
-                    const data = await utils.management.sales.getRecentSales.fetch({ limit: 100, officerId: officer.id, orgId });
+                    const { items: data } = await utils.management.sales.getRecentSales.fetch({ limit: 100, officerId: officer.id, orgId });
                     if (data.length > 0) {
                         return {
                             sheetName: officer.name,
@@ -330,7 +331,7 @@ export default function ReportsScreen() {
                 return type === 'pdf' ? generateMultiSheetPDF(sheets, "Recent Sales Ledger", true) : generateMultiSheetExcel(sheets, "Recent Sales Ledger");
             }
         }
-        const data = await utils.officer.sales.getRecentSales.fetch({ limit: 100 });
+        const { items: data } = await utils.officer.sales.getRecentSales.fetch({ limit: 100 });
         const subtitle = getReportSubtitle();
         return type === 'pdf' ? exportSalesLedgerPDF(data, getReportTitle("Recent Sales"), false, subtitle) : exportSalesLedgerExcel(data, getReportTitle("Recent Sales"), false, subtitle);
     };
