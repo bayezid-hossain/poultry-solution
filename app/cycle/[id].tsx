@@ -9,6 +9,8 @@ import { DeleteCycleModal } from "@/components/cycles/delete-cycle-modal";
 import { EditOfficialDateModal } from "@/components/cycles/edit-official-date-modal";
 import { EndCycleModal } from "@/components/cycles/end-cycle-modal";
 import { LogsTimeline } from "@/components/cycles/logs-timeline";
+import { CycleVisitsSection } from "@/components/farmer-visits/cycle-visits-section";
+import { useFarmerVisitApi } from "@/lib/use-farmer-visit-api";
 import { ReopenCycleModal } from "@/components/cycles/reopen-cycle-modal";
 import { SalesHistoryList } from "@/components/cycles/sales-history-list";
 import { SellModal } from "@/components/cycles/sell-modal";
@@ -20,7 +22,7 @@ import { Icon } from "@/components/ui/icon";
 import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { format } from "date-fns";
+import { differenceInCalendarDays, format, parseISO } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
 import { Activity, Archive, ArrowLeft, Bird, CalendarDays, ChevronDown, ChevronUp, ClipboardCheck, LineChart, MoreHorizontal, Package, Pencil, Power, Rewind, RotateCcw, ShoppingCart, Skull, Trash2, Wheat } from "lucide-react-native";
 import { useEffect, useState } from "react";
@@ -42,8 +44,8 @@ export default function CycleDetailsScreen() {
     const [selectedActionCycle, setSelectedActionCycle] = useState<any>(null);
 
     // Accordions
-    const [openSection, setOpenSection] = useState<'activity' | 'sales' | 'other' | 'insights' | null>(null);
-    const [renderSection, setRenderSection] = useState<'activity' | 'sales' | 'other' | 'insights' | null>(null);
+    const [openSection, setOpenSection] = useState<'activity' | 'sales' | 'visits' | 'other' | 'insights' | null>(null);
+    const [renderSection, setRenderSection] = useState<'activity' | 'sales' | 'visits' | 'other' | 'insights' | null>(null);
     const [proModal, setProModal] = useState<{ open: boolean, feature: string }>({ open: false, feature: "" });
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -63,6 +65,16 @@ export default function CycleDetailsScreen() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const { data: response, isLoading, error, refetch } = trpc.officer.cycles.getDetails.useQuery({ id: id as string });
+
+    // Farm visit count and last visit date. Pro only, and the id works for active and ended cycles alike.
+    const { orgId: visitOrgId, api: visitApi, isPro: visitPro } = useFarmerVisitApi();
+    const visitSummary = visitApi.cycleSummary.useQuery(
+        { orgId: visitOrgId, cycleRef: id as string },
+        { enabled: !!visitOrgId && visitPro && !!id },
+    );
+    const visitCount = visitSummary.data?.count ?? 0;
+    const lastVisit = visitSummary.data?.lastVisitDate ? parseISO(visitSummary.data.lastVisitDate) : null;
+    const lastVisitAgo = lastVisit ? differenceInCalendarDays(new Date(), lastVisit) : null;
 
     if (isLoading) {
         return (
@@ -105,7 +117,7 @@ export default function CycleDetailsScreen() {
     const feedIntake = Number(cycle.intake ?? 0).toFixed(2);
     const startDateFormatted = cycle.createdAt ? format(new Date(cycle.createdAt), "dd MMM yyyy") : "";
 
-    const toggleSection = (section: 'activity' | 'sales' | 'other' | 'insights') => {
+    const toggleSection = (section: 'activity' | 'sales' | 'visits' | 'other' | 'insights') => {
         setOpenSection(openSection === section ? null : section);
     };
 
@@ -197,6 +209,31 @@ export default function CycleDetailsScreen() {
                             <Text className="text-[15px] font-bold text-foreground">{mortalityValue.toLocaleString()} birds</Text>
                         </View>
 
+                        {visitPro && (
+                            <>
+                                <View className="flex-row justify-between items-center py-3 border-b border-border/10">
+                                    <Text className="text-sm text-muted-foreground font-medium">Farm Visits</Text>
+                                    <Text className="text-[15px] font-bold text-foreground">
+                                        {visitCount.toLocaleString()} {visitCount === 1 ? "visit" : "visits"}
+                                    </Text>
+                                </View>
+
+                                <View className="flex-row justify-between items-center py-3 border-b border-border/10">
+                                    <Text className="text-sm text-muted-foreground font-medium">Last Visited</Text>
+                                    {lastVisit ? (
+                                        <View className="items-end">
+                                            <Text className="text-[15px] font-bold text-foreground">{format(lastVisit, "dd MMM yyyy")}</Text>
+                                            <Text className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                                                {lastVisitAgo === 0 ? "Today" : lastVisitAgo === 1 ? "1 day ago" : `${lastVisitAgo} days ago`}
+                                            </Text>
+                                        </View>
+                                    ) : (
+                                        <Text className="text-[15px] font-bold text-muted-foreground">Never</Text>
+                                    )}
+                                </View>
+                            </>
+                        )}
+
                         <View className="flex-row justify-between items-center pt-3 pb-1">
                             <Text className="text-sm text-muted-foreground font-medium">Survival Rate</Text>
                             <Text className="text-[15px] font-bold text-emerald-500">{survivalRate}%</Text>
@@ -274,6 +311,45 @@ export default function CycleDetailsScreen() {
                                     <View className="py-20 items-center justify-center">
                                         <BirdyLoader size={48} color="#10b981" />
                                         <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Rendering Sales</Text>
+                                    </View>
+                                )}
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Farm Visits */}
+                    <View className="bg-card w-full border border-border/30 rounded-[16px] overflow-hidden">
+                        <Pressable
+                            className="flex-row justify-between items-center p-4 active:bg-muted/30"
+                            onPress={() => toggleSection('visits')}
+                        >
+                            <View className="flex-row items-center gap-3">
+                                <Icon as={ClipboardCheck} size={18} className="text-foreground" />
+                                <Text className="font-bold text-lg text-foreground">Farm Visits</Text>
+                                {visitPro ? (
+                                    visitCount > 0 && (
+                                        <View className="bg-primary/10 px-2 py-0.5 rounded-full">
+                                            <Text className="text-xs font-bold text-primary">{visitCount}</Text>
+                                        </View>
+                                    )
+                                ) : (
+                                    <View className="bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
+                                        <Text className="text-[8px] font-black text-foreground">PRO</Text>
+                                    </View>
+                                )}
+                            </View>
+                            <Icon as={openSection === 'visits' ? ChevronUp : ChevronDown} size={20} className="text-muted-foreground" />
+                        </Pressable>
+                        {openSection === 'visits' && (
+                            <View className="p-4 border-t border-border/20">
+                                {!visitPro ? (
+                                    <ProBlocker feature="Farmer Visit Reports" description="Create, track and share farmer visit reports with automatic FCR and standard comparisons." />
+                                ) : renderSection === 'visits' ? (
+                                    <CycleVisitsSection cycleRef={id as string} canAdd={!isArchived} />
+                                ) : (
+                                    <View className="py-20 items-center justify-center">
+                                        <BirdyLoader size={48} color="#10b981" />
+                                        <Text className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-4 opacity-50">Rendering Visits</Text>
                                     </View>
                                 )}
                             </View>
