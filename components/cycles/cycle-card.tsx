@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { useRouter } from "expo-router";
-import { Bird, CalendarDays, CircleDashed, ClipboardList, MoreHorizontal, Pencil, Power, Rewind, RotateCcw, ShoppingCart, Skull, Trash2, User, Wheat, Wrench } from "lucide-react-native";
+import { Bird, CalendarDays, CircleDashed, ClipboardCheck, Hourglass, MoreHorizontal, Pencil, Power, Rewind, RotateCcw, ShoppingCart, Skull, Trash2, User, Wheat, Wrench } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, TouchableOpacity, View } from "react-native";
 
@@ -243,7 +243,7 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                                 <Text className="text-base font-medium text-foreground">Add Mortality</Text>
                             </Pressable>
                             <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => { setIsMenuOpen(false); router.push(`/cycle/${cycle.id}/farmer-visit` as any); }}>
-                                <View className="w-8 items-center justify-center mr-3"><Icon as={ClipboardList} size={20} className="text-foreground" /></View>
+                                <View className="w-8 items-center justify-center mr-3"><Icon as={ClipboardCheck} size={20} className="text-foreground" /></View>
                                 <Text className="text-base font-medium text-foreground">Farmer Visit</Text>
                             </Pressable>
                             <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${birdsOutValue > 0 ? 'opacity-50' : ''}`} onPress={() => birdsOutValue === 0 && handleAction('edit_doc')}>
@@ -251,7 +251,7 @@ export function CycleCard({ cycle, onPress, onAction, isGrouped }: CycleCardProp
                                 <Text className="text-base font-medium text-foreground">Edit Initial Birds (DOC)</Text>
                             </Pressable>
                             <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50 ${birdsOutValue > 0 ? 'opacity-50' : ''}`} onPress={() => birdsOutValue === 0 && handleAction('edit_age')}>
-                                <View className="w-8 items-center justify-center mr-3"><Icon as={CalendarDays} size={20} className="text-foreground" /></View>
+                                <View className="w-8 items-center justify-center mr-3"><Icon as={Hourglass} size={20} className="text-foreground" /></View>
                                 <Text className="text-base font-medium text-foreground">Edit Age</Text>
                             </Pressable>
                             <Pressable className={`flex-row items-center py-4 border-b border-border/30 active:bg-muted/50`} onPress={() => handleAction('edit_official_date')}>

@@ -20,6 +20,7 @@ const officerCoreItems: NavItem[] = [
     { label: "Dashboard", icon: LayoutDashboard, route: "/(drawer)/(tabs)" },
     { label: "Cycles", icon: Users, route: "/(drawer)/(tabs)/cycles" },
     { label: "Farmers", icon: Wheat, route: "/(drawer)/(tabs)/farmers" },
+    { label: "Farmer Visits", icon: ClipboardCheck, route: "/(drawer)/farmer-visits", isPro: true },
 ];
 
 const officerActivityItems: NavItem[] = [
@@ -37,7 +38,6 @@ const officerReportItems: NavItem[] = [
     { label: "Monthly DOC Placements", icon: ClipboardList, route: "/(drawer)/doc-placements", isPro: true },
     { label: "Yearly Performance", icon: TrendingUp, route: "/(drawer)/performance", isPro: true },
     { label: "Monthly Production", icon: BarChart3, route: "/(drawer)/production", isPro: true },
-    { label: "Farmer Visits", icon: ClipboardCheck, route: "/(drawer)/farmer-visits", isPro: true },
     { label: "Download Reports", icon: Download, route: "/(drawer)/reports", isPro: true },
 ];
 
@@ -47,6 +47,7 @@ const managementCoreItems: NavItem[] = [
     { label: "Members", icon: Crown, route: "/(drawer)/members" },
     { label: "Price Policies", icon: Tag, route: "/(drawer)/price-policies" },
     { label: "Farmers", icon: Wheat, route: "/(drawer)/(tabs)/farmers" },
+    { label: "Farmer Visits", icon: ClipboardCheck, route: "/(drawer)/farmer-visits", isPro: true },
     { label: "Cycles", icon: Users, route: "/(drawer)/(tabs)/cycles" },
 ];
 
@@ -63,7 +64,6 @@ const managementReportItems: NavItem[] = [
     { label: "Monthly DOC Placements", icon: ClipboardList, route: "/(drawer)/doc-placements", isPro: true },
     { label: "Yearly Performance", icon: TrendingUp, route: "/(drawer)/performance", isPro: true },
     { label: "Monthly Production", icon: BarChart3, route: "/(drawer)/production", isPro: true },
-    { label: "Farmer Visits", icon: ClipboardCheck, route: "/(drawer)/farmer-visits", isPro: true },
     { label: "Download Reports", icon: Download, route: "/(drawer)/reports", isPro: true },
 ];
 
