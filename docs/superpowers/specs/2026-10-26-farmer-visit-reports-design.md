@@ -37,16 +37,17 @@ generates the message with a copy button, and keeps cycle mortality in sync.
 | `body_weight_g` | int |
 | `fcr` | decimal, null on day 0 |
 
-Days 0–34 come from the supplied Ross table. Days 35–40 are extrapolated:
+Days 0–35 come from the supplied Ross table (36 rows). Days 36–40 are extrapolated:
 
 | day | daily_feed_g | body_weight_g | fcr |
 |---|---|---|---|
-| 35 | 195 | 2291 | 1.548 |
-| 36 | 201 | 2392 | 1.566 |
-| 37 | 207 | 2494 | 1.584 |
-| 38 | 212 | 2597 | 1.602 |
-| 39 | 218 | 2700 | 1.620 |
-| 40 | 224 | 2804 | 1.638 |
+| 36 | 195 | 2291 | 1.548 |
+| 37 | 201 | 2392 | 1.566 |
+| 38 | 207 | 2494 | 1.584 |
+| 39 | 213 | 2597 | 1.602 |
+| 40 | 219 | 2701 | 1.620 |
+
+Age above 40 clamps to day 40. Day 0 has no FCR.
 
 **`farmer_visit_reports`**
 
@@ -76,7 +77,7 @@ Unique index on `(cycle_id, visit_date)`.
 - `avg_fcr = (Σ running × 50) / (avg_weight_g / 1000 × liveBirds)`; 0 if weight or live birds is 0
 - `std = standard_values[clamp(age, 0, 40)]`
 - Totals for intake, running and stock are `Σ` over `feed_lines`
-- Suggested age = whole days from cycle start to `visit_date`
+- Suggested age = `max(0, calendar days from cycle start to visit_date + 1)`, computed on the mobile client
 
 ## 3. Cycle side effect
 
@@ -92,7 +93,7 @@ way "Correct mortality" does.
 ## 4. API (tRPC, officer and management routers, scoped like existing cycle queries)
 
 - `farmerVisit.list({ search, dateFrom, dateTo, sort: "date" | "farmer", order, cursor })`
-- `farmerVisit.getPrefill({ cycleId, date })` → farmer, location, DOC, strain, suggested age,
+- `farmerVisit.getPrefill({ cycleId, date })` → farmer, location, DOC, strain, cycle start date,
   current cycle mortality, std for that age, and the existing report for that cycle+date if any
 - `farmerVisit.getStandard({ age })` → std wt / std FCR for refetch on date or age change
 - `farmerVisit.save` (upsert on cycle+date), `farmerVisit.get`, `farmerVisit.delete`
