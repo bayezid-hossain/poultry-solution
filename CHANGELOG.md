@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.61] - 2026-10-26
+
+### Added
+- Farmer Visit Reports (Pro): a new Farmer Visits screen in the drawer lists every visit report, with search by farmer name, date range and sorting by date or farmer, plus copy and delete on each report
+- Farmer Visit action in the cycle actions menu opens a bottom-sheet form with age, mortality, weight, feed by type (B1, B2 or any you add), litter, disease, medicine and suggestions. Standard weight and FCR are filled in from the standard table, average FCR is calculated for you, and View report shows the message to review, copy, save or edit before saving. Saving copies the report to your clipboard and updates the cycle's total mortality
+
 ## [v1.0.59] - 2026-09-18
 
 ### Added
