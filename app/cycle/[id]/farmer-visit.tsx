@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
 import {
-    calcAge, calcAvgFcr, calcLiveBirds, DEFAULT_SUGGESTIONS, formatVisitMessage, sumFeed, type FeedLine,
+    calcAge, calcAvgFcr, calcLiveBirds, DEFAULT_LITTER, DEFAULT_SUGGESTIONS, formatVisitMessage, sumFeed, type FeedLine,
 } from "@/lib/farmer-visit";
 import { useFarmerVisitApi } from "@/lib/use-farmer-visit-api";
 import { trpc } from "@/lib/trpc";
@@ -172,7 +172,7 @@ export default function FarmerVisitScreen() {
             avgFcr: override ? override.avgFcr : avgFcr,
             stdFcr: override ? override.stdFcr : stdFcr,
             feedLines,
-            litter,
+            litter: litter.trim() || DEFAULT_LITTER,
             disease,
             medicine,
             suggestions,
@@ -210,7 +210,7 @@ export default function FarmerVisitScreen() {
             totalMortality: toInt(totalMortality),
             avgWeightG: toInt(avgWeight),
             feedLines,
-            litter,
+            litter: litter.trim() || DEFAULT_LITTER,
             disease,
             medicine,
             suggestions,

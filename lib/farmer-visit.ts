@@ -4,6 +4,8 @@ export type FeedLine = { type: string; intake: number; running: number; stock: n
 
 export const KG_PER_BAG = 50;
 
+export const DEFAULT_LITTER = "Dry";
+
 export const DEFAULT_SUGGESTIONS =
     "Maintain curtain management, Feeder and Dribler.\nGive fresh water. Maintain temperature.";
 
