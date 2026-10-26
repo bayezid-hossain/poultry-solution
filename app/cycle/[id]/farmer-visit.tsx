@@ -241,13 +241,15 @@ export default function FarmerVisitScreen() {
             <Text className="text-xl font-bold text-foreground flex-1" numberOfLines={1}>
                 {previewing ? "View Report" : existing ? "Edit Farmer Visit" : "Farmer Visit"}
             </Text>
-            <Pressable
-                onPress={() => router.back()}
-                hitSlop={8}
-                className="w-10 h-10 items-center justify-center rounded-full active:bg-accent"
-            >
-                <Icon as={X} size={20} className="text-muted-foreground" />
-            </Pressable>
+            {previewing ? null : (
+                <Pressable
+                    onPress={() => router.back()}
+                    hitSlop={8}
+                    className="w-10 h-10 items-center justify-center rounded-full active:bg-accent"
+                >
+                    <Icon as={X} size={20} className="text-muted-foreground" />
+                </Pressable>
+            )}
         </View>
     );
 
