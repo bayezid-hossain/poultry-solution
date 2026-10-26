@@ -37,7 +37,7 @@ const officerReportItems: NavItem[] = [
     { label: "Monthly DOC Placements", icon: ClipboardList, route: "/(drawer)/doc-placements", isPro: true },
     { label: "Yearly Performance", icon: TrendingUp, route: "/(drawer)/performance", isPro: true },
     { label: "Monthly Production", icon: BarChart3, route: "/(drawer)/production", isPro: true },
-    { label: "Farmer Visits", icon: ClipboardCheck, route: "/(drawer)/farmer-visits" },
+    { label: "Farmer Visits", icon: ClipboardCheck, route: "/(drawer)/farmer-visits", isPro: true },
     { label: "Download Reports", icon: Download, route: "/(drawer)/reports", isPro: true },
 ];
 
@@ -63,7 +63,7 @@ const managementReportItems: NavItem[] = [
     { label: "Monthly DOC Placements", icon: ClipboardList, route: "/(drawer)/doc-placements", isPro: true },
     { label: "Yearly Performance", icon: TrendingUp, route: "/(drawer)/performance", isPro: true },
     { label: "Monthly Production", icon: BarChart3, route: "/(drawer)/production", isPro: true },
-    { label: "Farmer Visits", icon: ClipboardCheck, route: "/(drawer)/farmer-visits" },
+    { label: "Farmer Visits", icon: ClipboardCheck, route: "/(drawer)/farmer-visits", isPro: true },
     { label: "Download Reports", icon: Download, route: "/(drawer)/reports", isPro: true },
 ];
 

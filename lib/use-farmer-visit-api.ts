@@ -7,6 +7,7 @@ export function useFarmerVisitApi() {
     return {
         orgId: membership?.orgId ?? "",
         isManagement,
+        isPro: !!membership?.isPro,
         api: isManagement ? trpc.management.farmerVisits : trpc.officer.farmerVisits,
     };
 }

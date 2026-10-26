@@ -2,6 +2,7 @@ import { DateField } from "@/components/farmer-visits/date-field";
 import { FeedLineDraft, FeedLinesEditor } from "@/components/farmer-visits/feed-lines-editor";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
+import { ProBlocker } from "@/components/pro-blocker";
 import { Input } from "@/components/ui/input";
 import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
@@ -50,7 +51,7 @@ export default function FarmerVisitScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const utils = trpc.useUtils();
-    const { orgId, api } = useFarmerVisitApi();
+    const { orgId, api, isPro } = useFarmerVisitApi();
 
     const [visitDate, setVisitDate] = useState(dateParam ?? format(new Date(), "yyyy-MM-dd"));
     const [age, setAge] = useState("");
@@ -66,7 +67,7 @@ export default function FarmerVisitScreen() {
 
     const prefill = api.getPrefill.useQuery(
         { orgId, cycleId, date: visitDate },
-        { enabled: !!orgId && !!cycleId },
+        { enabled: !!orgId && !!cycleId && isPro },
     );
     const cycle = prefill.data?.cycle;
     const farmer = prefill.data?.farmer;
@@ -112,7 +113,7 @@ export default function FarmerVisitScreen() {
     const ageNum = toInt(age);
     const standard = api.getStandard.useQuery(
         { orgId, age: ageNum },
-        { enabled: !!orgId && age !== "" },
+        { enabled: !!orgId && isPro && age !== "" },
     );
 
     const feedLines: FeedLine[] = useMemo(
@@ -220,6 +221,15 @@ export default function FarmerVisitScreen() {
             </Pressable>
         </View>
     );
+
+    if (!isPro) {
+        return (
+            <View className="flex-1 bg-background">
+                {header}
+                <ProBlocker feature="Farmer Visit Reports" description="Create, track and share farmer visit reports with automatic FCR and standard comparisons." />
+            </View>
+        );
+    }
 
     if (prefill.isLoading || !orgId) {
         return (

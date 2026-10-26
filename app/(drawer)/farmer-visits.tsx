@@ -2,6 +2,7 @@ import { DateField } from "@/components/farmer-visits/date-field";
 import { VisitCard, type VisitListItem } from "@/components/farmer-visits/visit-card";
 import { ScreenHeader } from "@/components/screen-header";
 import { Icon } from "@/components/ui/icon";
+import { ProBlocker } from "@/components/pro-blocker";
 import { Input } from "@/components/ui/input";
 import { BirdyLoader } from "@/components/ui/loading-state";
 import { Text } from "@/components/ui/text";
@@ -19,7 +20,7 @@ type SortKey = "date" | "farmer";
 export default function FarmerVisitsScreen() {
     const router = useRouter();
     const utils = trpc.useUtils();
-    const { orgId, api } = useFarmerVisitApi();
+    const { orgId, api, isPro } = useFarmerVisitApi();
 
     const [searchText, setSearchText] = useState("");
     const [search, setSearch] = useState("");
@@ -44,7 +45,7 @@ export default function FarmerVisitsScreen() {
             order,
         },
         {
-            enabled: !!orgId,
+            enabled: !!orgId && isPro,
             initialCursor: 1,
             getNextPageParam: (last: VisitPage) => last.nextCursor ?? undefined,
         },
@@ -74,6 +75,15 @@ export default function FarmerVisitsScreen() {
             </Pressable>
         );
     };
+
+    if (!isPro) {
+        return (
+            <View className="flex-1 bg-background">
+                <ScreenHeader title="Farmer Visits" />
+                <ProBlocker feature="Farmer Visit Reports" description="Create, track and share farmer visit reports with automatic FCR and standard comparisons." />
+            </View>
+        );
+    }
 
     return (
         <View className="flex-1 bg-background">
