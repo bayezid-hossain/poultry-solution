@@ -22,7 +22,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
-import { Activity, Archive, ArrowLeft, Bird, CalendarDays, ChevronDown, ChevronUp, ClipboardList, LineChart, MoreHorizontal, Package, Pencil, Power, Rewind, RotateCcw, ShoppingCart, Skull, Trash2, Wheat } from "lucide-react-native";
+import { Activity, Archive, ArrowLeft, Bird, CalendarDays, ChevronDown, ChevronUp, ClipboardCheck, LineChart, MoreHorizontal, Package, Pencil, Power, Rewind, RotateCcw, ShoppingCart, Skull, Trash2, Wheat } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 
@@ -462,7 +462,7 @@ export default function CycleDetailsScreen() {
                                 </Pressable>
                                 <Pressable className="flex-row items-center py-4 border-b border-border/30 active:bg-muted/50" onPress={() => { setIsMenuOpen(false); router.push(`/cycle/${id}/farmer-visit` as any); }}>
                                     <View className="w-8 items-center justify-center mr-3">
-                                        <Icon as={ClipboardList} size={20} className="text-foreground" />
+                                        <Icon as={ClipboardCheck} size={20} className="text-foreground" />
                                     </View>
                                     <Text className="font-medium text-foreground text-base flex-1">Farmer Visit</Text>
                                 </Pressable>
