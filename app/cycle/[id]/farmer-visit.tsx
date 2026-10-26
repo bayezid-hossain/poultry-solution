@@ -1,5 +1,6 @@
 import { DateField } from "@/components/farmer-visits/date-field";
 import { FeedLineDraft, FeedLinesEditor } from "@/components/farmer-visits/feed-lines-editor";
+import { BottomSheetModal } from "@/components/ui/bottom-sheet-modal";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { ProBlocker } from "@/components/pro-blocker";
@@ -12,11 +13,11 @@ import {
 import { useFarmerVisitApi } from "@/lib/use-farmer-visit-api";
 import { trpc } from "@/lib/trpc";
 import * as Clipboard from "expo-clipboard";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { format } from "date-fns";
-import { ChevronLeft, Copy } from "lucide-react-native";
+import { ChevronLeft, Copy, X } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
@@ -216,44 +217,61 @@ export default function FarmerVisitScreen() {
         });
     };
 
+    // The form lives in the app's BottomSheetModal so its keyboard handling keeps lower fields visible.
+    // Called as a function (not a component) so the sheet and its inputs are not remounted on each render.
+    const sheet = (children: React.ReactNode) => (
+        <View className="flex-1">
+            <Stack.Screen options={{ presentation: "transparentModal", animation: "fade", contentStyle: { backgroundColor: "transparent" } }} />
+            <BottomSheetModal open fullScreen onOpenChange={(o) => { if (!o) router.back(); }}>
+                <View className="flex-1">{children}</View>
+            </BottomSheetModal>
+        </View>
+    );
+
     const header = (
-        <View
-            className="flex-row items-center px-4 pb-3 bg-background border-b border-border"
-            style={{ paddingTop: insets.top + 8 }}
-        >
-            <Pressable
-                onPress={() => (previewing ? setPreviewing(false) : router.back())}
-                className="w-10 h-10 items-center justify-center rounded-lg active:bg-accent mr-2"
-            >
-                <Icon as={ChevronLeft} size={22} className="text-foreground" />
-            </Pressable>
-            <Text className="text-xl font-bold text-[#16a34a] flex-1" numberOfLines={1}>
+        <View className="flex-row items-center px-4 pt-5 pb-3 border-b border-border">
+            {previewing ? (
+                <Pressable
+                    onPress={() => setPreviewing(false)}
+                    className="w-10 h-10 items-center justify-center rounded-lg active:bg-accent mr-2"
+                >
+                    <Icon as={ChevronLeft} size={22} className="text-foreground" />
+                </Pressable>
+            ) : null}
+            <Text className="text-xl font-bold text-foreground flex-1" numberOfLines={1}>
                 {previewing ? "View Report" : existing ? "Edit Farmer Visit" : "Farmer Visit"}
             </Text>
+            <Pressable
+                onPress={() => router.back()}
+                hitSlop={8}
+                className="w-10 h-10 items-center justify-center rounded-full active:bg-accent"
+            >
+                <Icon as={X} size={20} className="text-muted-foreground" />
+            </Pressable>
         </View>
     );
 
     if (!isPro) {
-        return (
-            <View className="flex-1 bg-background">
+        return sheet(
+            <>
                 {header}
                 <ProBlocker feature="Farmer Visit Reports" description="Create, track and share farmer visit reports with automatic FCR and standard comparisons." />
-            </View>
+            </>,
         );
     }
 
     if (prefill.isLoading || !orgId) {
-        return (
-            <View className="flex-1 bg-background">
+        return sheet(
+            <>
                 {header}
                 <View className="flex-1 items-center justify-center"><BirdyLoader /></View>
-            </View>
+            </>,
         );
     }
 
     if (prefill.isError || !cycle || !farmer) {
-        return (
-            <View className="flex-1 bg-background">
+        return sheet(
+            <>
                 {header}
                 <View className="flex-1 items-center justify-center px-8 gap-3">
                     <Text className="text-center text-muted-foreground">
@@ -261,21 +279,21 @@ export default function FarmerVisitScreen() {
                     </Text>
                     <Button variant="outline" onPress={() => prefill.refetch()}><Text>Try again</Text></Button>
                 </View>
-            </View>
+            </>,
         );
     }
 
     if (previewing) {
-        return (
-            <View className="flex-1 bg-background">
+        return sheet(
+            <>
                 {header}
-                <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 160 }}>
-                    <View className="rounded-2xl border border-border/50 bg-card p-4">
+                <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 24 }}>
+                    <View className="rounded-2xl border border-border/50 bg-background p-4">
                         <Text selectable className="text-sm leading-6 text-foreground">{buildMessage()}</Text>
                     </View>
                 </ScrollView>
                 <View
-                    className="absolute bottom-0 left-0 right-0 px-4 pt-3 bg-background border-t border-border gap-2"
+                    className="px-4 pt-3 border-t border-border gap-2"
                     style={{ paddingBottom: insets.bottom + 12 }}
                 >
                     <Button variant="outline" onPress={onCopy} className="h-11 rounded-xl active:scale-[0.98]">
@@ -291,19 +309,19 @@ export default function FarmerVisitScreen() {
                         </Button>
                     </View>
                 </View>
-            </View>
+            </>,
         );
     }
 
-    return (
-        <KeyboardAvoidingView className="flex-1 bg-background" behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    return sheet(
+        <>
             {header}
             <ScrollView
-                contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 120, gap: 20 }}
+                contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 20 }}
                 keyboardShouldPersistTaps="handled"
             >
                 {/* Read-only cycle summary */}
-                <View className="rounded-2xl border border-border/50 bg-card p-4 gap-1">
+                <View className="rounded-2xl border border-border/50 bg-background p-4 gap-1">
                     <Text className="text-lg font-black text-foreground">{farmer.name}</Text>
                     {farmer.location ? <Text className="text-sm text-muted-foreground">{farmer.location}</Text> : null}
                     <Text className="text-sm text-muted-foreground mt-1">
@@ -391,13 +409,13 @@ export default function FarmerVisitScreen() {
             </ScrollView>
 
             <View
-                className="absolute bottom-0 left-0 right-0 px-4 pt-3 bg-background border-t border-border"
+                className="px-4 pt-3 border-t border-border"
                 style={{ paddingBottom: insets.bottom + 12 }}
             >
                 <Button onPress={onViewReport} className="h-12 rounded-xl active:scale-[0.98]">
                     <Text className="font-bold">View report</Text>
                 </Button>
             </View>
-        </KeyboardAvoidingView>
+        </>,
     );
 }
