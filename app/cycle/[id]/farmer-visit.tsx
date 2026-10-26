@@ -64,10 +64,12 @@ export default function FarmerVisitScreen() {
     const [medicine, setMedicine] = useState("");
     const [suggestions, setSuggestions] = useState(DEFAULT_SUGGESTIONS);
     const [seededKey, setSeededKey] = useState("");
+    const [previewing, setPreviewing] = useState(false);
 
     const prefill = api.getPrefill.useQuery(
         { orgId, cycleId, date: visitDate },
-        { enabled: !!orgId && !!cycleId && isPro },
+        // Always fetch fresh: the cycle may have been corrected (age, mortality, DOC) since this was last cached.
+        { enabled: !!orgId && !!cycleId && isPro, staleTime: 0, gcTime: 0, refetchOnMount: "always" },
     );
     const cycle = prefill.data?.cycle;
     const farmer = prefill.data?.farmer;
@@ -98,7 +100,7 @@ export default function FarmerVisitScreen() {
             setMedicine(existing.medicine);
             setSuggestions(existing.suggestions);
         } else {
-            setAge(String(calcAge(visitDate, new Date(prefill.data.cycle.startDate))));
+            setAge(String(calcAge(visitDate, new Date(prefill.data.cycle.ageStartDate))));
             setTodayMortality("");
             setTotalMortality(String(prefill.data.cycle.mortality));
             setAvgWeight("");
@@ -135,8 +137,16 @@ export default function FarmerVisitScreen() {
     const stdFcr = standard.data?.fcr ?? null;
 
     const save = api.save.useMutation({
-        onSuccess: (res) => {
-            toast.success(existing ? "Report updated" : "Report saved");
+        onSuccess: async (res) => {
+            // Copy the saved message right away so it can be pasted straight into chat.
+            await Clipboard.setStringAsync(
+                buildMessage({
+                    avgFcr: Number(res.report.avgFcr),
+                    stdWeightG: res.report.stdWeightG ?? null,
+                    stdFcr: res.report.stdFcr == null ? null : Number(res.report.stdFcr),
+                }),
+            );
+            toast.success(existing ? "Report updated and copied" : "Report saved and copied");
             if (!res.mortalitySynced && cycle && toInt(totalMortality) !== cycle.mortality) {
                 toast.info("Cycle mortality was not changed because birds have already been sold.");
             }
@@ -146,7 +156,7 @@ export default function FarmerVisitScreen() {
         onError: (e) => toast.error(e.message),
     });
 
-    const buildMessage = () =>
+    const buildMessage = (override?: { avgFcr: number; stdWeightG: number | null; stdFcr: number | null }) =>
         formatVisitMessage({
             visitDate,
             farmerName: farmer?.name ?? "",
@@ -157,9 +167,9 @@ export default function FarmerVisitScreen() {
             todayMortality: toInt(todayMortality),
             totalMortality: toInt(totalMortality),
             avgWeightG: toInt(avgWeight),
-            stdWeightG,
-            avgFcr,
-            stdFcr,
+            stdWeightG: override ? override.stdWeightG : stdWeightG,
+            avgFcr: override ? override.avgFcr : avgFcr,
+            stdFcr: override ? override.stdFcr : stdFcr,
             feedLines,
             litter,
             disease,
@@ -172,15 +182,24 @@ export default function FarmerVisitScreen() {
         toast.success("Report copied");
     };
 
-    const onSave = () => {
-        if (!cycle) return;
-        if (feedLines.length === 0) { toast.error("Add at least one feed type"); return; }
+    const validate = (): boolean => {
+        if (!cycle) return false;
+        if (feedLines.length === 0) { toast.error("Add at least one feed type"); return false; }
         const names = feedLines.map((l) => l.type.toLowerCase());
-        if (new Set(names).size !== names.length) { toast.error("Feed type names must be unique"); return; }
+        if (new Set(names).size !== names.length) { toast.error("Feed type names must be unique"); return false; }
         if (toInt(totalMortality) + cycle.birdsOut > cycle.doc) {
             toast.error(`Total mortality cannot exceed initial birds (${cycle.doc})`);
-            return;
+            return false;
         }
+        return true;
+    };
+
+    const onViewReport = () => {
+        if (validate()) setPreviewing(true);
+    };
+
+    const onSave = () => {
+        if (!validate()) return;
         save.mutate({
             orgId,
             cycleId,
@@ -203,22 +222,14 @@ export default function FarmerVisitScreen() {
             style={{ paddingTop: insets.top + 8 }}
         >
             <Pressable
-                onPress={() => router.back()}
+                onPress={() => (previewing ? setPreviewing(false) : router.back())}
                 className="w-10 h-10 items-center justify-center rounded-lg active:bg-accent mr-2"
             >
                 <Icon as={ChevronLeft} size={22} className="text-foreground" />
             </Pressable>
             <Text className="text-xl font-bold text-[#16a34a] flex-1" numberOfLines={1}>
-                {existing ? "Edit Farmer Visit" : "Farmer Visit"}
+                {previewing ? "View Report" : existing ? "Edit Farmer Visit" : "Farmer Visit"}
             </Text>
-            <Pressable
-                onPress={onCopy}
-                disabled={!cycle}
-                className="flex-row items-center gap-1.5 h-10 px-3 rounded-xl border border-border active:bg-accent"
-            >
-                <Icon as={Copy} size={16} className="text-foreground" />
-                <Text className="text-sm font-bold text-foreground">Copy</Text>
-            </Pressable>
         </View>
     );
 
@@ -249,6 +260,36 @@ export default function FarmerVisitScreen() {
                         {prefill.error?.message ?? "Could not load this cycle."}
                     </Text>
                     <Button variant="outline" onPress={() => prefill.refetch()}><Text>Try again</Text></Button>
+                </View>
+            </View>
+        );
+    }
+
+    if (previewing) {
+        return (
+            <View className="flex-1 bg-background">
+                {header}
+                <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 160 }}>
+                    <View className="rounded-2xl border border-border/50 bg-card p-4">
+                        <Text selectable className="text-sm leading-6 text-foreground">{buildMessage()}</Text>
+                    </View>
+                </ScrollView>
+                <View
+                    className="absolute bottom-0 left-0 right-0 px-4 pt-3 bg-background border-t border-border gap-2"
+                    style={{ paddingBottom: insets.bottom + 12 }}
+                >
+                    <Button variant="outline" onPress={onCopy} className="h-11 rounded-xl active:scale-[0.98]">
+                        <Icon as={Copy} size={16} className="text-foreground" />
+                        <Text className="font-bold">Copy</Text>
+                    </Button>
+                    <View className="flex-row gap-2">
+                        <Button variant="outline" onPress={() => setPreviewing(false)} disabled={save.isPending} className="flex-1 h-12 rounded-xl active:scale-[0.98]">
+                            <Text className="font-bold">Back to edit</Text>
+                        </Button>
+                        <Button onPress={onSave} disabled={save.isPending} className="flex-1 h-12 rounded-xl active:scale-[0.98]">
+                            <Text className="font-bold">{save.isPending ? "Saving..." : existing ? "Update report" : "Save report"}</Text>
+                        </Button>
+                    </View>
                 </View>
             </View>
         );
@@ -353,8 +394,8 @@ export default function FarmerVisitScreen() {
                 className="absolute bottom-0 left-0 right-0 px-4 pt-3 bg-background border-t border-border"
                 style={{ paddingBottom: insets.bottom + 12 }}
             >
-                <Button onPress={onSave} disabled={save.isPending} className="h-12 rounded-xl active:scale-[0.98]">
-                    <Text className="font-bold">{save.isPending ? "Saving..." : existing ? "Update report" : "Save report"}</Text>
+                <Button onPress={onViewReport} className="h-12 rounded-xl active:scale-[0.98]">
+                    <Text className="font-bold">View report</Text>
                 </Button>
             </View>
         </KeyboardAvoidingView>
