@@ -100,6 +100,13 @@ export default function TabsDrawerLayout() {
             headerShown: false
           }}
         />
+        <Drawer.Screen
+          name="farmer-visits"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false
+          }}
+        />
 
       </Drawer>
     </View>
