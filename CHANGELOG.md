@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.62] - 2026-10-26
+
 ### Added
 - Cycle details now show how many farm visits a cycle has and when it was last visited, with a Farm Visits section between Sales History and Other Cycles listing every visit report. From there you can add a new visit, edit, copy or delete a report
 
