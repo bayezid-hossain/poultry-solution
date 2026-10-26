@@ -93,7 +93,7 @@ const expected = [
     "",
     "Medicine:",
     "",
-    "Suggestions: Maintain curtain management,Feeder and Dribker.",
+    "Suggestions: Maintain curtain management, Feeder and Dribler.",
     "Give fresh water. Maintain temperature.",
 ].join("\n");
 assert.equal(formatVisitMessage(base), expected);

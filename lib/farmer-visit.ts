@@ -5,7 +5,7 @@ export type FeedLine = { type: string; intake: number; running: number; stock: n
 export const KG_PER_BAG = 50;
 
 export const DEFAULT_SUGGESTIONS =
-    "Maintain curtain management,Feeder and Dribker.\nGive fresh water. Maintain temperature.";
+    "Maintain curtain management, Feeder and Dribler.\nGive fresh water. Maintain temperature.";
 
 export const DEFAULT_FEED_LINES: FeedLine[] = [
     { type: "B1", intake: 0, running: 0, stock: 0 },
