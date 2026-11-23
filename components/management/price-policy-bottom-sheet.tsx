@@ -7,7 +7,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { format } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import { X } from "lucide-react-native";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -24,8 +24,14 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+export type PricePolicyScope =
+    | { kind: "mine" }
+    // officerId null = the organization default
+    | { kind: "officer"; officerId: string | null };
+
 interface PricePolicyBottomSheetProps {
     open: boolean;
+    scope: PricePolicyScope;
     onOpenChange: (open: boolean) => void;
     mode: "add" | "edit";
     policy?: {
@@ -37,7 +43,7 @@ interface PricePolicyBottomSheetProps {
     };
 }
 
-export function PricePolicyBottomSheet({ open, onOpenChange, mode, policy }: PricePolicyBottomSheetProps) {
+export function PricePolicyBottomSheet({ open, onOpenChange, mode, policy, scope }: PricePolicyBottomSheetProps) {
     const utils = trpc.useUtils();
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const orgId = membership?.orgId ?? "";
@@ -53,54 +59,58 @@ export function PricePolicyBottomSheet({ open, onOpenChange, mode, policy }: Pri
                 baseSellPrice: Number(policy.baseSellPrice),
             }
             : {
-                effectiveFrom: new Date(),
+                effectiveFrom: startOfDay(new Date()),
                 feedPricePerBag: undefined,
                 docPricePerBird: undefined,
                 baseSellPrice: undefined,
             },
     });
 
-    const invalidateList = () => utils.management.pricePolicies.list.invalidate();
+    const invalidateList = () => {
+        if (scope.kind === "mine") {
+            utils.officer.pricePolicies.list.invalidate();
+            utils.officer.pricePolicies.status.invalidate();
+        } else {
+            utils.management.pricePolicies.list.invalidate();
+        }
+    };
 
-    const createMutation = trpc.management.pricePolicies.create.useMutation({
-        onSuccess: () => {
-            toast.success("Price policy created");
-            invalidateList();
-            onOpenChange(false);
-            reset();
-        },
-        onError: (e) => toast.error(e.message),
-    });
+    const onCreated = () => {
+        toast.success("Price policy created");
+        invalidateList();
+        onOpenChange(false);
+        reset();
+    };
+    const onUpdated = () => {
+        toast.success("Price policy updated");
+        invalidateList();
+        onOpenChange(false);
+    };
+    const onFailed = (e: { message: string }) => toast.error(e.message);
 
-    const updateMutation = trpc.management.pricePolicies.update.useMutation({
-        onSuccess: () => {
-            toast.success("Price policy updated");
-            invalidateList();
-            onOpenChange(false);
-        },
-        onError: (e) => toast.error(e.message),
-    });
+    const createMine = trpc.officer.pricePolicies.create.useMutation({ onSuccess: onCreated, onError: onFailed });
+    const updateMine = trpc.officer.pricePolicies.update.useMutation({ onSuccess: onUpdated, onError: onFailed });
+    const createManaged = trpc.management.pricePolicies.create.useMutation({ onSuccess: onCreated, onError: onFailed });
+    const updateManaged = trpc.management.pricePolicies.update.useMutation({ onSuccess: onUpdated, onError: onFailed });
 
-    const isPending = createMutation.isPending || updateMutation.isPending;
+    const isPending =
+        createMine.isPending || updateMine.isPending || createManaged.isPending || updateManaged.isPending;
 
     const onSubmit = (values: FormValues) => {
+        const body = {
+            orgId,
+            effectiveFrom: values.effectiveFrom.toISOString(),
+            feedPricePerBag: values.feedPricePerBag,
+            docPricePerBird: values.docPricePerBird,
+            baseSellPrice: values.baseSellPrice,
+        };
         if (mode === "edit" && policy) {
-            updateMutation.mutate({
-                orgId,
-                id: policy.id,
-                effectiveFrom: values.effectiveFrom.toISOString(),
-                feedPricePerBag: values.feedPricePerBag,
-                docPricePerBird: values.docPricePerBird,
-                baseSellPrice: values.baseSellPrice,
-            });
+            if (scope.kind === "mine") updateMine.mutate({ ...body, id: policy.id });
+            else updateManaged.mutate({ ...body, id: policy.id });
+        } else if (scope.kind === "mine") {
+            createMine.mutate(body);
         } else {
-            createMutation.mutate({
-                orgId,
-                effectiveFrom: values.effectiveFrom.toISOString(),
-                feedPricePerBag: values.feedPricePerBag,
-                docPricePerBird: values.docPricePerBird,
-                baseSellPrice: values.baseSellPrice,
-            });
+            createManaged.mutate({ ...body, officerId: scope.officerId ?? undefined });
         }
     };
 
@@ -156,6 +166,9 @@ export function PricePolicyBottomSheet({ open, onOpenChange, mode, policy }: Pri
                                 </>
                             )}
                         />
+                        <Text className="text-[11px] text-muted-foreground mt-1.5 ml-1">
+                            Prices apply to sales and cycle endings from this date. Pick an earlier date to include earlier work. Reports already calculated are not changed.
+                        </Text>
                         {errors.effectiveFrom && (
                             <Text className="text-[10px] text-destructive mt-1 ml-1">{errors.effectiveFrom.message}</Text>
                         )}

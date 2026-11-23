@@ -85,6 +85,16 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
     const [showDateChangeWarning, setShowDateChangeWarning] = useState(false);
     const [showDiffModal, setShowDiffModal] = useState(false);
 
+    // Prices the server uses when a field is left empty (pro-gated, non-pro users get the fallbacks)
+    const saleOwnDate = saleEvent.saleDate && !isNaN(new Date(saleEvent.saleDate).getTime()) ? new Date(saleEvent.saleDate).toISOString() : undefined;
+    const priceDefaults = trpc.officer.sales.getPriceDefaults.useQuery(
+        { cycleId: saleEvent.cycleId || undefined, historyId: saleEvent.historyId || undefined, date: saleOwnDate },
+        { enabled: open && !!(saleEvent.cycleId || saleEvent.historyId), retry: false }
+    );
+    const baseSellPlaceholder = String(priceDefaults.data?.basePrice ?? 145);
+    const feedPricePlaceholder = String(priceDefaults.data?.feedPrice ?? 3325);
+    const docPricePlaceholder = String(priceDefaults.data?.docPrice ?? 41.5);
+
     // Priority: explicit officialInputDate → cycle start date (startDate for history, createdAt for active)
     // cycleContext is canonical (backend-computed), with direct relations as defensive fallbacks
     const officialDocDate = saleEvent.cycleContext?.officialInputDate
@@ -864,7 +874,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                                         value={value?.toString() || ""}
                                                         onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                         keyboardType="decimal-pad"
-                                                        placeholder="145"
+                                                        placeholder={baseSellPlaceholder}
                                                         className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
                                                     />
                                                 )}
@@ -881,7 +891,7 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                                         value={value?.toString() || ""}
                                                         onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                         keyboardType="decimal-pad"
-                                                        placeholder="3325"
+                                                        placeholder={feedPricePlaceholder}
                                                         className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
                                                     />
                                                 )}
@@ -898,13 +908,14 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
                                                         value={value?.toString() || ""}
                                                         onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                         keyboardType="decimal-pad"
-                                                        placeholder="41.5"
+                                                        placeholder={docPricePlaceholder}
                                                         className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
                                                     />
                                                 )}
                                             />
                                         </View>
                                     </View>
+                                    <Text className="text-[10px] text-muted-foreground mt-1">Leave empty to use your prices</Text>
                                 </View>
                             </View>
                         )}
