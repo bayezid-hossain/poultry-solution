@@ -4,8 +4,10 @@ import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { Textarea } from "@/components/ui/textarea";
+import { formatTransferMessage } from "@/lib/feed-transfer";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as Clipboard from "expo-clipboard";
 import { ArrowRight, CheckCircle2, ChevronDown, Package, PackageX, Search, User, X } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -99,8 +101,21 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
 
     const transferMutation = isManagement ? trpc.management.stock.transferStock : trpc.officer.stock.transferStock;
     const mutation = (transferMutation as any).useMutation({
-        onSuccess: async () => {
-            toast.success("Stock transferred successfully");
+        onSuccess: async (_data: unknown, variables: { feeds: { type?: string; quantity: number }[] }) => {
+            // Copy the transfer message right away so it can be pasted straight into chat.
+            try {
+                await Clipboard.setStringAsync(
+                    formatTransferMessage({
+                        date: new Date(),
+                        fromFarmer: sourceFarmerName,
+                        toFarmer: selectedFarmer?.name ?? "",
+                        lines: variables.feeds.map((f) => ({ feedType: f.type ?? null, quantity: f.quantity })),
+                    }),
+                );
+                toast.success("Stock transferred and message copied");
+            } catch {
+                toast.success("Stock transferred successfully");
+            }
             utils.officer.farmers.getDetails.invalidate({ farmerId: sourceFarmerId });
             utils.officer.stock.getHistory.invalidate({ farmerId: sourceFarmerId });
             utils.officer.stock.getStockBreakdown.invalidate({ farmerId: sourceFarmerId });
