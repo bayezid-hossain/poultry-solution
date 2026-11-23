@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- Security: updated dependencies to patched versions
+
 ## [v1.0.63] - 2026-11-23
 
 ### Added
