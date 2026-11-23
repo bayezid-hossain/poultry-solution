@@ -1,5 +1,6 @@
 /// <reference types="nativewind/types" />
 import { OfficerSelector } from "@/components/dashboard/officer-selector";
+import { CopyTransferButton } from "@/components/farmers/copy-transfer-button";
 import { FeedDistributionModal } from "@/components/farmers/feed-distribution-modal";
 import { StockDistributionChips } from "@/components/farmers/stock-distribution-chips";
 import { ProBlocker } from "@/components/pro-blocker";
@@ -290,6 +291,12 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                                 "border-emerald-400/30",
                                 "border-purple-400/30",
                             ];
+                            // A transfer writes one row per feed type; show Copy once per transfer, and not once
+                            // it has been reverted (a revert is an ADJUSTMENT pointing at the transfer row's id).
+                            const revertedLogIds = new Set(
+                                stockLogs.filter((l: any) => l.type === "ADJUSTMENT" && l.referenceId).map((l: any) => l.referenceId),
+                            );
+                            const copyShownFor = new Set<string>();
                             const groups: { dateKey: string; logs: any[] }[] = [];
                             stockLogs.slice(0, 10).forEach((log: any) => {
                                 const dateKey = format(new Date(log.createdAt), "yyyy-MM-dd");
@@ -315,6 +322,9 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                                     {group.logs.map((log: any) => {
                                         const ti = typeIcon(log.type);
                                         const amount = Number(log.amount);
+                                        const isTransferLog = log.type === "TRANSFER_IN" || log.type === "TRANSFER_OUT";
+                                        const showCopy = isTransferLog && !!log.referenceId && !revertedLogIds.has(log.id) && !copyShownFor.has(log.referenceId);
+                                        if (showCopy) copyShownFor.add(log.referenceId);
 
                                         return (
                                             <View key={log.id} className="flex-row items-center py-3 border-b border-border/5 px-4">
@@ -331,6 +341,7 @@ function FarmerStockRow({ farmer, isManagement, orgId }: { farmer: { id: string;
                                                                 {log.feedType}
                                                             </Text>
                                                         )}
+                                                        {showCopy && <CopyTransferButton referenceId={log.referenceId} />}
                                                     </View>
                                                 </View>
 

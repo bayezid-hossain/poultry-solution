@@ -1,3 +1,4 @@
+import { CopyTransferButton } from "@/components/farmers/copy-transfer-button";
 import { EditFeedTypeModal } from "@/components/farmers/edit-feed-type-modal";
 import { FeedDistributionModal } from "@/components/farmers/feed-distribution-modal";
 import { EditStockLogModal } from "@/components/farmers/edit-stock-log-modal";
@@ -190,6 +191,9 @@ export default function FarmerLedgerScreen() {
                         >
                             <Icon as={Tag} size={12} className="text-blue-500" />
                         </Button>
+                        {isTransfer && !isReverted && item.referenceId && (
+                            <CopyTransferButton referenceId={item.referenceId} variant="icon" />
+                        )}
                         {!isCorrection && !isCycleClose && !isReverted && item.type !== "ADJUSTMENT" && item.type !== "CYCLE_CONSUMPTION" && (
                             !isTransfer ? (
                                 <View className="gap-0.5">
