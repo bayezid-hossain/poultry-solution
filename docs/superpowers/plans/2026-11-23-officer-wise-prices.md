@@ -20,7 +20,7 @@
 | `scripts/verify-price-policy-resolution.ts` (create) | Tests for `pickPolicy` |
 | `db/schema.ts` (modify) | `officer_id` column, two partial unique indexes, relation |
 | `modules/reports/server/services/sale-metrics-service.ts` (modify) | `getPriceForDate(orgId, officerId, date, tx)` and its caller in `recalculateForCycle` |
-| `trpc/routers/officer/sales.ts` (modify, around line 1187) | Pass the farmer's officer id to `getPriceForDate` |
+| `trpc/routers/officer/sales.ts` (modify) | Pass the farmer's officer id to `getPriceForDate` in `previewSale` (line ~1187), and add `getPriceDefaults` for the form placeholders |
 | `trpc/routers/management/price-policies.ts` (modify) | Officer scope on list/create/update/delete, `syncOrgPrices` limited to org defaults |
 | `trpc/routers/officer/price-policies.ts` (create) | Officer's own list/create/update/delete/status |
 | `trpc/routers/officer/officer.ts` (modify) | Register `pricePolicies` |
@@ -37,6 +37,7 @@
 | `app/(drawer)/_layout.tsx` (modify) | Hidden screen for `my-prices`, mounts the launch prompt |
 | `components/custom-drawer-content.tsx` (modify) | "My Prices" item for officers |
 | `components/prices/price-prompt-sheet.tsx` (create) | Launch reminder |
+| `components/cycles/sell-modal.tsx`, `components/cycles/adjust-sale-modal.tsx` (modify) | Placeholders show the officer's current prices instead of hard-coded 145 / 3325 / 41.5 |
 
 ---
 
@@ -182,7 +183,34 @@ Add imports `or`, `isNull` from `drizzle-orm` and `import { pickPolicy } from "@
 
 - [ ] **Step 2:** In `recalculateForCycle` (line ~105) change the call to `getPriceForDate(orgId, cycle.farmer?.officerId ?? null, priceDate, tx)`. The `farmer` relation is already loaded (`with: { farmer: ... }`).
 - [ ] **Step 3:** In `trpc/routers/officer/sales.ts` around line 1187, find how that handler loads the cycle's farmer and pass its `officerId` as the second argument (read the 30 lines above to get the variable name, add the farmer fetch if it does not already have one).
-- [ ] **Step 4:** `npx tsc --noEmit` clean. Commit `feat(pricing): price lookup uses the farmer's officer`.
+- [ ] **Step 4:** `previewSale` is what the sell form calls for its preview and what the adjust-sale form uses (with `excludeSaleId`), so this one change covers the sale preview and sale adjustments. Saved sales go through `recalculateForCycle`, covered by Step 2.
+- [ ] **Step 5:** `npx tsc --noEmit` clean. Commit `feat(pricing): price lookup uses the farmer's officer`.
+
+---
+
+### Task 3b: Price defaults for the sale forms (backend)
+
+**Files:** modify `trpc/routers/officer/sales.ts`.
+
+The sell form and adjust-sale form have optional overrides (Rec. Price, Feed/Bag, DOC/Bird) with hard-coded placeholders. When left empty the server uses the policy price, so the placeholders must show that same price.
+
+- [ ] **Step 1:** Add a query next to `previewSale` (same access rules: the cycle's farmer belongs to the caller, or the caller is an authorized manager or admin; copy the permission block from `previewSale`, reading the 20 lines above line 1170 for it):
+
+```ts
+    getPriceDefaults: protectedProcedure
+        .input(z.object({
+            cycleId: z.string().optional(),
+            historyId: z.string().optional(),
+            date: z.string().datetime().optional(), // the sale date, defaults to now
+        }))
+        .query(async ({ ctx, input }) => {
+            // load the cycle (or history) with its farmer, run the same permission checks as previewSale
+            const prices = await SaleMetricsService.getPriceForDate(orgId, farmer.officerId, input.date ? new Date(input.date) : new Date());
+            return prices; // { feedPrice, docPrice, basePrice }
+        }),
+```
+
+- [ ] **Step 2:** `npx tsc --noEmit` clean. Commit `feat(pricing): expose the effective prices for the sale forms`.
 
 ---
 
@@ -410,6 +438,17 @@ export function PricePromptSheet() {
 
 ---
 
+### Task 10b: Sale form placeholders (mobile)
+
+**Files:** modify `components/cycles/sell-modal.tsx` (placeholders at lines ~999, 1016, 1033) and `components/cycles/adjust-sale-modal.tsx` (the same three fields).
+
+- [ ] **Step 1:** In each modal add `const defaults = trpc.officer.sales.getPriceDefaults.useQuery({ cycleId / historyId, date }, { enabled: open })`, using the same cycle or history id the modal already has, and the sale date from the form (for the adjust modal, the sale's own date).
+- [ ] **Step 2:** Replace the hard-coded placeholders with `defaults.data?.basePrice`, `defaults.data?.feedPrice` and `defaults.data?.docPrice` (as strings), falling back to the old constants while loading. Add a small caption under the three fields: "Leave empty to use your prices".
+- [ ] **Step 3:** The adjust modal still pre-fills the sale's saved prices as values; the placeholder only shows when a field is cleared. Do not change that behaviour.
+- [ ] **Step 4:** Typecheck, commit `feat(prices): sale forms show the officer's current prices as placeholders`.
+
+---
+
 ### Task 11: Changelog, verification, PRs
 
 - [ ] **Step 1:** `node add-changelog.js "Each officer can now set their own DOC, feed and selling prices from My Prices, and profit numbers use them. Officers who have not set prices are reminded when the app opens, and until then the organization prices apply. Managers can view and edit any officer's prices from Price Policies" --type Added`.
@@ -422,9 +461,12 @@ export function PricePromptSheet() {
   5. A view-only manager cannot create or delete.
   6. Web price policy table shows "Org default" and officer names.
   7. Existing sales and reports are unchanged.
+  8. Sell form: with no override typed, the Rec. Price, Feed/Bag and DOC/Bird placeholders show the officer's current prices (and the org default's for an officer without a policy). The preview and the saved sale use those same prices.
+  9. Adjust sale: fields keep the sale's saved prices, clearing one shows the current price as the placeholder, and saving recalculates with the officer's price.
 - [ ] **Step 4:** Push both branches, open PRs (backend first, with the `db:push` note), do not merge.
 
 ## Self-review notes
 
 - **Spec coverage:** schema and unique rules (Task 2), lookup order (Tasks 1, 3), officer and management APIs (Tasks 4, 5), web column (Task 6), mobile screens and picker (Tasks 7, 8), drawer (Task 9), launch reminder (Task 10), changelog and checks (Task 11).
-- **Open details to confirm during Task 3:** the second `getPriceForDate` caller in `officer/sales.ts` may not have the farmer loaded; and `OfficerSelector`'s `disableGlobal` behaviour (Task 8) should be read before use.
+- **Open details to confirm during Task 3:** the `getPriceForDate` caller in `previewSale` may not have the farmer's officer loaded (it reads `cycle.farmer`, check the `with` clause); and `OfficerSelector`'s `disableGlobal` behaviour (Task 8) should be read before use.
+- **Sale forms** (Tasks 3, 3b, 10b): preview, saved sales, adjustments and placeholders all resolve prices through the same `getPriceForDate`, so they cannot disagree.

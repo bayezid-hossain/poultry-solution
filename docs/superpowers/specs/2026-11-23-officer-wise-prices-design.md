@@ -58,6 +58,14 @@ New pure function `pickPolicy(rows, officerId, date)`:
 - Officer: new "My Prices" drawer item opening the same content scoped to themselves.
 - Launch prompt: a bottom sheet mounted once in `app/(drawer)/_layout.tsx` for users whose active mode is officer. It asks `status`, and if `hasOwnPolicy` is false it opens. "Set prices" goes to My Prices with the add sheet open. "Later" sets a module-level flag so it does not return until the app is relaunched.
 
+## Sale forms
+
+The sell form and the adjust-sale form already let the user override Rec. Price, Feed/Bag and DOC/Bird, and use the policy price when the field is empty. Three things follow from officer-wise prices:
+
+- The sale preview (`previewSale`), saved sales and adjustments all use the farmer's officer's price through the same lookup.
+- A new `sales.getPriceDefaults` call returns the effective prices for a cycle and date, and both forms show them as the field placeholders instead of the hard-coded 145, 3325 and 41.5.
+- Adjust sale keeps pre-filling the sale's saved prices as values. The placeholder only shows when a field is cleared.
+
 ## Web dashboard
 
 The price policy table gets an "Applies to" column (officer name or "Org default"). Editing officer policies from the web is out of scope.
