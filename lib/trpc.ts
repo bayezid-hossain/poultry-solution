@@ -1,9 +1,9 @@
 import { QueryClient } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
-import * as SecureStore from "expo-secure-store";
 import superjson from "superjson";
 import type { AppRouter } from "../../feed-reminder-up/trpc/routers/_app";
+import { readAuthStorage } from "./auth-client";
 import { TRPC_API_URL } from "./config/api";
 
 export const trpc = createTRPCReact<AppRouter>();
@@ -18,12 +18,14 @@ export const trpcClient = trpc.createClient({
             async headers() {
                 // React Native fetch() notoriously drops manual `cookie:` headers.
                 // We MUST use the Authorization: Bearer <token> format for TRPC.
-                // better-auth securely stores the raw server cookies locally in Android.
-                // We synchronously parse that cookie jar to find the active session_token.
+                // better-auth securely stores the raw server cookies in SecureStore.
+                // We parse that cookie jar to find the active session_token. It is
+                // read through better-auth's storage adapter because large values
+                // are split across several SecureStore keys.
                 let token = undefined;
 
                 try {
-                    const cookieStr = SecureStore.getItem("poultrysolution_cookie");
+                    const cookieStr = await readAuthStorage("cookie");
                     if (cookieStr) {
                         const parsed = JSON.parse(cookieStr);
                         // Find the cookie ending in 'session_token' (e.g. better-auth.session_token)
@@ -41,13 +43,13 @@ export const trpcClient = trpc.createClient({
 
                 // Fallback to session_data cache if cookie parser fails for any reason
                 if (!token) {
-                    const sessionStr = SecureStore.getItem("poultrysolution_session_data");
-                    if (sessionStr) {
-                        try {
+                    try {
+                        const sessionStr = await readAuthStorage("session_data");
+                        if (sessionStr) {
                             const parsed = JSON.parse(sessionStr);
                             token = parsed?.session?.token;
-                        } catch (e) { }
-                    }
+                        }
+                    } catch (e) { }
                 }
 
                 // Only return Authorization header if token exists and isn't the string "undefined"
