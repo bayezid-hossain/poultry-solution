@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.0.64] - 2026-11-23
+
+### Fixed
+- Price fields in My Prices and Price Policies now accept decimal values like 41.5 — previously the decimal point disappeared as you typed
+
 ## [v1.0.63] - 2026-11-23
 
 ### Added
