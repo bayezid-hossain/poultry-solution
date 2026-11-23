@@ -129,8 +129,8 @@ function PolicyTimelineRow({
 
 interface PricePoliciesContentProps {
     scope: PricePolicyScope;
-    // Opens the add sheet as soon as this turns true (used by the launch reminder link)
-    autoOpenAdd?: boolean;
+    // Opens the add sheet whenever this changes to a truthy value (used by the launch reminder link)
+    autoOpenAdd?: boolean | string;
 }
 
 export function PricePoliciesContent({ scope, autoOpenAdd }: PricePoliciesContentProps) {

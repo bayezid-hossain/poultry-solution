@@ -10,7 +10,7 @@ export default function MyPricesScreen() {
     return (
         <View className="flex-1 bg-background">
             <ScreenHeader title="My Prices" />
-            <PricePoliciesContent scope={{ kind: "mine" }} autoOpenAdd={add === "1"} />
+            <PricePoliciesContent scope={{ kind: "mine" }} autoOpenAdd={add || undefined} />
         </View>
     );
 }

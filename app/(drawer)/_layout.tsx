@@ -1,4 +1,5 @@
 import { CustomDrawerContent } from "@/components/custom-drawer-content";
+import { PricePromptSheet } from "@/components/prices/price-prompt-sheet";
 import { Drawer } from "expo-router/drawer";
 import { View } from "react-native";
 
@@ -116,6 +117,7 @@ export default function TabsDrawerLayout() {
         />
 
       </Drawer>
+      <PricePromptSheet />
     </View>
   );
 }
