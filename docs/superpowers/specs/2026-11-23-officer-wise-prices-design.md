@@ -16,7 +16,7 @@ DOC price, feed price and base selling price live in `price_policies`, one timel
 | What if an officer has none | The organization-wide policies stay and become the "org default". An officer's own policy wins when one is effective on the sale date, otherwise the org default, otherwise the built-in constants |
 | Existing org policies | Kept as they are. They become defaults by having no officer. No data migration |
 | Which officer applies to a sale | The officer who owns the cycle's farmer when the sale metrics are calculated |
-| Past sales | Unchanged. Each sale metrics row already stores the prices it used |
+| Past sales and reports | Unchanged. Each sale metrics row stores the prices it used, and reports read those stored values. Nothing is recalculated automatically when a policy is created, edited or deleted |
 | Reminder | Every app launch, an officer with no policy effective today is asked to set prices. A bottom sheet with "Set prices" and "Later". "Later" hides it until the next app launch |
 | Pro gating | None |
 
@@ -57,6 +57,14 @@ New pure function `pickPolicy(rows, officerId, date)`:
 - Management: the existing Price Policies screen gets an officer picker at the top (Org default, or a specific officer), reusing `OfficerSelector`. The add sheet creates in the picked scope.
 - Officer: new "My Prices" drawer item opening the same content scoped to themselves.
 - Launch prompt: a bottom sheet mounted once in `app/(drawer)/_layout.tsx` for users whose active mode is officer. It asks `status`, and if `hasOwnPolicy` is false it opens. "Set prices" goes to My Prices with the add sheet open. "Later" sets a module-level flag so it does not return until the app is relaunched.
+
+## Reports
+
+The production, performance and annual reports read `net_profit` from `sale_metrics`, which is recalculated when a sale is recorded or adjusted and when a cycle ends or reopens. Those recalculations use the officer's prices through the same lookup, so reports are consistent for everything calculated after a policy takes effect.
+
+- The price used is the one in effect on the cycle's pricing date (end date for ended cycles, otherwise the latest sale date, otherwise the start date), not the date the policy was created. A policy applies to sales and cycle endings from its effective date onward. An officer who wants earlier work covered backdates the effective date, but stored rows only change when that cycle is next recalculated.
+- The price form shows a hint explaining this next to the effective date field.
+- Fix: the web dashboard's sales table (`desktop-sales-table.tsx`) computes profit from the fixed constants instead of the prices stored on each sale. It uses the stored per-sale prices, falling back to the constants only when none are stored, as the mobile sale details already do.
 
 ## Sale forms
 

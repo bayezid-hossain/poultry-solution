@@ -25,6 +25,7 @@
 | `trpc/routers/officer/price-policies.ts` (create) | Officer's own list/create/update/delete/status |
 | `trpc/routers/officer/officer.ts` (modify) | Register `pricePolicies` |
 | `modules/management/ui/components/price-policies/price-policy-table.tsx` (modify) | "Applies to" column |
+| `modules/cycles/ui/components/cycles/desktop-sales-table.tsx` (modify) | Profit from the prices stored on each sale, not the fixed constants |
 
 **Mobile `C:\Users\amiba\Projects\poultry-solution`**
 
@@ -346,6 +347,13 @@ export const officerPricePoliciesRouter = createTRPCRouter({
 - [ ] **Step 1:** Add an "Applies to" column showing `row.officerName ?? "Org default"`. Read the file first and follow its column pattern. The `list` response now includes `officerName`.
 - [ ] **Step 2:** `npx tsc --noEmit` clean. Commit `feat(pricing): show who a price policy applies to on the web`.
 
+### Task 6b: Web sales table uses stored prices
+
+**Files:** modify `modules/cycles/ui/components/cycles/desktop-sales-table.tsx` (lines ~193-194).
+
+- [ ] **Step 1:** The table computes `feedCost = totalFeedBags * FEED_PRICE_PER_BAG` and `docCost = doc * DOC_PRICE_PER_BIRD`. Read how each row exposes `cycleContext` (see `modules/shared/types/sale.ts`, which has `feedPriceUsed` and `docPriceUsed`) and use `Number(cycleContext?.feedPriceUsed ?? FEED_PRICE_PER_BAG)` and `Number(cycleContext?.docPriceUsed ?? DOC_PRICE_PER_BIRD)`. This mirrors `sale-details-content.tsx`, which already does it.
+- [ ] **Step 2:** `npx tsc --noEmit` clean. Commit `fix(sales): web sales table uses the prices stored on each sale`.
+
 Push the backend branch and open the PR here. Deploy needs `npm run db:push` first.
 
 ---
@@ -357,7 +365,7 @@ Push the backend branch and open the PR here. Deploy needs `npm run db:push` fir
 - [ ] **Step 1:** Add a prop `scope: { kind: "mine" } | { kind: "officer"; officerId: string | null }` (`null` = org default). The component currently hardcodes `trpc.management.pricePolicies.create/update` and invalidates `management.pricePolicies.list`.
   - `kind: "mine"`: use `trpc.officer.pricePolicies.create/update` and invalidate `officer.pricePolicies.list` and `officer.pricePolicies.status`.
   - `kind: "officer"`: keep the management mutations, send `officerId: scope.officerId ?? undefined` on create, and invalidate `management.pricePolicies.list`.
-- [ ] **Step 2:** Default the effective date to start of today for a new policy so it applies to current cycles immediately, with the existing date picker to change it.
+- [ ] **Step 2:** Default the effective date to the start of today for a new policy, with the existing date picker to change it. Under the date field add the hint: "Prices apply to sales and cycle endings from this date. Pick an earlier date to include earlier work. Reports already calculated are not changed."
 - [ ] **Step 3:** Typecheck, commit `feat(prices): price policy sheet works for officers`.
 
 ---
@@ -460,7 +468,7 @@ export function PricePromptSheet() {
   4. Management: Price Policies shows the org default timeline, picking an officer shows that officer's, creating and deleting in each scope works and does not change the org default. The organization row prices still follow only the latest org default.
   5. A view-only manager cannot create or delete.
   6. Web price policy table shows "Org default" and officer names.
-  7. Existing sales and reports are unchanged.
+  7. Existing sales and reports are unchanged after saving a policy. A new sale or an ended cycle after the effective date shows the officer's prices in the production and performance reports.
   8. Sell form: with no override typed, the Rec. Price, Feed/Bag and DOC/Bird placeholders show the officer's current prices (and the org default's for an officer without a policy). The preview and the saved sale use those same prices.
   9. Adjust sale: fields keep the sale's saved prices, clearing one shows the current price as the placeholder, and saving recalculates with the officer's price.
 - [ ] **Step 4:** Push both branches, open PRs (backend first, with the `db:push` note), do not merge.
