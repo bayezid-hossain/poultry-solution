@@ -6,7 +6,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Plus, Trash2, Wheat, X } from "lucide-react-native";
 import { useRef, useState } from "react";
-import { Pressable, ScrollView, TextInput, View } from "react-native";
+import { Pressable, ScrollView, TextInput, View, type TextInputInstance } from "react-native";
 import { FeedTypeInput } from "./feed-type-input";
 
 interface RestockModalProps {
@@ -35,7 +35,7 @@ export function RestockModal({
     const [note, setNote] = useState("");
     const [error, setError] = useState<string | null>(null);
 
-    const noteRef = useRef<TextInput>(null);
+    const noteRef = useRef<TextInputInstance>(null);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";

@@ -2,7 +2,7 @@ import { Icon } from "@/components/ui/icon";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { DrawerContentScrollView } from "@react-navigation/drawer";
+import { DrawerContentScrollView } from "expo-router/drawer";
 import { useGlobalSearchParams, usePathname, useRouter } from "expo-router";
 import { BarChart3, Bird, BookOpen, ClipboardCheck, ClipboardList, Crown, Download, LayoutDashboard, Package, Settings, ShoppingBag, Tag, TrendingUp, Users, Wheat } from "lucide-react-native";
 import { Image, Pressable, View } from "react-native";

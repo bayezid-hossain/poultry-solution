@@ -402,7 +402,7 @@ export default function SalesScreen() {
                                 <View className="py-6 items-center">
                                     <ActivityIndicator />
                                 </View>
-                            ) : null
+                            ) : undefined
                         }
 
                         refreshControl={

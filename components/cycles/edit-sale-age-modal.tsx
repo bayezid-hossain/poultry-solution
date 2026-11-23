@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { Pencil, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
+import { ScrollView, TextInput, View, type TextInputInstance } from "react-native";
 
 interface EditSaleAgeModalProps {
     currentAge: number;
@@ -23,7 +23,7 @@ export function EditSaleAgeModal({
     const [age, setAge] = useState("");
     const [error, setError] = useState<string | null>(null);
 
-    const ageRef = useRef<TextInput>(null);
+    const ageRef = useRef<TextInputInstance>(null);
 
     useEffect(() => {
         if (open) {

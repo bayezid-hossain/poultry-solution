@@ -8,7 +8,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, X } from "lucide-react-native";
 import { useRef, useState } from "react";
-import { Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, TextInput, View, type TextInputInstance } from "react-native";
 import { toast } from "sonner-native";
 
 interface AddMortalityModalProps {
@@ -32,7 +32,7 @@ export function AddMortalityModal({
     const [date, setDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
 
-    const amountRef = useRef<TextInput>(null);
+    const amountRef = useRef<TextInputInstance>(null);
 
     const mutation = trpc.officer.cycles.addMortality.useMutation({
         onSuccess: () => {

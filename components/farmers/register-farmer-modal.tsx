@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react-native";
 import { useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, TextInput, View, type TextInputInstance } from "react-native";
 import { toast } from "sonner-native";
 import { z } from "zod";
 import { FeedTypeInput } from "./feed-type-input";
@@ -45,10 +45,10 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
         },
     });
 
-    const nameRef = useRef<TextInput>(null);
-    const mobileRef = useRef<TextInput>(null);
-    const locationRef = useRef<TextInput>(null);
-    const stockRef = useRef<TextInput>(null);
+    const nameRef = useRef<TextInputInstance>(null);
+    const mobileRef = useRef<TextInputInstance>(null);
+    const locationRef = useRef<TextInputInstance>(null);
+    const stockRef = useRef<TextInputInstance>(null);
 
     const createMutation = trpc.officer.farmers.create.useMutation({
         onSuccess: () => {
@@ -174,7 +174,7 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
                                     keyboardType="decimal-pad"
                                     className={`bg-muted/30 h-12 px-4 rounded-xl ${errors.initialStock ? 'border-destructive' : 'border-border/50'}`}
                                     returnKeyType="next"
-                                    onSubmitEditing={handleSubmit(onSubmit)}
+                                    onSubmitEditing={() => handleSubmit(onSubmit)()}
                                 />
                             )}
                         />
@@ -199,7 +199,7 @@ export function RegisterFarmerModal({ open, onOpenChange, onSuccess }: RegisterF
                     </View>
 
                     <Button
-                        onPress={handleSubmit(onSubmit)}
+                        onPress={() => handleSubmit(onSubmit)()}
                         disabled={createMutation.isPending}
                         className="h-14 rounded-2xl bg-primary mt-4 active:opacity-90"
                     >

@@ -6,7 +6,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { MapPin, Phone, User, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
+import { ScrollView, TextInput, View, type TextInputInstance } from "react-native";
 import { toast } from "sonner-native";
 
 interface EditFarmerModalProps {
@@ -32,9 +32,9 @@ export function EditFarmerModal({
     const [location, setLocation] = useState(farmer.location || "");
     const [mobile, setMobile] = useState(farmer.mobile || "");
 
-    const nameRef = useRef<TextInput>(null);
-    const locationRef = useRef<TextInput>(null);
-    const mobileRef = useRef<TextInput>(null);
+    const nameRef = useRef<TextInputInstance>(null);
+    const locationRef = useRef<TextInputInstance>(null);
+    const mobileRef = useRef<TextInputInstance>(null);
 
     useEffect(() => {
         if (open) {

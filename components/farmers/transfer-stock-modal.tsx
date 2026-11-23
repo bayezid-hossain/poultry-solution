@@ -12,7 +12,7 @@ import { ArrowRight, CheckCircle2, ChevronDown, Package, PackageX, Search, User,
 import { useColorScheme } from "nativewind";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, TextInput, View, type TextInputInstance } from "react-native";
 import { toast } from "sonner-native";
 import { z } from "zod";
 
@@ -49,7 +49,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
         },
     });
 
-    const noteRef = useRef<TextInput>(null);
+    const noteRef = useRef<TextInputInstance>(null);
 
     const targetFarmerId = watch("targetFarmerId");
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
@@ -395,7 +395,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                                     onChangeText={onChange}
                                     numberOfLines={2}
                                     className="bg-card border-2 border-border rounded-2xl text-sm h-20 text-foreground px-4"
-                                    onSubmitEditing={handleSubmit(onSubmit)}
+                                    onSubmitEditing={() => handleSubmit(onSubmit)()}
                                 />
                             )}
                         />
@@ -412,7 +412,7 @@ export const TransferStockModal = ({ open, onOpenChange, sourceFarmerId, sourceF
                         </Button>
                         <Button
                             className="flex-1 h-14 bg-blue-600 rounded-2xl shadow-none"
-                            onPress={handleSubmit(onSubmit)}
+                            onPress={() => handleSubmit(onSubmit)()}
                             disabled={mutation.isPending || !hasValidFeed}
                         >
                             <Text className="text-white font-black text-base">

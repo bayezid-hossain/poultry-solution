@@ -9,7 +9,7 @@ import { addDays, format } from "date-fns";
 import { ArrowLeft, Banknote, Bird, Box, CalendarIcon, FileText, Settings, ShoppingCart, Truck } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { ActivityIndicator, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, TextInput, View, type TextInputInstance } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 import { z } from "zod";
@@ -147,17 +147,17 @@ export const AdjustSaleModal = ({ open, onOpenChange, saleEvent, latestReport, o
         defaultValues,
     });
 
-    const locationRef = useRef<TextInput>(null);
-    const partyRef = useRef<TextInput>(null);
-    const birdsSoldRef = useRef<TextInput>(null);
-    const birdsRejectedRef = useRef<TextInput>(null);
-    const totalMortalityRef = useRef<TextInput>(null);
-    const totalWeightRef = useRef<TextInput>(null);
-    const pricePerKgRef = useRef<TextInput>(null);
-    const adjustmentNoteRef = useRef<TextInput>(null);
-    const recoveryPriceRef = useRef<TextInput>(null);
-    const feedPriceRef = useRef<TextInput>(null);
-    const docPriceRef = useRef<TextInput>(null);
+    const locationRef = useRef<TextInputInstance>(null);
+    const partyRef = useRef<TextInputInstance>(null);
+    const birdsSoldRef = useRef<TextInputInstance>(null);
+    const birdsRejectedRef = useRef<TextInputInstance>(null);
+    const totalMortalityRef = useRef<TextInputInstance>(null);
+    const totalWeightRef = useRef<TextInputInstance>(null);
+    const pricePerKgRef = useRef<TextInputInstance>(null);
+    const adjustmentNoteRef = useRef<TextInputInstance>(null);
+    const recoveryPriceRef = useRef<TextInputInstance>(null);
+    const feedPriceRef = useRef<TextInputInstance>(null);
+    const docPriceRef = useRef<TextInputInstance>(null);
 
     const feedConsumedArray = useFieldArray({
         control: form.control,

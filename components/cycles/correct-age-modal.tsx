@@ -6,7 +6,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { Pencil, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
+import { ScrollView, TextInput, View, type TextInputInstance } from "react-native";
 
 interface CorrectAgeModalProps {
     cycleId: string;
@@ -27,8 +27,8 @@ export function CorrectAgeModal({
     const [reason, setReason] = useState("");
     const [error, setError] = useState<string | null>(null);
 
-    const ageRef = useRef<TextInput>(null);
-    const reasonRef = useRef<TextInput>(null);
+    const ageRef = useRef<TextInputInstance>(null);
+    const reasonRef = useRef<TextInputInstance>(null);
 
     useEffect(() => {
         if (open) {

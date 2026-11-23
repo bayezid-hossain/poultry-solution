@@ -1,6 +1,6 @@
 import { LoadingState } from "@/components/ui/loading-state";
 import { VersionChecker } from "@/components/updater/version-checker";
-import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from "@react-navigation/native";
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from "expo-router";
 import { PortalHost } from "@rn-primitives/portal";
 import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from "expo-router";
@@ -197,7 +197,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 export const unstable_settings = {
-  initialRouteName: "(drawer)",
+  anchor: "(drawer)",
 };
 
 import { GlobalFilterProvider } from "@/context/global-filter-context";

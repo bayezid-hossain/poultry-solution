@@ -8,7 +8,7 @@ import { format, isAfter } from "date-fns";
 import { Plus } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Alert, FlatList, Pressable, RefreshControl, View } from "react-native";
-import { Swipeable } from "react-native-gesture-handler";
+import Swipeable, { type SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { toast } from "sonner-native";
 
 type Policy = {
@@ -35,7 +35,7 @@ function PolicyTimelineRow({
     onEdit: () => void;
     onDelete: () => void;
 }) {
-    const swipeRef = useRef<Swipeable>(null);
+    const swipeRef = useRef<SwipeableMethods>(null);
 
     const renderRightActions = () => (
         <View className="flex-row items-center ml-2 gap-2 pr-1">

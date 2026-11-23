@@ -12,6 +12,7 @@ import {
     Pressable,
     ScrollView,
     TextInput,
+    type TextInputInstance,
     View,
 } from "react-native";
 
@@ -27,7 +28,7 @@ export default function ForgotPasswordScreen() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [resending, setResending] = useState(false);
-    const inputRefs = useRef<(TextInput | null)[]>([]);
+    const inputRefs = useRef<(TextInputInstance | null)[]>([]);
 
     const handleSendOtp = async () => {
         if (!email) {

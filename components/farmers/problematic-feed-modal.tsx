@@ -6,7 +6,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { AlertCircle, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
+import { ScrollView, TextInput, View, type TextInputInstance } from "react-native";
 
 interface ProblematicFeedModalProps {
     farmer: {
@@ -28,7 +28,7 @@ export function ProblematicFeedModal({
     const [amount, setAmount] = useState("");
     const [error, setError] = useState<string | null>(null);
 
-    const amountRef = useRef<TextInput>(null);
+    const amountRef = useRef<TextInputInstance>(null);
 
     useEffect(() => {
         if (open) {

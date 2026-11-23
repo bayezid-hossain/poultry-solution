@@ -24,7 +24,7 @@ import {
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { ActivityIndicator, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, TextInput, View, type TextInputInstance } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 import { z } from "zod";
@@ -128,23 +128,23 @@ export const SellModal = ({
         },
     });
 
-    const saleDateRef = useRef<TextInput>(null);
-    const farmerMobileRef = useRef<TextInput>(null);
-    const locationRef = useRef<TextInput>(null);
-    const partyRef = useRef<TextInput>(null);
-    const birdsSoldRef = useRef<TextInput>(null);
+    const saleDateRef = useRef<TextInputInstance>(null);
+    const farmerMobileRef = useRef<TextInputInstance>(null);
+    const locationRef = useRef<TextInputInstance>(null);
+    const partyRef = useRef<TextInputInstance>(null);
+    const birdsSoldRef = useRef<TextInputInstance>(null);
     // Tracks whether the officer typed the sold count themselves. Until they do, the field
     // keeps auto-filling with every bird left in the house.
     const birdsSoldTouchedRef = useRef(false);
-    const birdsRejectedRef = useRef<TextInput>(null);
-    const mortalityChangeRef = useRef<TextInput>(null);
-    const totalWeightRef = useRef<TextInput>(null);
-    const pricePerKgRef = useRef<TextInput>(null);
-    const cashReceivedRef = useRef<TextInput>(null);
-    const depositReceivedRef = useRef<TextInput>(null);
-    const recoveryPriceRef = useRef<TextInput>(null);
-    const feedPriceRef = useRef<TextInput>(null);
-    const docPriceRef = useRef<TextInput>(null);
+    const birdsRejectedRef = useRef<TextInputInstance>(null);
+    const mortalityChangeRef = useRef<TextInputInstance>(null);
+    const totalWeightRef = useRef<TextInputInstance>(null);
+    const pricePerKgRef = useRef<TextInputInstance>(null);
+    const cashReceivedRef = useRef<TextInputInstance>(null);
+    const depositReceivedRef = useRef<TextInputInstance>(null);
+    const recoveryPriceRef = useRef<TextInputInstance>(null);
+    const feedPriceRef = useRef<TextInputInstance>(null);
+    const docPriceRef = useRef<TextInputInstance>(null);
 
     const hasInitializedRef = useRef(false);
 
@@ -545,7 +545,7 @@ export const SellModal = ({
                             </Button>
                             <Button
                                 className="flex-1 h-14 rounded-xl shadow-none flex-row gap-2"
-                                onPress={onSubmit}
+                                onPress={() => onSubmit()}
                                 disabled={isSubmitting || mutation.isPending}
                             >
                                 {isSubmitting || mutation.isPending ? (

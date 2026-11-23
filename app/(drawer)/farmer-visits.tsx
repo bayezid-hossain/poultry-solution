@@ -143,7 +143,7 @@ export default function FarmerVisitsScreen() {
                             </Text>
                         </View>
                     }
-                    ListFooterComponent={query.isFetchingNextPage ? <View className="py-4"><BirdyLoader /></View> : null}
+                    ListFooterComponent={query.isFetchingNextPage ? <View className="py-4"><BirdyLoader /></View> : undefined}
                 />
             )}
         </View>

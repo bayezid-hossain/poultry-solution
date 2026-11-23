@@ -5,7 +5,7 @@ import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
 import { AlertCircle, CheckCircle2, PackageMinus, PackageX, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, TextInput, View, type TextInputInstance } from "react-native";
 
 interface StockCorrectionModalProps {
     farmerId: string;
@@ -29,8 +29,8 @@ export function StockCorrectionModal({
     const [selectedType, setSelectedType] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const amountRef = useRef<TextInput>(null);
-    const noteRef = useRef<TextInput>(null);
+    const amountRef = useRef<TextInputInstance>(null);
+    const noteRef = useRef<TextInputInstance>(null);
 
     const { data: membership } = trpc.auth.getMyMembership.useQuery();
     const isManagement = membership?.activeMode === "MANAGEMENT";

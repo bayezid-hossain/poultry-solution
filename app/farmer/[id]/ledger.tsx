@@ -375,7 +375,7 @@ export default function FarmerLedgerScreen() {
                             </View>
                             <View className="w-8" />
                         </View>
-                    ) : null}
+                    ) : undefined}
                     ListEmptyComponent={
                         <View className="items-center justify-center p-10 opacity-50">
                             <Icon as={History} size={48} className="text-muted-foreground mb-4" />

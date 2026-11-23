@@ -105,7 +105,7 @@ export const FarmerPickerList = ({
                             <View className="py-4 items-center">
                                 <ActivityIndicator />
                             </View>
-                        ) : null
+                        ) : undefined
                     }
                     ListEmptyComponent={
                         <View className="p-8 items-center">

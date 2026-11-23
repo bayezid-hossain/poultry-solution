@@ -10,6 +10,7 @@ import {
     Pressable,
     ScrollView,
     TextInput,
+    type TextInputInstance,
     View,
 } from "react-native";
 
@@ -23,7 +24,7 @@ export default function VerifyEmailScreen() {
     const [loading, setLoading] = useState(false);
     const [resending, setResending] = useState(false);
     const [resent, setResent] = useState(false);
-    const inputRefs = useRef<(TextInput | null)[]>([]);
+    const inputRefs = useRef<(TextInputInstance | null)[]>([]);
 
     const handleOtpChange = (value: string, index: number) => {
         if (value.length > 1) {

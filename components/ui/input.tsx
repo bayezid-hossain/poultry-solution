@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils';
 import * as React from 'react';
-import { Platform, TextInput, type TextInputProps } from 'react-native';
+import { Platform, TextInput, type TextInputProps, type TextInputInstance } from 'react-native';
 
-const Input = React.forwardRef<TextInput, TextInputProps>(
+const Input = React.forwardRef<TextInputInstance, TextInputProps>(
   ({ className, ...props }, ref) => {
     return (
       <TextInput

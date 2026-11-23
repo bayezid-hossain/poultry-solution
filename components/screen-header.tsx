@@ -1,6 +1,7 @@
 import { Text } from "@/components/ui/text";
 import { trpc } from "@/lib/trpc";
-import { DrawerActions, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "expo-router";
+import { DrawerActions } from "expo-router/react-navigation";
 import { router } from "expo-router";
 import { Bell } from "lucide-react-native";
 import { ReactNode } from "react";
