@@ -11,7 +11,7 @@
     "lint": "expo lint"
   },
   "dependencies": {
-    "@better-auth/expo": "^1.4.18",
+    "@better-auth/expo": "1.7.27",
     "@e965/xlsx": "^0.20.3",
     "@expo/vector-icons": "^15.0.3",
     "@hookform/resolvers": "^5.2.2",
@@ -34,7 +34,7 @@
     "@trpc/client": "^11.10.0",
     "@trpc/react-query": "^11.10.0",
     "@trpc/server": "^11.10.0",
-    "better-auth": "^1.4.18",
+    "better-auth": "1.7.27",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
