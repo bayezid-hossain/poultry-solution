@@ -17,12 +17,26 @@ import { z } from "zod";
 
 const schema = z.object({
     effectiveFrom: z.date(),
-    feedPricePerBag: z.number({ error: "Required" }).positive("Must be positive"),
-    docPricePerBird: z.number({ error: "Required" }).positive("Must be positive"),
-    baseSellPrice: z.number({ error: "Required" }).positive("Must be positive"),
+    // Inputs hold raw text so partial decimals like "41." survive typing; coerce on submit.
+    feedPricePerBag: z.coerce.number({ error: "Required" }).positive("Must be positive"),
+    docPricePerBird: z.coerce.number({ error: "Required" }).positive("Must be positive"),
+    baseSellPrice: z.coerce.number({ error: "Required" }).positive("Must be positive"),
 });
 
-type FormValues = z.infer<typeof schema>;
+type FormInput = {
+    effectiveFrom: Date;
+    feedPricePerBag: string;
+    docPricePerBird: string;
+    baseSellPrice: string;
+};
+type FormValues = z.output<typeof schema>;
+
+// Allow digits with at most one decimal point.
+const sanitizeDecimal = (t: string) => {
+    const cleaned = t.replace(/,/g, ".").replace(/[^0-9.]/g, "");
+    const [whole, ...rest] = cleaned.split(".");
+    return rest.length ? `${whole}.${rest.join("")}` : whole;
+};
 
 export type PricePolicyScope =
     | { kind: "mine" }
@@ -49,20 +63,20 @@ export function PricePolicyBottomSheet({ open, onOpenChange, mode, policy, scope
     const orgId = membership?.orgId ?? "";
     const [showDatePicker, setShowDatePicker] = useState(false);
 
-    const { control, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
-        resolver: zodResolver(schema),
+    const { control, handleSubmit, reset, formState: { errors } } = useForm<FormInput, unknown, FormValues>({
+        resolver: zodResolver(schema as any),
         defaultValues: mode === "edit" && policy
             ? {
                 effectiveFrom: new Date(policy.effectiveFrom),
-                feedPricePerBag: Number(policy.feedPricePerBag),
-                docPricePerBird: Number(policy.docPricePerBird),
-                baseSellPrice: Number(policy.baseSellPrice),
+                feedPricePerBag: String(Number(policy.feedPricePerBag)),
+                docPricePerBird: String(Number(policy.docPricePerBird)),
+                baseSellPrice: String(Number(policy.baseSellPrice)),
             }
             : {
                 effectiveFrom: startOfDay(new Date()),
-                feedPricePerBag: undefined,
-                docPricePerBird: undefined,
-                baseSellPrice: undefined,
+                feedPricePerBag: "",
+                docPricePerBird: "",
+                baseSellPrice: "",
             },
     });
 
@@ -184,9 +198,9 @@ export function PricePolicyBottomSheet({ open, onOpenChange, mode, policy, scope
                                 render={({ field: { onChange, value } }) => (
                                     <Input
                                         placeholder="3325"
-                                        value={value?.toString() ?? ""}
-                                        onChangeText={(t) => onChange(t ? parseFloat(t) : undefined)}
-                                        keyboardType="numeric"
+                                        value={value ?? ""}
+                                        onChangeText={(t) => onChange(sanitizeDecimal(t))}
+                                        keyboardType="decimal-pad"
                                         className={`bg-muted/30 h-12 px-3 rounded-xl ${errors.feedPricePerBag ? 'border-destructive' : 'border-border/50'}`}
                                     />
                                 )}
@@ -204,9 +218,9 @@ export function PricePolicyBottomSheet({ open, onOpenChange, mode, policy, scope
                                 render={({ field: { onChange, value } }) => (
                                     <Input
                                         placeholder="41.5"
-                                        value={value?.toString() ?? ""}
-                                        onChangeText={(t) => onChange(t ? parseFloat(t) : undefined)}
-                                        keyboardType="numeric"
+                                        value={value ?? ""}
+                                        onChangeText={(t) => onChange(sanitizeDecimal(t))}
+                                        keyboardType="decimal-pad"
                                         className={`bg-muted/30 h-12 px-3 rounded-xl ${errors.docPricePerBird ? 'border-destructive' : 'border-border/50'}`}
                                     />
                                 )}
@@ -224,9 +238,9 @@ export function PricePolicyBottomSheet({ open, onOpenChange, mode, policy, scope
                                 render={({ field: { onChange, value } }) => (
                                     <Input
                                         placeholder="145"
-                                        value={value?.toString() ?? ""}
-                                        onChangeText={(t) => onChange(t ? parseFloat(t) : undefined)}
-                                        keyboardType="numeric"
+                                        value={value ?? ""}
+                                        onChangeText={(t) => onChange(sanitizeDecimal(t))}
+                                        keyboardType="decimal-pad"
                                         className={`bg-muted/30 h-12 px-3 rounded-xl ${errors.baseSellPrice ? 'border-destructive' : 'border-border/50'}`}
                                     />
                                 )}
