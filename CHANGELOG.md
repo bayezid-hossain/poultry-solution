@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Feed transfers now copy a ready-to-paste message (date, from and to farm, quantity per feed type and total) as soon as the transfer succeeds, and transfer rows in the stock ledger and farmer ledger have a Copy button to get the same message again later
+
 ## [v1.0.62] - 2026-10-26
 
 ### Added
