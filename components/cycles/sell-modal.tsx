@@ -381,6 +381,17 @@ export const SellModal = ({
         });
     });
 
+    // Prices the server uses when a field is left empty (pro-gated, non-pro users get the fallbacks)
+    const watchSaleDate = form.watch("saleDate");
+    const priceDefaultsDate = watchSaleDate && !isNaN(new Date(watchSaleDate).getTime()) ? new Date(watchSaleDate).toISOString() : undefined;
+    const priceDefaults = trpc.officer.sales.getPriceDefaults.useQuery(
+        { cycleId, date: priceDefaultsDate },
+        { enabled: open && !!cycleId, retry: false }
+    );
+    const baseSellPlaceholder = String(priceDefaults.data?.basePrice ?? 145);
+    const feedPricePlaceholder = String(priceDefaults.data?.feedPrice ?? 3325);
+    const docPricePlaceholder = String(priceDefaults.data?.docPrice ?? 41.5);
+
     const mortalityChange = form.watch("mortalityChange") || 0;
     const watchBirdsSold = form.watch("birdsSold") || 0;
     const watchBirdsRejected = form.watch("birdsRejected") || 0;
@@ -996,7 +1007,7 @@ export const SellModal = ({
                                                                     value={value?.toString() || ""}
                                                                     onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                                     keyboardType="decimal-pad"
-                                                                    placeholder="145"
+                                                                    placeholder={baseSellPlaceholder}
                                                                     className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
                                                                 />
                                                             )}
@@ -1013,7 +1024,7 @@ export const SellModal = ({
                                                                     value={value?.toString() || ""}
                                                                     onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                                     keyboardType="decimal-pad"
-                                                                    placeholder="3325"
+                                                                    placeholder={feedPricePlaceholder}
                                                                     className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
                                                                 />
                                                             )}
@@ -1030,13 +1041,14 @@ export const SellModal = ({
                                                                     value={value?.toString() || ""}
                                                                     onChangeText={(t) => onChange(t === "" ? undefined : t.endsWith('.') ? t : parseFloat(t) || undefined)}
                                                                     keyboardType="decimal-pad"
-                                                                    placeholder="41.5"
+                                                                    placeholder={docPricePlaceholder}
                                                                     className="h-10 bg-amber-500/5 border-amber-500/20 text-sm font-mono"
                                                                 />
                                                             )}
                                                         />
                                                     </View>
                                                 </View>
+                                                <Text className="text-[10px] text-muted-foreground mt-1">Leave empty to use your prices</Text>
                                             </View>
                                         </View>
                                     )}
