@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Each officer can now set their own DOC, feed and selling prices from My Prices, and sales, profit and the production and performance reports use them from the date they take effect. Officers who have not set prices are reminded when the app opens, and until then the organization prices apply. The sale and adjust forms show your current prices as placeholders, and managers can view and edit any officer's prices from Price Policies
+
 ## [v1.0.62] - 2026-10-26
 
 ### Added
