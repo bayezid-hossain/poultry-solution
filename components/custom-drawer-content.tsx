@@ -26,6 +26,7 @@ const officerCoreItems: NavItem[] = [
 const officerActivityItems: NavItem[] = [
     { label: "Sales", icon: ShoppingBag, route: "/(drawer)/sales", isPro: true },
     { label: "Stock & Import", icon: ClipboardList, route: "/(drawer)/stock-ledger", isPro: true },
+    { label: "My Prices", icon: Tag, route: "/(drawer)/my-prices" },
 ];
 
 const officerOrderItems: NavItem[] = [

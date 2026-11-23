@@ -101,6 +101,13 @@ export default function TabsDrawerLayout() {
           }}
         />
         <Drawer.Screen
+          name="my-prices"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false
+          }}
+        />
+        <Drawer.Screen
           name="farmer-visits"
           options={{
             drawerItemStyle: { display: "none" },
